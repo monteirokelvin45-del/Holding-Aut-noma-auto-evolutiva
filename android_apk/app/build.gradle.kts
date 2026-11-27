@@ -6,6 +6,34 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// ---------------------------------------------------------------------------
+// Valores injectados em tempo de build (BuildConfig).
+//
+// Declarados ao nível do script, e não dentro de defaultConfig: o bloco
+// buildTypes.release também os usa, e uma `val` declarada dentro de
+// defaultConfig não é visível lá — foi exactamente esse o erro de compilação
+// do primeiro build no CI ("Unresolved reference: urlExplicita").
+// ---------------------------------------------------------------------------
+//   -Pautomaton.baseUrl=...  ou  AUTOMATON_BASE_URL no ambiente.
+//
+// Sem valor explícito, o build de **debug** aponta para
+// http://10.0.2.2:8000 — o alias documentado do emulador Android para a
+// máquina anfitriã, ou seja, o endereço do backend local. O release exige a
+// URL explícita (ver buildTypes), porque um APK de produção a apontar para o
+// emulador seria inútil.
+// O valor por omissão anterior, https://automaton-holding.fly.dev, não
+// corresponde a serviço nenhum: instalava-se o APK e falhava tudo com "erro
+// de rede", sem forma de perceber que o endereço vinha do build.
+val urlExplicita: String? = (project.findProperty("automaton.baseUrl") as String?)
+    ?: System.getenv("AUTOMATON_BASE_URL")
+val baseUrlPadrao: String = urlExplicita ?: "http://10.0.2.2:8000"
+
+// Token do APK (header X-Automaton-Token). Nunca commitar valores reais:
+// passar via -Pautomaton.token=... ou AUTOMATON_API_TOKEN no ambiente.
+val apiToken: String = (project.findProperty("automaton.token") as String?)
+    ?: System.getenv("AUTOMATON_API_TOKEN")
+    ?: ""
+
 android {
     namespace = "com.automaton.holding"
     compileSdk = 35
@@ -17,27 +45,9 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // URL do backend injectada em tempo de build (BuildConfig).
-        //   -Pautomaton.baseUrl=...  ou  AUTOMATON_BASE_URL no ambiente.
-        //
-        // Sem valor explícito, o build de **debug** aponta para
-        // http://10.0.2.2:8000 — o alias documentado do emulador Android para
-        // a máquina anfitriã. Não é um domínio inventado: é o endereço do
-        // backend local. O build de **release** exige a URL explícita (ver
-        // buildTypes abaixo), porque um APK de produção a apontar para o
-        // emulador seria inútil.
-        // Antes o valor por omissão era https://automaton-holding.fly.dev,
-        // que não corresponde a serviço nenhum.
-        val urlExplicita = (project.findProperty("automaton.baseUrl") as String?)
-            ?: System.getenv("AUTOMATON_BASE_URL")
-        val baseUrl = urlExplicita ?: "http://10.0.2.2:8000"
-        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+        // Ver o bloco no topo do ficheiro.
+        buildConfigField("String", "BASE_URL", "\"$baseUrlPadrao\"")
 
-        // Token do APK (header X-Automaton-Token). Nunca commitar valores reais:
-        // passar via -Pautomaton.token=... ou AUTOMATON_API_TOKEN no ambiente.
-        val apiToken = (project.findProperty("automaton.token") as String?)
-            ?: System.getenv("AUTOMATON_API_TOKEN")
-            ?: ""
         buildConfigField("String", "API_TOKEN", "\"$apiToken\"")
     }
 
