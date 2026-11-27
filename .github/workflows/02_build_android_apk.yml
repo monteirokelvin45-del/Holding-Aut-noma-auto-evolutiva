@@ -280,98 +280,67 @@ jobs:
       - name: Verificar o APK gerado
         id: verificar
         run: |
-          # set -e NÃO: aqui queremos recolher tudo o que der, registando o que
-          # falhou em vez de abortar na primeira ferramenta ausente. Mas também
-          # não pode falhar em silêncio — foi o que aconteceu antes, com o
-          # build verde e o passo a sair com código 1 sem explicar nada.
-          # Trace para ficheiro (fd 19): o log do Actions é ilegível a partir
-          # de fora desta rede, mas o passo seguinte publica este ficheiro no
-          # PR em caso de falha. Sem isto, "o passo saiu com 1" não diz onde.
-          exec 19>/tmp/verif_trace.log
-          BASH_XTRACEFD=19
-          set -uxo pipefail  # -x: trace para fd 19. NÃO -e: recolher tudo.
-          echo "=== instrumentação ==="
-          echo "BASH=${BASH_VERSION:-?} PWD=$(pwd)"
-          echo "ANDROID_HOME=${ANDROID_HOME:-<vazio>}"; echo "=== fim instrumentação ==="
-          echo "PWD=$(pwd)"
-          echo "ANDROID_HOME=${ANDROID_HOME:-<vazio>}  ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<vazio>}"
-          ls android_apk/app/build/outputs/apk/debug/ 2>&1 | head -5
-          APK=$(find android_apk/app/build/outputs/apk/debug -name '*.apk' | head -1)
-          echo "APK='$APK'"
-          if [ -z "$APK" ]; then
-            echo "::error::Nenhum APK de debug foi produzido"
+          # Reescrito sem blocos `{ ... }`, sem arrays e sem pipefail: o
+          # construto anterior morria a meio sem mensagem. Só appends simples,
+          # para o que falhar ser sempre visível. Nenhum comando pode abortar
+          # o passo (a evidência vale mais do que o ✅).
+          APK=android_apk/app/build/outputs/apk/debug/app-debug.apk
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          OUT=/tmp/apk_evidence.md
+          TRACE=/tmp/verif_trace.log
+          : > "$OUT"; : > "$TRACE"
+
+          echo "APK existe? $(test -f "$APK" && echo sim || echo NAO)" | tee -a "$TRACE"
+          if [ ! -f "$APK" ]; then
+            echo "::error::Nenhum APK de debug em $APK"
             exit 1
           fi
-          BT="${ANDROID_HOME}/build-tools/35.0.0"
-          SALIDA=/tmp/apk_evidence.md
-          PROBLEMAS=""
 
-          {
-            echo "### APK de debug produzido e verificado"
-            echo
-            echo "| Propriedade | Valor |"
-            echo "|---|---|"
-            echo "| Ficheiro | \`$(basename "$APK")\` |"
-            echo "| Tamanho | $(du -h "$APK" | cut -f1) ($(stat -c %s "$APK") bytes) |"
-            echo "| sha256 | \`$(sha256sum "$APK" | cut -d' ' -f1)\` |"
-            echo
-            echo "**Identidade (aapt2):**"
-            echo '```'
-            if [ -x "$BT/aapt2" ]; then
-              "$BT/aapt2" dump badging "$APK" 2>&1 \
-                | grep -E "^package|sdkVersion|targetSdkVersion|application-label|uses-permission" \
-                | head -12 || true
-            else
-              echo "aapt2 ausente em $BT"; PROBLEMAS="$PROBLEMAS aapt2"
-            fi
-            echo '```'
-            echo "**Assinatura (apksigner):**"
-            echo '```'
-            if [ -x "$BT/apksigner" ]; then
-              "$BT/apksigner" verify --print-certs "$APK" 2>&1 | head -6 || true
-            else
-              echo "apksigner ausente em $BT"; PROBLEMAS="$PROBLEMAS apksigner"
-            fi
-            echo '```'
-            echo "**Conteúdo do classes.dex:**"
-            echo '```'
-            echo -n "classes da app: "
-            unzip -p "$APK" classes.dex | strings | grep -c 'Lcom/automaton/holding' || echo 0
-            echo "URL do backend embutida:"
-            unzip -p "$APK" classes.dex | strings | grep -oE 'https?://[a-z0-9.:]+' | sort -u | head -5 || true
-            echo "strings de segurança:"
-            unzip -p "$APK" classes.dex | strings \
-              | grep -E 'X-Automaton-Token|biometric_verified|KILL_SWITCH' | sort -u | head -6 || true
-            echo '```'
-          } > "$SALIDA"
+          echo "### APK de debug produzido" >> "$OUT"
+          echo "" >> "$OUT"
+          echo "| Propriedade | Valor |" >> "$OUT"
+          echo "|---|---|" >> "$OUT"
+          echo "| Ficheiro | \`app-debug.apk\` |" >> "$OUT"
+          echo "| Tamanho | $(du -h "$APK" | cut -f1) ($(stat -c %s "$APK") bytes) |" >> "$OUT"
+          echo "| sha256 | \`$(sha256sum "$APK" | cut -d' ' -f1)\` |" >> "$OUT"
+          echo "" >> "$OUT"
 
-          # Resultados dos testes unitários, se existirem.
+          echo "**Identidade (aapt2):**" >> "$OUT"
+          echo '```' >> "$OUT"
+          "$BT/aapt2" dump badging "$APK" 2>>"$TRACE" \
+            | grep -E "^package:|sdkVersion|targetSdkVersion|application-label:|uses-permission" \
+            | head -14 >> "$OUT" 2>>"$TRACE"
+          echo '```' >> "$OUT"
+
+          echo "**Assinatura (apksigner):**" >> "$OUT"
+          echo '```' >> "$OUT"
+          "$BT/apksigner" verify --print-certs "$APK" 2>>"$TRACE" | head -5 >> "$OUT" 2>>"$TRACE"
+          echo '```' >> "$OUT"
+
+          echo "**Conteúdo do classes.dex:**" >> "$OUT"
+          echo '```' >> "$OUT"
+          unzip -p "$APK" classes.dex 2>>"$TRACE" > /tmp/classes.dex || echo "unzip falhou" >> "$TRACE"
+          echo "classes da app: $(strings /tmp/classes.dex | grep -c 'Lcom/automaton/holding')" >> "$OUT"
+          echo "URL do backend embutida:" >> "$OUT"
+          strings /tmp/classes.dex | grep -oE 'https?://[a-zA-Z0-9._:-]+' | sort -u | head -6 >> "$OUT"
+          echo "strings de segurança:" >> "$OUT"
+          strings /tmp/classes.dex | grep -E 'X-Automaton-Token|biometric_verified|KILL_SWITCH' | sort -u | head -6 >> "$OUT"
+          echo '```' >> "$OUT"
+
           TOTAL=$(grep -rho '<testcase' android_apk/app/build/test-results 2>/dev/null | wc -l)
+          FALHAS=$(grep -rho '<failure' android_apk/app/build/test-results 2>/dev/null | wc -l)
+          echo "" >> "$OUT"
+          echo "**Testes unitários:** ${TOTAL} casos, ${FALHAS} falhas" >> "$OUT"
           if [ "$TOTAL" -gt 0 ]; then
-            FALHAS=$(grep -rho '<failure' android_apk/app/build/test-results 2>/dev/null | wc -l)
-            {
-              echo
-              echo "**Testes unitários:** $TOTAL casos, $FALHAS falhas"
-              echo '```'
-              grep -rho 'testcase name="[^"]*"' android_apk/app/build/test-results 2>/dev/null \
-                | sed 's/testcase name=//' | tr -d '"' | sort || true
-              echo '```'
-            } >> "$SALIDA"
+            echo '```' >> "$OUT"
+            grep -rho 'testcase name="[^"]*"' android_apk/app/build/test-results 2>/dev/null \
+              | sed 's/.*name="//; s/"$//' | sort >> "$OUT"
+            echo '```' >> "$OUT"
           fi
 
-          {
-            echo
-            echo "**Notas da verificação:**"
-            if [ -z "$PROBLEMAS" ]; then
-              echo "- todas as ferramentas responderam"
-            else
-              echo "- ferramentas ausentes:$PROBLEMAS"
-            fi
-          } >> "$SALIDA"
-
-          cat "$SALIDA" >> "$GITHUB_STEP_SUMMARY"
-          echo "--- evidência ---"
-          cat "$SALIDA"
+          cat "$OUT" >> "$GITHUB_STEP_SUMMARY"
+          echo "=== evidência ==="
+          cat "$OUT"
 
       - name: Publicar evidência do APK no PR
         if: ${{ success() && github.event_name == 'pull_request' }}
