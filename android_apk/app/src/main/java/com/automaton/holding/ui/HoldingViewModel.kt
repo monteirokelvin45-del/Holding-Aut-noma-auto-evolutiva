@@ -171,7 +171,7 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /** O evento `snapshot` traz o backlog completo; os restantes são pontuais. */
-    private fun ingest(event: LiveEvent) {
+    private suspend fun ingest(event: LiveEvent) {
         when (event.type) {
             "snapshot" -> {
                 val backlog = api.parseSnapshotEvents(event)
@@ -195,6 +195,10 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
                 addEvent(event)
                 lastSequence = maxOf(lastSequence, event.sequence)
                 // Eventos críticos actualizam o estado imediatamente.
+                // Este bloco corre dentro do collect do startLiveStream, que é
+                // uma corrotina — daí a função ser `suspend`. Chamar
+                // getSystemStatus() de uma função normal não compila
+                // ("Suspend function should be called only from a coroutine").
                 if (event.level == "critical" || event.level == "error") {
                     api.getSystemStatus().onSuccess { _status.value = it }
                 }

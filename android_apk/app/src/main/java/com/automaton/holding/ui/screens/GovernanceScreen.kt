@@ -56,7 +56,10 @@ fun GovernanceScreen(
 ) {
     val scroll = rememberScrollState()
     val hr = governance?.hr
-    val accounting = governance?.accounting?.report
+    // AccountingPayload já É o objecto com os números (monthly_revenue_usd,
+    // tax_reserve_usd, phase). Havia aqui um `.report` que não existe em
+    // nenhum lado do modelo — herança de uma versão anterior do contrato.
+    val accounting = governance?.accounting
     val legal = governance?.legal
     val judge = governance?.judge
 
