@@ -33,7 +33,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write      # publicar o APK num ramo (ver passo final)
   pull-requests: write
   issues: write
 
@@ -353,6 +353,43 @@ jobs:
           cat "$OUT" >> "$GITHUB_STEP_SUMMARY"
           echo "=== evidência ==="
           cat "$OUT"
+
+      # O artefacto do Actions vive em *.blob.core.windows.net, que algumas
+      # redes (incluindo a do ambiente de desenvolvimento) não alcançam. Um
+      # ramo do repositório é servido por github.com, que é universalmente
+      # acessível. O ramo é reescrito a cada build (force-push de um commit
+      # órfão), por isso não acumula histórico.
+      - name: Depositar o APK num ramo do repositório
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          APK=android_apk/app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK" || { echo "::error::APK ausente"; exit 1; }
+          PUB=/tmp/apk_publicado
+          rm -rf "$PUB"; mkdir -p "$PUB"
+          cp "$APK" "$PUB/app-debug.apk"
+          ( cd "$PUB"
+            git init -q -b apk-artifact
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            sha256sum app-debug.apk > SHA256SUMS
+            {
+              echo "APK de debug gerado automaticamente pelo workflow 02."
+              echo
+              echo "Commit de origem: ${SHA}"
+              echo "Run: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+              echo
+              echo "Este ramo é reescrito (force-push) a cada build; não versionar nada aqui."
+            } > README.md
+            git add -A
+            git commit -q -m "apk-debug: ${SHA:0:12}"
+            git push -q --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact
+          )
+          echo "APK publicado no ramo apk-artifact"
 
       - name: Publicar evidência do APK no PR
         if: ${{ success() && github.event_name == 'pull_request' }}
