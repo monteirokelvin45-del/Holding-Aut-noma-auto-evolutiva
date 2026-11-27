@@ -22,6 +22,11 @@ on:
     paths:
       - "android_apk/**"
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL do backend a fixar no APK (https://... ou http://10.0.2.2:8000 para o emulador)"
+        required: false
+        default: ""
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -83,6 +88,29 @@ jobs:
             echo "::warning::Sem keystore: apenas o APK de debug será assinado."
           fi
 
+      - name: Resolver URL do backend
+        id: backend
+        env:
+          SECRET_URL: ${{ secrets.AUTOMATON_BASE_URL }}
+          INPUT_URL: ${{ github.event.inputs.base_url }}
+        run: |
+          set -euo pipefail
+          # Prioridade: input manual > segredo do repositório.
+          # Não há valor por omissão: um APK a apontar para um domínio que não
+          # existe falha em runtime com "erro de rede" e ninguém descobre porquê.
+          BASE_URL="${INPUT_URL:-${SECRET_URL:-}}"
+          if [ -z "$BASE_URL" ]; then
+            # Sem URL configurada, o debug fica com o alias do emulador
+            # (10.0.2.2:8000) que o build.gradle.kts já usa por omissão.
+            # O release NÃO é tentado: um APK de produção a apontar para o
+            # emulador seria inútil e passaria despercebido.
+            echo "url=" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sem AUTOMATON_BASE_URL. Debug aponta para 10.0.2.2:8000; release vai ser saltado."
+          else
+            echo "url=$BASE_URL" >> "$GITHUB_OUTPUT"
+            echo "APK vai apontar para: $BASE_URL"
+          fi
+
       - name: Build debug
         working-directory: android_apk
         env:
@@ -90,10 +118,10 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew :app:assembleDebug --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ secrets.AUTOMATON_BASE_URL || 'https://automaton-holding.fly.dev' }}"
+            -Pautomaton.baseUrl="${{ steps.backend.outputs.url }}"
 
       - name: Build release (assinado)
-        if: steps.keystore.outputs.available == 'true'
+        if: ${{ steps.keystore.outputs.available == 'true' && steps.backend.outputs.url != '' }}
         working-directory: android_apk
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -121,14 +149,16 @@ jobs:
           }
           KTS
           ./gradlew :app:assembleRelease --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ secrets.AUTOMATON_BASE_URL || 'https://automaton-holding.fly.dev' }}"
+            -Pautomaton.baseUrl="${{ steps.backend.outputs.url }}"
 
       - name: Correr testes unitários
         working-directory: android_apk
         run: |
           set -euo pipefail
-          ./gradlew :app:testDebugUnitTest --no-daemon || \
-            echo "::warning::Sem testes unitários definidos ainda."
+          # Antes este passo tinha "|| echo warning", o que transformava uma
+          # falha real de testes num aviso verde. Sem testes definidos, o Gradle
+          # devolve sucesso; se houver testes e falharem, o build falha.
+          ./gradlew :app:testDebugUnitTest --no-daemon
 
       - name: Localizar e renomear APKs
         id: apks

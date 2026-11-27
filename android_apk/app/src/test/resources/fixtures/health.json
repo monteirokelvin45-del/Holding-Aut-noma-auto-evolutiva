@@ -1,0 +1,101 @@
+{
+  "status": "ok",
+  "service": "automaton-holding-api",
+  "version": "1.0.0",
+  "env": "production",
+  "started_at": "2026-11-27T18:37:12+00:00",
+  "now": "2026-11-27T18:37:12+00:00",
+  "kill_switch": {
+    "engaged": false,
+    "reason": "estado_inicial",
+    "engaged_by": "system",
+    "engaged_at": null,
+    "released_at": null,
+    "version": 1
+  },
+  "vault": {
+    "root": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data",
+    "files": {
+      "ledger.json": {
+        "exists": true,
+        "bytes": 835,
+        "valid_json": true
+      },
+      "post_mortem_memory.json": {
+        "exists": true,
+        "bytes": 147,
+        "valid_json": true
+      },
+      "squad_metrics.json": {
+        "exists": true,
+        "bytes": 2124,
+        "valid_json": true
+      },
+      "pending_approvals.json": {
+        "exists": true,
+        "bytes": 1173,
+        "valid_json": true
+      }
+    }
+  },
+  "integrations": {
+    "groq": false,
+    "gemini": false,
+    "openrouter": false,
+    "ollama": false,
+    "langfuse": false,
+    "telegram": false,
+    "pexels": false,
+    "pixabay": false,
+    "genai_video": false,
+    "gumroad": false,
+    "lemonsqueezy": false,
+    "mpesa": false,
+    "emola": false,
+    "paypal": false,
+    "wise": false,
+    "github": true
+  },
+  "budget": {
+    "daily_cap_usd": 0.0,
+    "per_agent_cap_usd": 0.0,
+    "approval_threshold_usd": 5.0
+  },
+  "llm": {
+    "groq": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "gemini": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "openrouter": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "ollama": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "local": {
+      "configured": true,
+      "available": true,
+      "reason": "sempre_disponivel",
+      "requests_today": 20
+    }
+  },
+  "websocket_clients": 0,
+  "telegram": {
+    "enabled": false,
+    "allowed_chats": 0
+  }
+}

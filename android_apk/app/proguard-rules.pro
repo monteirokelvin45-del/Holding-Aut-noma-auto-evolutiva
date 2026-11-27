@@ -1,11 +1,25 @@
 # Regras ProGuard/R8 para o APK da holding.
-# kotlinx.serialization: manter serializers gerados.
+#
+# As regras oficiais de kotlinx.serialization (as que o R8 precisa para não
+# apagar os serializers gerados em build de release) são estas — as três
+# primeiras linhas substituem um conjunto anterior que só cobria o pacote
+# kotlinx.serialization.json e deixava os `$serializer` da app ao critério do
+# R8, o que parte o release com `SerializationException: Serializer for
+# class ... is not found` apenas em produção.
 -keepattributes *Annotation*, InnerClasses, Signature
--keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
--keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
--keep,includedescriptorclasses class com.automaton.holding.**$$serializer { *; }
--keepclassmembers class com.automaton.holding.** { *** Companion; }
--keepclasseswithmembers class com.automaton.holding.** { kotlinx.serialization.KSerializer serializer(...); }
+-dontnote kotlinx.serialization.**
+
+# Mantém o Companion e o serializer() de todas as classes @Serializable.
+-keepclassmembers class **$$serializer {
+    *** descriptor;
+}
+-keepclasseswithmembers class ** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
+}
 
 # OkHttp
 -dontwarn okhttp3.**
@@ -13,5 +27,5 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 
-# Biometric
+# Biometria
 -keep class androidx.biometric.** { *; }

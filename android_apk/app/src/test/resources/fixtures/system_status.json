@@ -1,0 +1,66 @@
+{
+  "kill_switch": {
+    "engaged": false,
+    "reason": "estado_inicial",
+    "engaged_by": "system",
+    "engaged_at": null,
+    "released_at": null,
+    "version": 1
+  },
+  "treasury": {
+    "phase": 1,
+    "phase_name": "Lancamento",
+    "total_assets_usd": 0.0,
+    "balances_usd": {
+      "tax_reserve_usd": 0.0,
+      "owner_pocket_usd": 0.0,
+      "savings_vault_usd": 0.0,
+      "reinvestment_pool_usd": 0.0
+    },
+    "balances_mzn": {
+      "tax_reserve_usd": 0.0,
+      "owner_pocket_usd": 0.0,
+      "savings_vault_usd": 0.0,
+      "reinvestment_pool_usd": 0.0
+    },
+    "monthly_revenue_usd": 0.0
+  },
+  "portfolio": {
+    "total": 0,
+    "active": 0,
+    "killed": 0,
+    "paused": 0,
+    "revenue_usd": 0,
+    "cost_usd": 0,
+    "with_first_dollar": 0
+  },
+  "approvals": {
+    "pending": 2,
+    "critical": 2,
+    "pending_usd": 18.0
+  },
+  "validation": {
+    "total": 1,
+    "running": 1,
+    "passed": 0,
+    "failed": 0,
+    "total_clicks": 0,
+    "total_signups": 0,
+    "overall_conversion": 0.0,
+    "production_unlocked": 0
+  },
+  "cemetery": {
+    "total": 0,
+    "by_squad": {},
+    "top_causes": {},
+    "embedding_model": "hash-tf-v2-stem",
+    "similarity_block": 0.4
+  },
+  "last_cycle": null,
+  "budget": {
+    "daily_cap_usd": 0.0,
+    "per_agent_cap_usd": 0.0,
+    "approval_threshold_usd": 5.0
+  },
+  "generated_at": "2026-11-27T18:37:12+00:00"
+}

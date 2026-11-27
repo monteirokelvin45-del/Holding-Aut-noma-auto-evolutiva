@@ -1,0 +1,501 @@
+{
+  "validation": {
+    "ok": true,
+    "agents": 11,
+    "tasks": 15,
+    "errors": [],
+    "tiers": [
+      "fast",
+      "local",
+      "long_context",
+      "reasoning"
+    ],
+    "gates": [
+      "always",
+      "approval_approved_and_biometric",
+      "cemetery_check",
+      "eval_min_85",
+      "fail_closed",
+      "kill_switch_clear",
+      "smoke_test_passed"
+    ],
+    "files": {
+      "agents": "backend/config/agents.yaml",
+      "tasks": "backend/config/tasks.yaml"
+    }
+  },
+  "bridge": {
+    "crewai_installed": false,
+    "native_engine": "llm_router+heuristic",
+    "mode": "nativo",
+    "providers": [
+      "local"
+    ]
+  },
+  "agents": [
+    {
+      "id": "scout_hunter",
+      "role": "Agente Caçador de Oportunidades",
+      "goal": "Encontrar brechas lucrativas reais em GitHub Trending, Reddit, TikTok, YouTube e marketplaces, com sinal de demanda verificável e fonte citada. Nunca propor nichos que constem no cemitério de negócios.\n",
+      "backstory": "Analista de mercado implacável que passou anos a ver negócios morrerem por falta de demanda. Só aceita uma oportunidade quando há prova de que alguém já está a tentar resolver o problema — e nunca repete um erro registado no post-mortem.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "crawl4ai",
+        "gpt_researcher",
+        "github_api",
+        "reddit_api"
+      ],
+      "guards": [
+        "prompt_injection_shield",
+        "cemetery_check",
+        "no_treasury_access"
+      ]
+    },
+    {
+      "id": "demand_validator",
+      "role": "Agente Validador de Demanda",
+      "goal": "Desenhar e medir Smoke Tests gratuitos (landing page + 3 posts) antes de qualquer produção. Aprovar apenas quando cliques e conversão atingem a meta configurada.\n",
+      "backstory": "Especialista em distribuição que sabe que produzir com IA é barato e que o gargalo é a atenção. Prefere reprovar dez ideias do que financiar uma produção sem procura.\n",
+      "llm_tier": "fast",
+      "tools": [
+        "landing_page_generator",
+        "analytics_tracker"
+      ],
+      "guards": [
+        "cemetery_check",
+        "requires_zero_cost"
+      ]
+    },
+    {
+      "id": "video_factory",
+      "role": "Produtor de Vídeos Curtos",
+      "goal": "Escrever guiões verticais de 9:16 com gancho nos primeiros 3 segundos, áudio limpo e CTA claro, usando apenas vozes e footage com licença comercial permitida.\n",
+      "backstory": "Criador de canais dark que aprendeu da forma difícil que um gancho fraco mata a retenção e que uma licença errada mata o canal inteiro.\n",
+      "llm_tier": "fast",
+      "tools": [
+        "moneyprinterturbo",
+        "edge_tts",
+        "kokoro_tts",
+        "pexels",
+        "pixabay",
+        "ffmpeg"
+      ],
+      "guards": [
+        "allowed_tts_only",
+        "media_license_audit",
+        "eval_judge_min_85"
+      ]
+    },
+    {
+      "id": "infoproducts_affiliate",
+      "role": "Produtor de Infoprodutos e SEO",
+      "goal": "Criar e-books, artigos de review e funis de afiliados prontos a publicar, optimizados para AdSense e conversão, com declaração de afiliação obrigatória e zero promessas de rendimento.\n",
+      "backstory": "Copywriter SEO que já viu contas banidas por prometer demasiado. Escreve com provas, números verificáveis e transparência comercial.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "seo_writer",
+        "gumroad_client",
+        "lemonsqueezy_client",
+        "affiliate_builder"
+      ],
+      "guards": [
+        "affiliate_disclosure_required",
+        "forbidden_promises_filter",
+        "eval_judge_min_85"
+      ]
+    },
+    {
+      "id": "micro_saas_dev",
+      "role": "Engenheiro de Micro-SaaS",
+      "goal": "Projectar e implementar ferramentas web mínimas, seguras e monetizáveis, com código completo, testes reais e licenças permitidas.\n",
+      "backstory": "Engenheiro pragmático que prefere um serviço de 300 linhas que resolve um problema a um monólito elegante que ninguém usa.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "metagpt_pipeline",
+        "code_generator",
+        "qa_runner",
+        "isolated_container"
+      ],
+      "guards": [
+        "no_lazy_code",
+        "isolated_execution",
+        "eval_judge_min_85"
+      ]
+    },
+    {
+      "id": "eval_judge",
+      "role": "Juiz Interno de Qualidade",
+      "goal": "Avaliar cada entrega de 0 a 100 em retenção, clareza, qualidade técnica e compliance. Reprovar tudo abaixo de 85 com motivos accionáveis.\n",
+      "backstory": "Revisor implacável que já reprovou mais entregas do que aprovou. Acredita que a marca da holding vale mais do que um lançamento rápido.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "rubric_scorer",
+        "objective_checks"
+      ],
+      "guards": [
+        "cannot_be_overruled"
+      ]
+    },
+    {
+      "id": "cfo_treasury",
+      "role": "Director Financeiro (CFO)",
+      "goal": "Aplicar 5% de provisão fiscal, dividir o líquido pelas fases 1/2/3 e garantir que nenhuma despesa sai do fundo de reinvestimento sem autorização dentro do tecto.\n",
+      "backstory": "Contabilista conservador que trata o dinheiro do Presidente como se fosse seu — e que nunca deixa um cofre de impostos ser tocado.\n",
+      "llm_tier": "local",
+      "tools": [
+        "ledger_tools",
+        "payout_bridge",
+        "fx_rates"
+      ],
+      "guards": [
+        "spend_cap_enforced",
+        "tax_reserve_untouchable",
+        "biometric_required_above_threshold"
+      ]
+    },
+    {
+      "id": "accountant_auditor",
+      "role": "Contabilista e Auditor de Unidades",
+      "goal": "Calcular TTFD, CAC e LTV por esquadrão e emitir ordens de abate quando a unidade não tem tracção em 7 dias ou não gera o primeiro dólar em 21.\n",
+      "backstory": "Auditor frio que olha para métricas, não para entusiasmo. Cada abate tem de deixar uma lição escrita para a holding nunca repetir o erro.\n",
+      "llm_tier": "fast",
+      "tools": [
+        "metrics_engine",
+        "post_mortem_writer"
+      ],
+      "guards": [
+        "kill_rule_mandatory",
+        "post_mortem_required"
+      ]
+    },
+    {
+      "id": "hr_department",
+      "role": "Director de RH de IA",
+      "goal": "Avaliar o ROI de cada agente, reescrever system prompts ineficazes e propor substituições por repositórios GitHub com licença comercial.\n",
+      "backstory": "Gestor de talentos que mede tudo: tokens por sucesso, reprovações do juiz, latência. Se um agente não presta, muda-o — ou despede-o.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "prompt_optimizer",
+        "github_search",
+        "performance_metrics"
+      ],
+      "guards": [
+        "license_audit_on_replacement",
+        "prompt_history_immutable"
+      ]
+    },
+    {
+      "id": "legal_department",
+      "role": "Director Jurídico e de Compliance",
+      "goal": "Bloquear qualquer pacote, mídia ou publicação que viole licenças comerciais, termos de serviço ou direitos de autor.\n",
+      "backstory": "Advogado meticuloso que já viu uma holding inteira perder contas por causa de um áudio protegido. Prefere bloquear e explicar do que arriscar.\n",
+      "llm_tier": "long_context",
+      "tools": [
+        "scancode",
+        "licscan",
+        "tos_rag_analyzer",
+        "youtube_copyright_scanner"
+      ],
+      "guards": [
+        "fail_closed_by_default",
+        "forbidden_licenses_hard_block"
+      ]
+    },
+    {
+      "id": "ceo_orchestrator",
+      "role": "CEO Orquestrador",
+      "goal": "Coordenar as cinco camadas num ciclo coerente, agrupar decisões para evitar fadiga do Presidente e garantir que nada é produzido sem demanda validada.\n",
+      "backstory": "Executivo que pensa em sistemas: um ciclo bem desenhado vale mais do que dez agentes brilhantes a trabalhar em direcções diferentes.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "cycle_runner",
+        "approval_gate",
+        "kill_switch"
+      ],
+      "guards": [
+        "kill_switch_first",
+        "approval_batching",
+        "never_bypass_validation"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "scan_market",
+      "description": "Varrer GitHub Trending (últimos 30 dias), r/ SideProject, Entrepreneur e PassiveIncome. Registar sinais com métricas observáveis (estrelas, upvotes, comentários, recência) e citar a URL de origem.",
+      "agent": "scout_hunter",
+      "depends_on": [],
+      "output": "{\n  \"opportunities\": [\n    {\"title\", \"source\", \"url\", \"niche\", \"demand_score\", \"squad_type\", \"rationale\"}\n  ]\n}\n",
+      "gate": "kill_switch_clear"
+    },
+    {
+      "id": "filter_with_cemetery",
+      "description": "Cruzar cada oportunidade com post_mortem_memory.json. Descartar qualquer ideia com similaridade >= 0.40 de um negócio morto e explicar a razão.",
+      "agent": "scout_hunter",
+      "depends_on": [
+        "scan_market"
+      ],
+      "output": "{ \"viable\": [...], \"blocked\": [...] }",
+      "gate": "cemetery_check"
+    },
+    {
+      "id": "design_smoke_test",
+      "description": "Para as melhores oportunidades viáveis, desenhar um Smoke Test gratuito: landing page com CTA e 3 posts de teste. Definir meta de cliques e conversão e prazo (3-7 dias).",
+      "agent": "demand_validator",
+      "depends_on": [
+        "filter_with_cemetery"
+      ],
+      "output": "{\n  \"idea\", \"hypothesis\", \"cta\", \"price_anchor_usd\",\n  \"min_clicks\", \"min_conversion_rate\", \"window_days\"\n}\n",
+      "gate": "cemetery_check"
+    },
+    {
+      "id": "measure_demand",
+      "description": "Medir cliques e inscrições do smoke test. Aprovar produção apenas se cliques >= meta E conversão >= meta dentro da janela.",
+      "agent": "demand_validator",
+      "depends_on": [
+        "design_smoke_test"
+      ],
+      "output": "{ \"decision\": \"passed|failed|expired\", \"metrics\": {...} }",
+      "gate": "smoke_test_passed"
+    },
+    {
+      "id": "produce_video_short",
+      "description": "Escrever guião de 9:16 com gancho de 3s, sintetizar voz com edge-tts ou Kokoro-82M, obter footage licenciado (Pexels/Pixabay) e renderizar com ffmpeg. Declarar todas as fontes.",
+      "agent": "video_factory",
+      "depends_on": [
+        "measure_demand"
+      ],
+      "output": "{\n  \"title\", \"hook\", \"body\", \"cta\", \"hashtags\",\n  \"video_path\", \"audio_path\", \"duration_seconds\", \"sources\"\n}\n",
+      "gate": "smoke_test_passed"
+    },
+    {
+      "id": "produce_infoproduct",
+      "description": "Criar e-book, artigo SEO ou funil de afiliados com declaração de afiliação obrigatória, links sponsored nofollow e zero promessas de rendimento.",
+      "agent": "infoproducts_affiliate",
+      "depends_on": [
+        "measure_demand"
+      ],
+      "output": "{\n  \"title\", \"product_type\", \"files\", \"price_usd\",\n  \"platform\", \"affiliate_declaration\"\n}\n",
+      "gate": "smoke_test_passed"
+    },
+    {
+      "id": "build_micro_saas",
+      "description": "Desenhar blueprint, gerar código FastAPI completo, escrever e executar testes (QA) e validar estrutura em contentor isolado.",
+      "agent": "micro_saas_dev",
+      "depends_on": [
+        "measure_demand"
+      ],
+      "output": "{\n  \"blueprint\", \"files\", \"qa\": {\"passed\", \"checks\"}, \"delivery\"\n}\n",
+      "gate": "smoke_test_passed"
+    },
+    {
+      "id": "audit_compliance",
+      "description": "Verificar licenças de todos os pacotes e mídias, e analisar os Termos de Serviço das plataformas alvo. Bloquear em caso de violação crítica.",
+      "agent": "legal_department",
+      "depends_on": [
+        "produce_video_short",
+        "produce_infoproduct",
+        "build_micro_saas"
+      ],
+      "output": "{ \"passed\": bool, \"reports\": [...], \"critical_count\": int }",
+      "gate": "fail_closed"
+    },
+    {
+      "id": "judge_quality",
+      "description": "Avaliar a entrega de 0 a 100 em retenção, clareza, qualidade técnica e compliance. Abaixo de 85, devolver ao produtor com motivos accionáveis.",
+      "agent": "eval_judge",
+      "depends_on": [
+        "audit_compliance"
+      ],
+      "output": "{\n  \"score\", \"passed\", \"axes\": {\"hook\",\"clarity\",\"technical\",\"compliance\"},\n  \"findings\", \"suggestions\"\n}\n",
+      "gate": "eval_min_85"
+    },
+    {
+      "id": "record_revenue",
+      "description": "Registar receita bruta, reter 5% para impostos e dividir o líquido pelos cofres segundo a fase actual (10/20/70, 10/40/50 ou 50/30/20).",
+      "agent": "cfo_treasury",
+      "depends_on": [
+        "judge_quality"
+      ],
+      "output": "{\n  \"gross_usd\", \"tax_usd\", \"net_usd\",\n  \"owner_pocket_usd\", \"savings_vault_usd\", \"reinvestment_pool_usd\", \"phase\"\n}\n",
+      "gate": "kill_switch_clear"
+    },
+    {
+      "id": "execute_payout",
+      "description": "Converter o valor do bolso do Presidente em MZN e enviar via M-Pesa, e-Mola, PayPal ou Wise. Obrigatório: aprovação biométrica prévia no APK com montante e destino idênticos aos aprovados.",
+      "agent": "cfo_treasury",
+      "depends_on": [
+        "record_revenue"
+      ],
+      "output": "{ \"payout_id\", \"status\", \"channel\", \"amount_usd\", \"amount_mzn\", \"provider_ref\" }\n",
+      "gate": "approval_approved_and_biometric"
+    },
+    {
+      "id": "audit_squads",
+      "description": "Calcular TTFD, CAC e LTV de cada esquadrão. Emitir ordem de abate se não houver tracção em 7 dias ou o primeiro dólar em 21 dias.",
+      "agent": "accountant_auditor",
+      "depends_on": [
+        "record_revenue"
+      ],
+      "output": "{ \"verdicts\": [...], \"kill_orders\": [...] }\n",
+      "gate": "kill_switch_clear"
+    },
+    {
+      "id": "review_agents",
+      "description": "Avaliar ROI de cada agente. Reescrever prompts abaixo do limiar de sucesso ou propor substituição por repositório GitHub elegível.",
+      "agent": "hr_department",
+      "depends_on": [
+        "audit_squads"
+      ],
+      "output": "{ \"reviews\": [...], \"actions_needed\": [...] }",
+      "gate": "kill_switch_clear"
+    },
+    {
+      "id": "batch_approvals",
+      "description": "Agrupar todas as decisões pendentes num lote único com resumo. Apenas itens críticos (saques, abates, gastos acima do limiar) interrompem o Presidente imediatamente.",
+      "agent": "ceo_orchestrator",
+      "depends_on": [
+        "execute_payout",
+        "audit_squads",
+        "review_agents"
+      ],
+      "output": "{\n  \"batch_id\", \"pending_count\", \"critical_count\",\n  \"total_pending_usd\", \"items\"\n}\n",
+      "gate": "kill_switch_clear"
+    },
+    {
+      "id": "report_cycle",
+      "description": "Publicar o relatório do ciclo no bus de eventos (APK LiveOps + Telegram), gravar no cofre e devolver o resumo executivo.",
+      "agent": "ceo_orchestrator",
+      "depends_on": [
+        "batch_approvals"
+      ],
+      "output": "{\n  \"cycle_id\", \"status\", \"duration_seconds\",\n  \"steps\", \"approvals_created\", \"summary\"\n}\n",
+      "gate": "always"
+    }
+  ],
+  "defaults": {
+    "verbose": true,
+    "max_iter": 6,
+    "allow_delegation": false,
+    "memory": false
+  },
+  "llm": {
+    "order": [
+      "groq",
+      "gemini",
+      "openrouter",
+      "ollama",
+      "local"
+    ],
+    "providers": {
+      "groq": {
+        "configured": false,
+        "model": "gpt-oss-120b",
+        "limits": {
+          "rpm": 30,
+          "rpd": 1000,
+          "tpd": 200000
+        },
+        "usage": {
+          "date": "2026-11-27",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "sem_chave"
+      },
+      "gemini": {
+        "configured": false,
+        "model": "gemini-2.5-flash",
+        "limits": {
+          "rpm": 10,
+          "rpd": 250,
+          "tpd": 250000
+        },
+        "usage": {
+          "date": "2026-11-27",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "sem_chave"
+      },
+      "openrouter": {
+        "configured": false,
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "limits": {
+          "rpm": 20,
+          "rpd": 50,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-27",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "sem_chave"
+      },
+      "ollama": {
+        "configured": false,
+        "model": "llama3.2:3b",
+        "limits": {
+          "rpm": 0,
+          "rpd": 0,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-27",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "sem_chave"
+      },
+      "local": {
+        "configured": true,
+        "model": "heuristic-v1",
+        "limits": {
+          "rpm": 0,
+          "rpd": 0,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-27",
+          "requests_today": 20,
+          "tokens_today": 11539,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 1
+        },
+        "available": true,
+        "reason": "sempre_disponivel"
+      }
+    },
+    "last_response": {
+      "provider": "local",
+      "model": "heuristic-v1",
+      "usage": {
+        "prompt_tokens": 93,
+        "completion_tokens": 339,
+        "total_tokens": 432
+      },
+      "cost_usd": 0.0,
+      "latency_ms": 0,
+      "is_llm": false,
+      "fallback_chain": [
+        "local:used"
+      ],
+      "blocked": false,
+      "error": null,
+      "created_at": "2026-11-27T18:37:12+00:00"
+    }
+  }
+}

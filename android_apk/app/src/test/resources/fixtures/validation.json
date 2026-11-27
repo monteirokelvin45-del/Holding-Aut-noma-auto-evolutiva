@@ -1,0 +1,117 @@
+{
+  "report": {
+    "summary": {
+      "total": 1,
+      "running": 1,
+      "passed": 0,
+      "failed": 0,
+      "total_clicks": 0,
+      "total_signups": 0,
+      "overall_conversion": 0.0,
+      "production_unlocked": 0
+    },
+    "thresholds": {
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "window_days": [
+        3,
+        7
+      ]
+    },
+    "active": [
+      {
+        "id": "smk_c3bbbb8774a4",
+        "idea": "Curso de finanças para pequenos negócios",
+        "niche": "financas",
+        "squad_type": "infoproduct",
+        "hypothesis": "Se curso de finanças para pequenos negócios resolver uma dor real, converterá pelo menos a meta mínima de inscrições.",
+        "cta": "Quero entrar na lista VIP",
+        "price_anchor_usd": 0.0,
+        "status": "running",
+        "created_at": "2026-11-27T18:37:12+00:00",
+        "deadline_at": "2026-11-30T18:37:12+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "organic": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em financas: curso de finanças para pequenos negócios. Quero entrar na lista VIP (link na bio).",
+          "P1 · Prova: O que já testámos sobre curso de finanças para pequenos negócios. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir curso de finanças para pequenos negócios. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_c3bbbb8774a4/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_c3bbbb8774a4/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-27T18:37:12+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "template",
+          "campaign_source": "organic",
+          "is_llm_copy": false
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 3.0
+      }
+    ],
+    "generated_at": "2026-11-27T18:37:12+00:00"
+  },
+  "tests": [
+    {
+      "id": "smk_c3bbbb8774a4",
+      "idea": "Curso de finanças para pequenos negócios",
+      "niche": "financas",
+      "squad_type": "infoproduct",
+      "hypothesis": "Se curso de finanças para pequenos negócios resolver uma dor real, converterá pelo menos a meta mínima de inscrições.",
+      "cta": "Quero entrar na lista VIP",
+      "price_anchor_usd": 0.0,
+      "status": "running",
+      "created_at": "2026-11-27T18:37:12+00:00",
+      "deadline_at": "2026-11-30T18:37:12+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em financas: curso de finanças para pequenos negócios. Quero entrar na lista VIP (link na bio).",
+        "P1 · Prova: O que já testámos sobre curso de finanças para pequenos negócios. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir curso de finanças para pequenos negócios. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_c3bbbb8774a4/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_c3bbbb8774a4/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-27T18:37:12+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0
+    }
+  ]
+}

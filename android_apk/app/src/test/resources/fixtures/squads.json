@@ -1,0 +1,21 @@
+{
+  "squads": [],
+  "summary": {
+    "total": 0,
+    "active": 0,
+    "killed": 0,
+    "paused": 0,
+    "revenue_usd": 0,
+    "cost_usd": 0,
+    "with_first_dollar": 0
+  },
+  "kill_policy": {
+    "min_traction_days": 7,
+    "min_views_in_traction_window": 200,
+    "first_dollar_deadline_days": 21,
+    "min_conversion_rate": 0.005,
+    "conversion_check_days": 14,
+    "min_spend_to_judge_usd": 0.0
+  },
+  "generated_at": "2026-11-27T18:37:12+00:00"
+}

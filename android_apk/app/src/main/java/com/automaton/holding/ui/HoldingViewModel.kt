@@ -129,6 +129,13 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
             in 500..599 -> "backend indisponível (${error.code})"
             else -> "HTTP ${error.code}"
         }
+        // Um UnknownHostException/SocketTimeout diz só "Unable to resolve host":
+        // quem instala o APK precisa de saber que a URL foi fixada no build.
+        is java.net.UnknownHostException,
+        is java.net.ConnectException ->
+            "não consigo chegar a ${com.automaton.holding.BuildConfig.BASE_URL} " +
+                "(verifique a rede; o endereço vem do build)"
+        is java.net.SocketTimeoutException -> "o backend não respondeu a tempo"
         else -> error.message ?: "erro de rede"
     }
 

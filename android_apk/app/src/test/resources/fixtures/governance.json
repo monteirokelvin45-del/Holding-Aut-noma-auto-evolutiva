@@ -1,0 +1,252 @@
+{
+  "hr": {
+    "agents": [
+      {
+        "id": "cfo_treasury",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      },
+      {
+        "id": "demand_validator",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      },
+      {
+        "id": "eval_judge",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      },
+      {
+        "id": "infoproducts_affiliate",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      },
+      {
+        "id": "micro_saas_dev",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      },
+      {
+        "id": "scout_hunter",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      },
+      {
+        "id": "video_factory",
+        "calls": 0,
+        "success_rate": null,
+        "avg_judge_score": null,
+        "cost_usd": 0.0,
+        "tokens": 0,
+        "prompt_version": 1,
+        "rewrites": 0,
+        "last_review": "nunca",
+        "status": "active"
+      }
+    ],
+    "summary": {
+      "total_agents": 7,
+      "needing_attention": 0,
+      "total_tokens": 0,
+      "total_cost_usd": 0.0
+    },
+    "thresholds": {
+      "min_success_rate": 0.6,
+      "min_judge_score": 85.0
+    },
+    "generated_at": "2026-11-27T18:37:12+00:00"
+  },
+  "accounting": {
+    "treasury": {
+      "phase": 1,
+      "phase_meta": {
+        "name": "Lancamento",
+        "min_usd": 0.0,
+        "max_usd": 1500.0,
+        "split": {
+          "owner_pocket": 0.1,
+          "savings_vault": 0.2,
+          "reinvestment_pool": 0.7
+        },
+        "description": "Capital zero: quase tudo reinvestido para escalar."
+      },
+      "computed_phase": 1,
+      "split": {
+        "owner_pocket": 0.1,
+        "savings_vault": 0.2,
+        "reinvestment_pool": 0.7
+      },
+      "balances_usd": {
+        "tax_reserve_usd": 0.0,
+        "owner_pocket_usd": 0.0,
+        "savings_vault_usd": 0.0,
+        "reinvestment_pool_usd": 0.0
+      },
+      "balances_mzn": {
+        "tax_reserve_usd": 0.0,
+        "owner_pocket_usd": 0.0,
+        "savings_vault_usd": 0.0,
+        "reinvestment_pool_usd": 0.0
+      },
+      "total_assets_usd": 0.0,
+      "gross_revenue_usd": 0.0,
+      "net_revenue_usd": 0.0,
+      "spent_from_reinvestment_usd": 0.0,
+      "paid_out_usd": 0.0,
+      "monthly_revenue_usd": 0.0,
+      "phase_thresholds_usd": {
+        "phase_2": 1500.0,
+        "phase_3": 15000.0
+      },
+      "fx": {
+        "usd_mzn": 63.5,
+        "source": "static_config"
+      },
+      "distributable_owner_usd": 0.0,
+      "tax_reserve_rate": 0.05,
+      "generated_at": "2026-11-27T18:37:12+00:00"
+    },
+    "portfolio": {
+      "total": 0,
+      "active": 0,
+      "killed": 0,
+      "paused": 0,
+      "revenue_usd": 0,
+      "cost_usd": 0,
+      "with_first_dollar": 0
+    },
+    "ledger_audit": {
+      "gross_usd": 0.0,
+      "tax_reserve_usd": 0.0,
+      "vaults_usd": 0.0,
+      "net_inflow_usd": 0.0,
+      "outflow_usd": 0.0,
+      "in_flight_payouts_usd": 0.0,
+      "expected_vaults_usd": 0.0,
+      "delta_usd": 0.0,
+      "balanced": true,
+      "checked_at": "2026-11-27T18:37:12+00:00"
+    },
+    "monthly_revenue_usd": 0.0,
+    "phase": 1,
+    "tax_rate": 0.05,
+    "tax_reserve_usd": 0.0,
+    "generated_at": "2026-11-27T18:37:12+00:00"
+  },
+  "legal": {
+    "tools_available": {
+      "licscan": false,
+      "scancode": false,
+      "scancode_toolkit_module": false,
+      "cocompliance": false,
+      "tos_rag_analyzer": false,
+      "youtube_copyright_scanner": false,
+      "pip": true
+    },
+    "allowed_licenses": [
+      "apache 2.0",
+      "apache-2.0",
+      "bsd",
+      "bsd-2-clause",
+      "bsd-3-clause",
+      "cc0-1.0",
+      "gpl-3.0",
+      "gplv3",
+      "isc",
+      "lgpl",
+      "lgpl-2.1",
+      "lgpl-3.0",
+      "mit",
+      "mpl-2.0",
+      "psf-2.0",
+      "unlicense"
+    ],
+    "forbidden_licenses": [
+      "cc-by-nc",
+      "cc-by-nc-4.0",
+      "cc-by-nc-nd",
+      "cc-by-nc-sa",
+      "cc-by-nd",
+      "non-commercial",
+      "proprietary",
+      "research-only"
+    ],
+    "forbidden_packages": [
+      "2noise/chattts",
+      "chattts",
+      "f5-tts",
+      "f5_tts"
+    ],
+    "known_platforms": [
+      "gumroad",
+      "lemonsqueezy",
+      "meta",
+      "reddit",
+      "tiktok",
+      "youtube"
+    ],
+    "recent_audits": [],
+    "generated_at": "2026-11-27T18:37:12+00:00"
+  },
+  "judge": {
+    "threshold": 85.0,
+    "total_evaluations": 0,
+    "passed": 0,
+    "failed": 0,
+    "pass_rate": 0.0,
+    "average_score": null,
+    "by_content_type": {},
+    "recent": [],
+    "generated_at": "2026-11-27T18:37:12+00:00"
+  },
+  "cemetery": {
+    "total": 0,
+    "by_squad": {},
+    "top_causes": {},
+    "embedding_model": "hash-tf-v2-stem",
+    "similarity_block": 0.4
+  },
+  "generated_at": "2026-11-27T18:37:12+00:00"
+}

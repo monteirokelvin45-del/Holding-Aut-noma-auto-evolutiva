@@ -3,6 +3,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -17,13 +18,23 @@ android {
         versionName = "1.0.0"
 
         // URL do backend injectada em tempo de build (BuildConfig).
-        // Pode ser sobreposta com -Pautomaton.baseUrl=https://api.exemplo.com
-        val baseUrl = (project.findProperty("automaton.baseUrl") as String?)
-            ?: "https://automaton-holding.fly.dev"
+        //   -Pautomaton.baseUrl=...  ou  AUTOMATON_BASE_URL no ambiente.
+        //
+        // Sem valor explícito, o build de **debug** aponta para
+        // http://10.0.2.2:8000 — o alias documentado do emulador Android para
+        // a máquina anfitriã. Não é um domínio inventado: é o endereço do
+        // backend local. O build de **release** exige a URL explícita (ver
+        // buildTypes abaixo), porque um APK de produção a apontar para o
+        // emulador seria inútil.
+        // Antes o valor por omissão era https://automaton-holding.fly.dev,
+        // que não corresponde a serviço nenhum.
+        val urlExplicita = (project.findProperty("automaton.baseUrl") as String?)
+            ?: System.getenv("AUTOMATON_BASE_URL")
+        val baseUrl = urlExplicita ?: "http://10.0.2.2:8000"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
 
         // Token do APK (header X-Automaton-Token). Nunca commitar valores reais:
-        // passar via -Pautomaton.token=... ou variável de ambiente no CI.
+        // passar via -Pautomaton.token=... ou AUTOMATON_API_TOKEN no ambiente.
         val apiToken = (project.findProperty("automaton.token") as String?)
             ?: System.getenv("AUTOMATON_API_TOKEN")
             ?: ""
@@ -32,6 +43,14 @@ android {
 
     buildTypes {
         release {
+            // Um release a apontar para o emulador (ou sem URL) não serve.
+            if (urlExplicita.isNullOrBlank()) {
+                throw GradleException(
+                    "Build de release sem URL do backend: passe " +
+                        "-Pautomaton.baseUrl=https://... ou defina AUTOMATON_BASE_URL."
+                )
+            }
+            buildConfigField("String", "BASE_URL", "\"$urlExplicita\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -71,6 +90,11 @@ android {
         }
     }
 
+    testOptions {
+        // Os testes de contrato correm na JVM; android.util.Log não existe lá.
+        unitTests.isReturnDefaultValues = true
+    }
+
     lint {
         abortOnError = false
         checkReleaseBuilds = false
@@ -96,8 +120,12 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // Biometria (aprovação de gastos e saques)
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    // Biometria (aprovação de gastos e saques).
+    // NOTA: a linha "1.2.0-alpha05" não corresponde a nenhum artefacto
+    // publicado — as versões reais da 1.2.x são 1.2.0-alpha01..alpha06.
+    // 1.1.0 é a estável mais recente e tem tudo o que usamos
+    // (BIOMETRIC_STRONG/WEAK, setAllowedAuthenticators).
+    implementation("androidx.biometric:biometric:1.1.0")
 
     // Rede: OkHttp (REST + WebSocket) e kotlinx.serialization
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
