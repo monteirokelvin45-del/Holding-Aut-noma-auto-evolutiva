@@ -449,6 +449,17 @@ class PromptShield:
         self._llm_guard_checked = True
         if not settings.llm_guard_enabled:
             return None
+        # Os scanners do LLM Guard descarregam pesos do HuggingFace. Em redes
+        # que bloqueiam o domínio, a tentativa ficava 236 s a repetir
+        # "Retrying in 8s" antes de desistir — a bloquear todas as chamadas
+        # seguintes. Sondar o domínio ANTES, com 3 s de orçamento, resolve.
+        if not self._models_host_reachable():
+            log.info(
+                "LLM Guard: HuggingFace inacessível; a usar heurística local "
+                "(sem penalização de latência)."
+            )
+            self._llm_guard_scanner = None
+            return None
         try:
             from llm_guard.input_scanners import PromptInjection  # type: ignore
 
@@ -458,6 +469,32 @@ class PromptShield:
             log.info("LLM Guard indisponível (%s); heurística local activa.", exc)
             self._llm_guard_scanner = None
         return self._llm_guard_scanner
+
+    @staticmethod
+    def _models_host_reachable(timeout: float = 3.0) -> bool:
+        """``True`` se huggingface.co responder dentro de ``timeout``.
+
+        Cacheado no processo: uma sonda, não uma por chamada.
+        """
+        cached = getattr(PromptShield, "_models_host_ok", None)
+        if cached is not None:
+            return bool(cached)
+        # Um connect TCP não serve: em redes com proxy/inspecção o socket abre
+        # e é o handshake TLS que morre. Só um pedido HTTP prova o contrário.
+        import urllib.error
+        import urllib.request
+
+        request = urllib.request.Request(
+            "https://huggingface.co/api/models/protectai/deberta-v3-base-prompt-injection-v2",
+            method="HEAD",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                reachable = 200 <= int(response.status) < 400
+        except (urllib.error.URLError, OSError, ValueError):
+            reachable = False
+        PromptShield._models_host_ok = reachable
+        return reachable
 
     # ------------------------------------------------------------------ limpeza
     @staticmethod
