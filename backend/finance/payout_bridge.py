@@ -269,54 +269,143 @@ class MPesaConnector(_Connector):
             "input_ServiceProviderCode": settings.mpesa_service_provider_code,
         }
 
-        # Caminho preferencial: SDK oficial.
+        # Caminho preferencial: SDK oficial, com as duas APIs reais:
+        #   1. paymentsds/mpesa-python-sdk  -> ``paymentsds.mpesa.Client``
+        #   2. variantes que expõem ``mpesa.B2C`` (Safaricom-style)
+        # O nome do pacote no PyPI não corresponde ao módulo: nunca importar
+        # ``mpesa.api.b2c`` (não existe) — era um bug silencioso aqui.
+        sdk_result = self._payout_with_sdk(request, msisdn, amount_mzn, reference)
+        if sdk_result is not None:
+            return sdk_result
+
+        return self._payout_manual(request, payload, reference, amount_mzn, msisdn)
+
+    # -------------------------------------------------------------- SDK paths
+    def _payout_with_sdk(
+        self,
+        request: PayoutRequest,
+        msisdn: str,
+        amount_mzn: str,
+        reference: str,
+    ) -> Optional["PayoutResult"]:
+        """Tenta o SDK instalado. Devolve ``None`` se nenhum estiver presente."""
+        # ---- paymentsds (Apache-2.0, M-Pesa Moçambique) -------------------
         try:
-            from mpesa.api.b2c import B2C  # type: ignore
+            from paymentsds.mpesa import Client  # type: ignore
+        except ImportError:
+            Client = None  # type: ignore[assignment]
+
+        if Client is not None:
+            try:
+                client = Client(
+                    api_key=settings.mpesa_api_key,
+                    public_key=settings.mpesa_public_key,
+                    service_provider_code=settings.mpesa_service_provider_code,
+                    origin=settings.mpesa_origin,
+                    host=settings.mpesa_base_url,
+                )
+                # B2C: o SDK detecta a operação pelo formato de ``to``
+                # (número de telemóvel => B2C_PAYMENT).
+                raw = client.send(
+                    {
+                        "to": msisdn,
+                        "amount": float(amount_mzn),
+                        "reference": reference[:12],
+                        "third_party_reference": reference[:12],
+                    }
+                )
+                payload = raw if isinstance(raw, dict) else {"raw": str(raw)}
+                code = str(
+                    payload.get("output_ResponseCode")
+                    or payload.get("responseCode")
+                    or payload.get("code")
+                    or ""
+                )
+                ok = code in {"INS-0", "0", "200"}
+                return PayoutResult(
+                    ok=ok,
+                    status="executed" if ok else "failed",
+                    channel=self.name,
+                    amount_usd=request.amount_usd,
+                    amount_mzn=float(amount_mzn),
+                    provider_ref=str(
+                        payload.get("output_TransactionID")
+                        or payload.get("transactionId")
+                        or reference
+                    ),
+                    message=(
+                        "M-Pesa B2C via paymentsds SDK."
+                        if ok else f"Código inesperado: {code or 'sem código'}"
+                    ),
+                    raw=payload,
+                    dry_run=False,
+                )
+            except Exception as exc:
+                log.warning("SDK paymentsds falhou (%s); a usar HTTP manual.", exc)
+                sdk_error = str(exc)
+
+        # ---- variantes com ``mpesa.B2C`` (Safaricom-KE style) -------------
+        try:
+            from mpesa import B2C  # type: ignore
         except ImportError:
             B2C = None  # type: ignore[assignment]
 
         if B2C is not None:
             try:
                 client = B2C(
-                    public_key=settings.mpesa_public_key,
-                    host=settings.mpesa_base_url,
-                    api_key=settings.mpesa_api_key,
-                    service_provider_code=settings.mpesa_service_provider_code,
-                    initiator_identifier=settings.mpesa_initiator_identifier,
-                    security_credential=settings.mpesa_security_credential,
+                    base_url=settings.mpesa_base_url,
+                    access_token=self._token(),
                 )
-                raw = client.payment(
-                    input_TransactionReference=payload["input_TransactionReference"],
-                    input_CustomerMSISDN=msisdn,
-                    input_Amount=amount_mzn,
-                    input_ThirdPartyReference=payload["input_ThirdPartyReference"],
-                    input_ServiceProviderCode=settings.mpesa_service_provider_code,
-                )
-                ok = str(raw.get("output_ResponseCode", "")) == "INS-0"
+                raw = client.make_payment({
+                    "input_TransactionReference": reference[:12],
+                    "input_CustomerMSISDN": msisdn,
+                    "input_Amount": amount_mzn,
+                    "input_ThirdPartyReference": reference[:12],
+                    "input_ServiceProviderCode": settings.mpesa_service_provider_code,
+                })
+                payload = raw if isinstance(raw, dict) else {"raw": str(raw)}
+                code = str(payload.get("output_ResponseCode", ""))
+                ok = code == "INS-0"
                 return PayoutResult(
                     ok=ok,
                     status="executed" if ok else "failed",
                     channel=self.name,
                     amount_usd=request.amount_usd,
-                    amount_mzn=exchange["mzn"],
-                    provider_ref=str(raw.get("output_TransactionID", "")),
-                    message=str(raw.get("output_ResponseDesc", "SDK M-Pesa")),
+                    amount_mzn=float(amount_mzn),
+                    provider_ref=str(payload.get("output_TransactionID", reference)),
+                    message=f"M-Pesa B2C via SDK genérico (código {code}).",
+                    raw=payload,
                     dry_run=False,
-                    raw=raw if isinstance(raw, dict) else {"raw": str(raw)},
                 )
             except Exception as exc:
-                log.warning("SDK M-Pesa falhou (%s); a tentar OpenAPI directa.", exc)
+                log.warning("SDK B2C genérico falhou (%s); a usar HTTP manual.", exc)
 
-        # Caminho manual: OAuth + B2C single stage.
+        return None
+
+    # ---------------------------------------------------------------- manual
+    def _payout_manual(
+        self,
+        request: PayoutRequest,
+        payload: Dict[str, Any],
+        reference: str,
+        amount_mzn: str,
+        msisdn: str,
+    ) -> "PayoutResult":
+        """Fluxo HTTP directo (OAuth + B2C single stage) quando não há SDK.
+
+        Usa ``vault.transaction``-free apenas leitura de settings: nenhuma
+        chamada aqui move dinheiro sem que ``available()`` tenha passado.
+        """
         if not settings.mpesa_security_credential and settings.mpesa_initiator_password:
-            settings_credential = self._encrypt_credential(
+            security_credential = self._encrypt_credential(
                 settings.mpesa_initiator_password, settings.mpesa_public_key
             )
         else:
-            settings_credential = settings.mpesa_security_credential
-        if not settings_credential:
+            security_credential = settings.mpesa_security_credential
+        if not security_credential:
             raise ConfigurationError(
-                "MPESA_SECURITY_CREDENTIAL (ou MPESA_INITIATOR_PASSWORD) em falta."
+                "MPESA_SECURITY_CREDENTIAL (ou MPESA_INITIATOR_PASSWORD) em falta "
+                "para o fluxo HTTP directo."
             )
 
         token = self._token()
@@ -327,7 +416,7 @@ class MPesaConnector(_Connector):
             payload={
                 **payload,
                 "input_InitiatorIdentifier": settings.mpesa_initiator_identifier,
-                "input_SecurityCredential": settings_credential,
+                "input_SecurityCredential": security_credential,
             },
             headers={
                 "Authorization": f"Bearer {token}",
@@ -343,12 +432,15 @@ class MPesaConnector(_Connector):
             status="executed" if ok else "failed",
             channel=self.name,
             amount_usd=request.amount_usd,
-            amount_mzn=exchange["mzn"],
+            amount_mzn=float(amount_mzn),
             provider_ref=str(body.get("output_TransactionID", "")),
-            message=str(body.get("output_ResponseDesc", body.get("error", "sem detalhe"))),
+            message=str(
+                body.get("output_ResponseDesc", body.get("error", "sem detalhe"))
+            ),
             dry_run=False,
             raw=body,
         )
+
 
 
 class EMolaConnector(_Connector):

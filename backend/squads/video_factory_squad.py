@@ -39,6 +39,7 @@ from ..core.errors import ValidationBlocked
 from ..core.llm_router import LLMRequest, llm_router
 from ..core.logger import get_logger
 from ..governance.legal_compliance import legal_department
+from .ai_video_backends import build_visual_prompt, genai_backends
 from .squad_base import BaseSquad, SquadRunResult
 
 log = get_logger("squads.video")
@@ -255,7 +256,34 @@ class FootageProvider:
         self.sources: List[Dict[str, Any]] = []
 
     def fetch(self, query: str, out_dir: Path, index: int = 0) -> Dict[str, Any]:
+        """Escolhe o footage por esta ordem, sempre com proveniência.
+
+        1. **IA local** (Wan 2.2 / LongCat / Kandinsky / LTX) quando há backend
+           configurado — é footage original, sem dependência de banco de imagens;
+        2. **Pexels** (licença gratuita para uso comercial);
+        3. **Pixabay** (idem);
+        4. **fundo procedimental** gerado por ffmpeg (declarado como tal).
+        """
         out_dir.mkdir(parents=True, exist_ok=True)
+
+        # ---- 1. geração por IA aberta (custo $0.00, corre em casa) ---------
+        if settings.genai_video_enabled:
+            generation = genai_backends.generate(
+                build_visual_prompt(query, query),
+                out_dir=out_dir / "genai",
+                kind="video",
+                duration_seconds=float(settings.video_max_duration_seconds) / 6.0,
+                seed=index + 7,
+            )
+            if generation.ok:
+                item = generation.as_footage(query)
+                self.sources.append(item)
+                return item
+            log.warning(
+                "Geração por IA indisponível (%s); a usar banco de imagens.",
+                generation.reason,
+            )
+
         if settings.pexels_api_key:
             item = self._pexels(query, out_dir, index)
             if item:

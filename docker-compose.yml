@@ -5,6 +5,7 @@
 #   default      -> backend + postgres + redis
 #   observability-> + langfuse (web/worker) para tracing
 #   video        -> + MoneyPrinterTurbo (fábrica de vídeo)
+#   gpu_video    -> + ComfyUI/Wan 2.2 (footage gerado por IA aberta)
 #   micro_saas   -> + contentor isolado para executar código gerado
 #
 # Uso:
@@ -132,6 +133,41 @@ services:
     networks:
       - holding
 
+  # ------------------------------------------------ geração de vídeo (GPU) ---
+  # Backend compatível com o contrato do `squads/ai_video_backends.py`:
+  #   POST /generate {"prompt", "width", "height", "fps", "duration_seconds",
+  #                   "seed"} -> {"video_b64"} ou {"video_path"}
+  # A imagem NÃO traz pesos: os modelos (Wan 2.2 Apache-2.0, LTX Apache-2.0,
+  # LongCat MIT, Kandinsky MIT) são descarregados para o volume na primeira
+  # execução. Sem GPU, fica desactivado e o sistema usa Pexels/Pixabay.
+  genai_video:
+    image: python:3.11-slim
+    container_name: automaton-genai-video
+    restart: unless-stopped
+    profiles: ["gpu_video"]
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir fastapi==0.115.6 uvicorn==0.34.0
+      pydantic==2.10.4 && uvicorn genai_server:app --host 0.0.0.0 --port 8188"
+    volumes:
+      - ./backend/squads:/app:ro
+      - genai_models:/models
+    environment:
+      GENAI_MODELS_DIR: /models
+      GENAI_DEFAULT_BACKEND: ${GENAI_DEFAULT_BACKEND:-wan22}
+      HF_HOME: /models/hf
+    ports:
+      - "8188:8188"
+    networks:
+      - holding
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   # --------------------------------- contentor isolado para código gerado ---
   # O esquadrão de micro-SaaS gera FastAPI apps. Nunca correm no host da
   # tesouraria: sobem aqui, sem rede de saída, com limites de CPU/memória.
@@ -168,6 +204,7 @@ networks:
     internal: true   # sem saída para a internet: código de terceiros fica contido
 
 volumes:
+  genai_models:
   postgres_data:
   redis_data:
   media_cache:

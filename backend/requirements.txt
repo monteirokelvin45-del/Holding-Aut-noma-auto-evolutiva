@@ -50,13 +50,18 @@ moviepy==1.0.3
 Pillow==11.0.0
 
 # --- Pagamentos e criptografia ----------------------------------------------
-mpesa-python-sdk==1.2.0
+# SDK oficial M-Pesa, mantido pela Vodacom/paymentsds (Apache-2.0):
+#   https://github.com/paymentsds/mpesa-python-sdk
+# Não confundir com `mpesa-python-sdk` (Safaricom Kenia) nem com `mpesa`
+# (vazio). O módulo importado é `paymentsds.mpesa`, NÃO `mpesa.api.b2c`.
+paymentsds-mpesa==0.1a10
 cryptography==44.0.0
 requests==2.32.3
 
-# --- Qualidade / ferramentas de licença (licscan, ScanCode, Apache-2.0) ------
-scancode-toolkit==32.3.5
-licscan==0.2.1
+# --- Qualidade / ferramentas de licença (ScanCode, Apache-2.0) ---------------
+# `licscan` NÃO existe no PyPI (o repo homónimo tem 1 estrela) — a auditoria de
+# licenças é feita por backend/governance/legal_compliance.py.
+scancode-toolkit==32.5.0
 
 # --- Testes ----------------------------------------------------------------
 pytest==8.3.4

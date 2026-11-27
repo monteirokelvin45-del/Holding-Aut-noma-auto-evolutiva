@@ -49,6 +49,8 @@ from .core.errors import (
 )
 from .core.llm_router import LLMRequest, llm_router
 from .core.llm_smoke import run_probe
+from .squads.ai_video_backends import genai_backends
+from .squads.research_backends import research_backends
 from .core.logger import get_logger
 from .core.observability_langfuse import (
     install_observability,
@@ -918,6 +920,116 @@ def run_agent_pipeline(payload: CrewPipelineRequest) -> Dict[str, Any]:
     """Corre um pipeline de tarefas respeitando ``depends_on`` e os gates."""
     result = crew_bridge.run_pipeline(payload.task_ids, payload.inputs)
     return {"ok": True, **result}
+
+
+# ==========================================================================
+# Stack de IA aberta: vídeo gerado, imagem, pesquisa profunda
+# ==========================================================================
+@app.get("/platform/stack", tags=["plataforma"])
+def platform_stack() -> Dict[str, Any]:
+    """Estado real de **todos** os componentes de IA da stack.
+
+    Uma única chamada responde a: que motores estão instalados, quais estão
+    prontos (com chave/endpoint) e o que fica em fallback. Nada é inventado —
+    ``ready`` só é ``True`` quando o componente pode mesmo ser usado agora.
+    """
+    tts_available = video_factory.tts.available()
+    return {
+        "video": {
+            "generative_backends": genai_backends.status(),
+            "stock_sources": {
+                "pexels": bool(settings.pexels_api_key),
+                "pixabay": bool(settings.pixabay_api_key),
+                "procedural_ffmpeg": True,
+            },
+            "engines": {
+                "moneyprinterturbo": {
+                    "base_url": settings.moneyprinter_base_url,
+                    "repo": "https://github.com/harry0703/MoneyPrinterTurbo",
+                    "license": "mit",
+                    "enabled": True,
+                },
+                "shortgpt": {
+                    "repo": "https://github.com/RayVentura/ShortGPT",
+                    "license": "mit",
+                    "enabled": settings.shortgpt_enabled,
+                },
+                "youtube_shorts_generator": {
+                    "repo": "https://github.com/SamurAIGPT/AI-Youtube-Shorts-Generator",
+                    "license": "mit",
+                    "enabled": settings.youtube_shorts_generator_enabled,
+                },
+            },
+        },
+        "voice": {
+            "preferred": settings.tts_provider,
+            "available": tts_available,
+            "engines": {
+                "edge_tts": {"license": "lgpl", "repo": "https://github.com/rany2/edge-tts"},
+                "kokoro": {"license": "apache-2.0", "repo": "https://github.com/hexgrad/kokoro"},
+                "chatterbox": {"license": "mit", "repo": "https://github.com/resemble-ai/chatterbox"},
+                "piper": {"license": "mit", "repo": "https://github.com/rhasspy/piper"},
+            },
+            "forbidden": ["chattts", "f5-tts"],
+        },
+        "research": research_backends.availability(),
+        "agents": crew_bridge.availability(),
+        "payments": {
+            "mpesa": {
+                "sdk": "paymentsds-mpesa",
+                "repo": "https://github.com/paymentsds/mpesa-python-sdk",
+                "license": "apache-2.0",
+                "configured": bool(
+                    settings.mpesa_api_key and settings.mpesa_public_key
+                ),
+                "base_url": settings.mpesa_base_url,
+            },
+            "mode": "live" if settings.mpesa_api_key else "dry_run",
+        },
+        "compliance": {
+            "allowed_licenses": ["mit", "apache-2.0", "bsd", "lgpl"],
+            "forbidden_packages": ["chattts", "f5-tts"],
+            "generated_at": utcnow_iso(),
+        },
+    }
+
+
+@app.get("/platform/genai", tags=["plataforma"])
+def genai_status() -> Dict[str, Any]:
+    """Backends de geração de vídeo/imagem por IA aberta."""
+    return genai_backends.status()
+
+
+class ResearchRequest(BaseModel):
+    query: str = Field(min_length=3, max_length=300)
+    max_results: int = Field(default=3, ge=1, le=10)
+
+
+@app.post("/platform/research", tags=["plataforma"])
+def platform_research(payload: ResearchRequest) -> Dict[str, Any]:
+    """Pesquisa profunda real (Crawl4AI → GPT-Researcher → extrator nativo).
+
+    Todo o texto passa pelo escudo anti-injection antes de sair daqui; páginas
+    bloqueadas são contadas e nunca devolvidas como conteúdo.
+    """
+    result = research_backends.deep_research(payload.query, payload.max_results)
+    return {"ok": result.get("ok", False), **result}
+
+
+@app.post("/platform/genai/probe", tags=["plataforma"],
+          dependencies=[Depends(require_token)])
+def genai_probe() -> Dict[str, Any]:
+    """Gera 1 frame de teste no primeiro backend pronto (custo $0.00)."""
+    from pathlib import Path as _Path
+
+    out_dir = _Path(settings.vault_path) / "runtime" / "genai_probe"
+    result = genai_backends.generate(
+        "fundo abstracto escuro com linhas ciano, sem texto",
+        out_dir=out_dir,
+        kind="image",
+        duration_seconds=2.0,
+    )
+    return {"ok": result.ok, **result.to_dict()}
 
 
 @app.post("/security/scan", tags=["segurança"])

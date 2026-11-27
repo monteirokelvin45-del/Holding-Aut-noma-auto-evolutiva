@@ -19,6 +19,7 @@ nunca em produção directa.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import urllib.error
@@ -33,6 +34,7 @@ from ..core.llm_router import LLMRequest, llm_router
 from ..core.logger import get_logger
 from ..core.security_guard import prompt_shield
 from ..core.shared_memory import shared_memory
+from .research_backends import research_backends
 from .squad_base import BaseSquad, SquadRunResult
 
 log = get_logger("squads.scout")
@@ -109,6 +111,28 @@ class ScoutOpportunity:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+def _first_int(text: str, pattern: str) -> int:
+    """Primeiro número inteiro que casa com ``pattern`` (0 se não houver).
+
+    Aceita separadores de milhar ("1,234" ou "1.234") e devolve sempre ``int``.
+    """
+    match = re.search(pattern, text or "", flags=re.IGNORECASE)
+    if not match:
+        return 0
+    digits = re.sub(r"[^0-9]", "", match.group(1))
+    return int(digits) if digits else 0
+
+
+def _slug_words(text: str, limit: int = 5) -> str:
+    """Núcleo temático de um título, em minúsculas e sem pontuação."""
+    stop = {
+        "the", "and", "for", "with", "from", "this", "that", "uma", "para",
+        "com", "dos", "das", "nas", "nos", "por", "que", "como", "mais",
+    }
+    words = [w for w in re.findall(r"[\wÀ-ÿ]+", (text or "").lower()) if len(w) > 3]
+    return " ".join([w for w in words if w not in stop][:limit])
 
 
 class ScoutHunter(BaseSquad):
@@ -314,21 +338,30 @@ class ScoutHunter(BaseSquad):
         fetched: List[str] = []
         per_source: Dict[str, int] = {}
 
+        research_used: List[Dict[str, Any]] = []
+
         for source in selected:
             items: List[ScoutOpportunity] = []
             if source == "github_trending":
                 items = self._fetch_github_trending()
             elif source in SUBREDDITS:
                 items = self._fetch_reddit(source)
-            if source in SOURCES_REQUIRING_TOOLING:
+            elif source == "deep_research":
+                # Crawl4AI / GPT-Researcher / extrator nativo: páginas reais
+                # passadas pelo escudo anti-injection antes de virarem sinais.
+                items, meta = self._fetch_deep_research()
+                research_used.append(meta)
+            if source in SOURCES_REQUIRING_TOOLING and not items:
+                availability = research_backends.availability()
                 reason = (
-                    "requer Crawl4AI/GPT-Researcher ou chave oficial"
-                    if not (settings.crawl4ai_enabled or settings.gpt_researcher_enabled)
-                    else "adaptador Crawl4AI não instalado neste ambiente"
+                    "pesquisa profunda sem resultados legíveis"
+                    if availability["active"] != "native"
+                    else "requer Crawl4AI/GPT-Researcher ou chave oficial"
+                    f" (motores prontos: {availability['active']})"
                 )
                 skipped.append({"source": source, "reason": reason})
                 continue
-            if source not in ("github_trending", *SUBREDDITS.keys()):
+            if source not in ("github_trending", "deep_research", *SUBREDDITS.keys()):
                 skipped.append({"source": source, "reason": "fonte desconhecida"})
                 continue
             per_source[source] = len(items)
@@ -376,7 +409,88 @@ class ScoutHunter(BaseSquad):
             "per_source": per_source,
             "total_found": len(ranked),
             "viable_count": len(clean),
+            "deep_research": research_used,
+            "research_engines": research_backends.availability(),
             "scanned_at": utcnow_iso(),
+        }
+
+    # ----------------------------------------------------- pesquisa profunda
+    def _fetch_deep_research(
+        self, topic: str = "micro saas inventory management small business"
+    ) -> tuple[List[ScoutOpportunity], Dict[str, Any]]:
+        """Converte páginas reais em oportunidades com sinal de demanda.
+
+        As páginas vêm do `research_backends` (Crawl4AI → GPT-Researcher →
+        extrator nativo) e o texto já passou pelo escudo anti-injection. Só
+        geramos oportunidade quando há sinal numérico observável (estrelas,
+        pontos, comentários) na página.
+        """
+        import unicodedata
+
+        normalized = "".join(
+            char for char in unicodedata.normalize("NFKD", topic or "")
+            if not unicodedata.combining(char)
+        )
+        result = research_backends.deep_research(normalized.strip() or "micro saas")
+        items: List[ScoutOpportunity] = []
+        for page in result.get("results", [])[: settings.research_max_results]:
+            text = str(page.get("markdown", ""))
+            if not text:
+                continue
+            title = page.get("title") or page.get("url", "")[:80]
+            # Uma listagem de API é um *contentor* de sinais, não um negócio:
+            # nesse caso o título vem do primeiro item da lista.
+            if title.lower().startswith("api "):
+                first_line = next(
+                    (line for line in text.splitlines() if line.strip()), ""
+                )
+                title = first_line.lstrip("- ").split(" — ")[0][:180] or title
+            stars = _first_int(text, r"(\d[\d,\.]*)\s*(?:stars?|estrelas?)")
+            points = _first_int(text, r"(\d[\d,\.]*)\s*points?")
+            comments = _first_int(text, r"(\d[\d,\.]*)\s*comments?")
+            signal = {
+                "stars": stars, "points": points, "comments": comments,
+                "chars": int(page.get("chars", 0)), "engine": page.get("source"),
+            }
+            if not any((stars, points, comments)):
+                continue
+            # Uma única página não pode valer 100 (isso falsearia o ranking):
+            # normalizamos e limitamos a 92 para deixar espaço a sinais
+            # multi-fonte, que são os que desbloqueiam produção.
+            raw_demand = self._score_demand(
+                primary=int(max(stars, points)),
+                secondary=int(points),
+                engagement=int(comments),
+                age_days=0.0,   # página fresca: sem decaimento
+            )
+            demand = round(min(92.0, raw_demand / 1.8), 2)
+            niche = _slug_words(title) or "geral"
+            items.append(
+                ScoutOpportunity(
+                    id="dr_" + hashlib.sha1(
+                        (title + page.get("url", "")).encode("utf-8")
+                    ).hexdigest()[:12],
+                    source=str(page.get("source") or "deep_research"),
+                    title=title[:180],
+                    url=str(page.get("url", "")),
+                    signal=signal,
+                    niche=niche,
+                    demand_score=demand,
+                    squad_type=self._guess_squad(f"{title} {text[:400]}"),
+                    rationale=(
+                        f"Página real analisada ({page.get('source')}); "
+                        f"estrelas={stars} pontos={points} comentários={comments}. "
+                        f"Trecho: {text[:180].strip()}"
+                    ),
+                    raw_excerpt=text[:400],
+                )
+            )
+        return items, {
+            "engine": result.get("engine"),
+            "ok": result.get("ok"),
+            "pages": len(result.get("results", [])),
+            "blocked": result.get("blocked", 0),
+            "reason": result.get("reason", ""),
         }
 
     def propose(self, opportunity_id: str, scan: Dict[str, Any]) -> Optional[Dict[str, Any]]:

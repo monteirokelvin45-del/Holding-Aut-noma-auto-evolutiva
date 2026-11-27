@@ -195,10 +195,22 @@ class Settings:
     moneyprinter_base_url: str = "http://moneyprinter:8080"
     shortgpt_enabled: bool = False
     youtube_shorts_generator_enabled: bool = False
+    # --- geração de footage/imagem por IA aberta (custo $0.00, local) -------
+    genai_video_enabled: bool = False
+    genai_video_order: List[str] = field(
+        default_factory=lambda: ["wan22", "longcat", "kandinsky", "ltx", "sdxl"]
+    )
+    genai_timeout_seconds: int = 600
     wan22_endpoint: str = ""
     longcat_endpoint: str = ""
     kandinsky_endpoint: str = ""
     ltx_endpoint: str = ""
+    sdxl_endpoint: str = ""
+    # --- pesquisa profunda (Crawl4AI / GPT-Researcher) -----------------------
+    research_max_results: int = 5
+    research_timeout_seconds: int = 240
+    # --- pesquisa profunda: quantos resultados o Scout deve recolher ---------
+    # (o bot Telegram usa ``telegram_polling_enabled``, definido acima)
 
     # ------------------------------------------------------------------ negócios
     gumroad_access_token: str = ""
@@ -262,6 +274,10 @@ class Settings:
             "telegram": bool(self.telegram_bot_token),
             "pexels": bool(self.pexels_api_key),
             "pixabay": bool(self.pixabay_api_key),
+            "genai_video": bool(self.genai_video_enabled and any([
+                self.wan22_endpoint, self.longcat_endpoint,
+                self.kandinsky_endpoint, self.ltx_endpoint, self.sdxl_endpoint,
+            ])),
             "gumroad": bool(self.gumroad_access_token),
             "lemonsqueezy": bool(self.lemonsqueezy_api_key),
             "mpesa": bool(self.mpesa_api_key and self.mpesa_public_key),
@@ -281,6 +297,11 @@ class Settings:
                 "approval_threshold_usd": self.approval_threshold_usd,
             },
             "llm_provider_order": list(self.llm_provider_order),
+            "genai_video": {
+                "enabled": self.genai_video_enabled,
+                "order": list(self.genai_video_order),
+            },
+            "tts_provider": self.tts_provider,
             "integrations": self.configured_secrets(),
             "eval_min_score": self.eval_min_score,
             "kill_policy": {
@@ -400,10 +421,18 @@ def _build_settings() -> Settings:
         youtube_shorts_generator_enabled=env_bool(
             "YOUTUBE_SHORTS_GENERATOR_ENABLED", False
         ),
+        genai_video_enabled=env_bool("GENAI_VIDEO_ENABLED", False),
+        genai_video_order=env_list(
+            "GENAI_VIDEO_ORDER", ["wan22", "longcat", "kandinsky", "ltx", "sdxl"]
+        ),
+        genai_timeout_seconds=env_int("GENAI_TIMEOUT_SECONDS", 600, minimum=30),
         wan22_endpoint=env_str("WAN22_ENDPOINT"),
         longcat_endpoint=env_str("LONGCAT_ENDPOINT"),
         kandinsky_endpoint=env_str("KANDINSKY_ENDPOINT"),
         ltx_endpoint=env_str("LTX_ENDPOINT"),
+        sdxl_endpoint=env_str("SDXL_ENDPOINT"),
+        research_max_results=env_int("RESEARCH_MAX_RESULTS", 5, minimum=1),
+        research_timeout_seconds=env_int("RESEARCH_TIMEOUT_SECONDS", 240, minimum=30),
         gumroad_access_token=env_str("GUMROAD_ACCESS_TOKEN"),
         gumroad_email=env_str("GUMROAD_EMAIL"),
         lemonsqueezy_api_key=env_str("LEMONSQUEEZY_API_KEY"),

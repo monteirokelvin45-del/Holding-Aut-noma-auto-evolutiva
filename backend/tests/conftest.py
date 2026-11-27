@@ -23,19 +23,28 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 
+# O isolamento tem de acontecer *antes* de qualquer módulo ``backend.*`` ser
+# importado (os módulos de teste importam ``backend.squads...`` durante a
+# coleção, que antecede qualquer fixture). Por isso é feito aqui, ao importar
+# o conftest.
+_TEST_VAULT = Path(tempfile.mkdtemp(prefix="automaton-test-vault-"))
+os.environ["VAULT_DIR"] = str(_TEST_VAULT)
+os.environ.setdefault("API_ACCESS_TOKEN", "test-token")
+os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("GENAI_VIDEO_ENABLED", "false")
+os.environ.setdefault("RESEARCH_ENABLED", "true")
+
+for _name in [m for m in list(sys.modules) if m.startswith("backend.")]:
+    del sys.modules[_name]
+importlib.invalidate_caches()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def vault_isolation() -> Iterator[Path]:
-    """Isola o cofre num directório temporário durante toda a sessão."""
-    tmp = Path(tempfile.mkdtemp(prefix="automaton-test-vault-"))
-    os.environ["VAULT_DIR"] = str(tmp)
-    os.environ.setdefault("API_ACCESS_TOKEN", "test-token")
-    os.environ.setdefault("APP_ENV", "test")
-    # Recarrega a configuração para apanhar o VAULT_DIR novo.
-    for module in [m for m in list(sys.modules) if m.startswith("backend.")]:
-        if module != "backend":
-            sys.modules.pop(module, ignore_errors=True)
-    importlib.invalidate_caches()
-    yield tmp
+    """Confirma o cofre temporário usado por toda a sessão de testes."""
+    # Reafirma no caso de outro conftest/plugin ter mexido no ambiente.
+    os.environ["VAULT_DIR"] = str(_TEST_VAULT)
+    yield _TEST_VAULT
 
 
 @pytest.fixture(scope="session")

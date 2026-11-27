@@ -138,6 +138,50 @@ O campo `is_llm` (e `engine` nas entregas das squads) diz sempre a verdade:
 `false` = motor heurístico local determinístico; `true` + `provider` = modelo
 real respondeu. Sem chaves o sistema **não falha** — degrada e avisa.
 
+### 4. Média gerado por IA aberta + pesquisa real
+
+Só modelos com licença utilizável comercialmente, todos a **$0.00** (pesos
+abertos em hardware próprio). A auditoria completa está em
+[`docs/stack_audit.md`](docs/stack_audit.md).
+
+| Função | Motor | Licença | Onde vive |
+|---|---|---|---|
+| Vídeo (texto→vídeo) | **Wan 2.2** (5B, 8 GB VRAM) | Apache-2.0 | `squads/genai_server.py` |
+| Vídeo rápido/longo | **LTX-Video**, **LongCat-Video** | Apache-2.0 / MIT | idem |
+| Imagem | **Kandinsky 6.0**, SDXL / SD 3.5 | MIT / Stability | idem |
+| Voz | edge-tts, **Kokoro-82M**, Chatterbox, Piper | LGPL / Apache-2.0 / MIT / MIT | `squads/video_factory_squad.py` |
+| Pesquisa | **Crawl4AI**, **GPT-Researcher**, extractor nativo | Apache-2.0 | `squads/research_backends.py` |
+| Pagamentos | **`paymentsds-mpesa`** (SDK oficial MZ) | Apache-2.0 | `finance/payout_bridge.py` |
+| B-roll de reserva | Pexels, Pixabay, fundo procedimental | Pexels/Pixabay ToS | `squads/video_factory_squad.py` |
+
+**Ordem de decisão no footage** (`FootageProvider.fetch`): IA local → Pexels →
+Pixabay → fundo procedimental. Cada geração leva proveniência
+(`backend`, `license`, `prompt`, `seed`, `latency_ms`) e é auditada pelo
+`legal_compliance.audit_media` antes de entrar no render. Quando cai para banco
+de imagens, fica um `WARNING` explícito no log — nunca se faz passar stock por
+IA.
+
+```bash
+# Que motores estão prontos, agora (nada é inventado)
+curl -s localhost:8000/platform/stack | jq '.video.generative_backends.ready,
+                                            .research.active, .payments.mpesa.sdk'
+# → []  "native"  "paymentsds-mpesa"     ($0.00: ainda sem endpoints/GPU)
+
+# Pesquisa profunda real (escudo anti-injection aplicado ao texto)
+curl -s -X POST localhost:8000/platform/research \
+     -H 'Content-Type: application/json' \
+     -d '{"query":"gestão de inventário retalho Moçambique","max_results":3}' | jq '.engine,.results|length'
+
+# Ligar a geração por GPU (ComfyUI/SDXL/…) e provar com 1 frame
+docker compose --profile gpu_video up -d genai_video
+export GENAI_VIDEO_ENABLED=true WAN22_ENDPOINT=http://localhost:8188/generate
+curl -s -X POST localhost:8000/platform/genai/probe -H "X-Automaton-Token: $TOKEN" | jq
+```
+
+Sem GPU o endpoint `/generate` responde **503 com o motivo**
+(`diffusers` em falta / sem ComfyUI) e o sistema usa stock — é degradação
+declarada, não simulação.
+
 ## 🛡 Regras inegociáveis
 
 | Regra | Implementação |
@@ -191,6 +235,10 @@ GET  /squads  POST /squads/{id}/kill · /squads/scout/scan
 POST /squads/video/produce · /squads/infoproducts/produce · /squads/micro-saas/build
 # validação e ciclo
 POST /validation · /validation/{id}/event · /validation/judge · /cycle/run
+# stack de IA aberta
+GET  /platform/stack · /platform/genai
+POST /platform/research          (público, só leitura)
+POST /platform/genai/probe       (token; gera 1 frame de teste)
 # tempo real
 WS   /ws/live        (eventos + snapshot + heartbeat)
 ```
@@ -202,13 +250,16 @@ Documentação interactiva: **`/docs`**.
 ## 🧪 Testes
 
 ```bash
-.venv/bin/python -m pytest backend/tests -q     # 12 testes, ~1.3 s
+.venv/bin/python -m pytest backend/tests -q     # 38 testes, ~1.5 s
 ```
 
 Cobrem: token de escrita, as três fases, retenção fiscal de 5%, teto de gasto
-zero, Juiz Eval (reprova/ aprova), kill switch a abortar o ciclo, smoke test
+zero, Juiz Eval (reprova/aprova), kill switch a abortar o ciclo, smoke test
 com demanda real, landing page pública, biometria obrigatória (428), ciclo
-completo do CEO e bloqueio pelo cemitério.
+completo do CEO, bloqueio pelo cemitério, metadados de licença dos backends de
+vídeo, `503` honesto do servidor de geração sem GPU, escudo anti-injection no
+resumo de pesquisa e o caminho SDK do M-Pesa (B2C via `paymentsds`, com
+cliente falso, mais o *dry-run* quando faltam credenciais).
 
 ---
 
