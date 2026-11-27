@@ -111,6 +111,21 @@ jobs:
             echo "APK vai apontar para: $BASE_URL"
           fi
 
+      - name: Definir URL usada no build
+        id: buildurl
+        env:
+          CONFIGURED: ${{ steps.backend.outputs.url }}
+        run: |
+          set -euo pipefail
+          # Sem segredo configurado, o debug aponta para o emulador. O
+          # build.gradle.kts já tem esse valor por omissão, mas aqui a variável
+          # fica explícita para não se passar uma string vazia ao -P.
+          if [ -n "$CONFIGURED" ]; then
+            echo "url=$CONFIGURED" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=http://10.0.2.2:8000" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build debug
         working-directory: android_apk
         env:
@@ -118,15 +133,31 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew :app:assembleDebug --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ steps.backend.outputs.url }}"
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}"
 
-      - name: Build release (assinado)
-        if: ${{ steps.keystore.outputs.available == 'true' && steps.backend.outputs.url != '' }}
-        working-directory: android_apk
+      - name: Definir aptidão do release
+        id: release_ok
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_OK: ${{ steps.keystore.outputs.available }}
+          CONFIGURED: ${{ steps.backend.outputs.url }}
+        run: |
+          set -euo pipefail
+          # Um release só faz sentido se tiver keystore E URL real do backend.
+          if [ "$KEYSTORE_OK" = "true" ] && [ -n "$CONFIGURED" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            [ "$KEYSTORE_OK" = "true" ] \
+              && echo "::warning::Com keystore mas sem AUTOMATON_BASE_URL: release saltado." \
+              || true
+          fi
+
+      # A injecção tem de correr ANTES da configuração do Gradle: append ao
+      # build.gradle.kts depois de o Gradle já ter lido o ficheiro não tem
+      # efeito nenhum.
+      - name: Injetar configuração de assinatura
+        if: ${{ steps.release_ok.outputs.ok == 'true' }}
+        working-directory: android_apk
         run: |
           set -euo pipefail
           cat >> app/build.gradle.kts <<'KTS'
@@ -148,8 +179,18 @@ jobs:
               }
           }
           KTS
+
+      - name: Build release (assinado)
+        if: ${{ steps.release_ok.outputs.ok == 'true' }}
+        working-directory: android_apk
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
           ./gradlew :app:assembleRelease --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ steps.backend.outputs.url }}"
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}"
 
       - name: Correr testes unitários
         working-directory: android_apk
@@ -186,7 +227,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publicar APK de release
-        if: steps.keystore.outputs.available == 'true'
+        if: ${{ steps.release_ok.outputs.ok == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: automaton-holding-release-apk
@@ -195,7 +236,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Anexar APK à release (em tags)
-        if: startsWith(github.ref, 'refs/tags/v') && steps.keystore.outputs.available == 'true'
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && steps.release_ok.outputs.ok == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -212,7 +253,7 @@ jobs:
             echo "| Variante | Ficheiro |"
             echo "|----------|----------|"
             echo "| Debug | \`dist/app-debug.apk\` |"
-            if [ "${{ steps.keystore.outputs.available }}" = "true" ]; then
+            if [ "${{ steps.release_ok.outputs.ok }}" = "true" ]; then
               echo "| Release (assinado) | \`dist/app-release.apk\` |"
             else
               echo "| Release | não assinado (sem keystore) |"
