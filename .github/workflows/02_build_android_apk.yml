@@ -282,16 +282,18 @@ jobs:
         run: |
           # set -e NÃO: aqui queremos recolher tudo o que der, registando o que
           # falhou em vez de abortar na primeira ferramenta ausente. Mas também
-          # não pode falhar em silêncio — foi o que aconteceu na execução
-          # anterior, com o build verde e o passo a sair com código 1.
+          # não pode falhar em silêncio — foi o que aconteceu antes, com o
+          # build verde e o passo a sair com código 1 sem explicar nada.
           set -uo pipefail
-          PROBLEMAS=()
           APK=$(find android_apk/app/build/outputs/apk/debug -name '*.apk' | head -1)
           if [ -z "$APK" ]; then
-            echo "::error::Nenhum APK de debug foi produzido"; exit 1
+            echo "::error::Nenhum APK de debug foi produzido"
+            exit 1
           fi
           BT="${ANDROID_HOME}/build-tools/35.0.0"
-          SALIDA=$(mktemp)
+          SALIDA=/tmp/apk_evidence.md
+          PROBLEMAS=""
+
           {
             echo "### APK de debug produzido e verificado"
             echo
@@ -305,57 +307,59 @@ jobs:
             echo '```'
             if [ -x "$BT/aapt2" ]; then
               "$BT/aapt2" dump badging "$APK" 2>&1 \
-                | grep -E "^package|sdkVersion|targetSdkVersion|application-label|uses-permission" | head -12 \
-                || echo "(aapt2 não devolveu identidade)"
+                | grep -E "^package|sdkVersion|targetSdkVersion|application-label|uses-permission" \
+                | head -12 || true
             else
-              echo "aapt2 ausente em $BT"; PROBLEMAS+=("aapt2 ausente")
+              echo "aapt2 ausente em $BT"; PROBLEMAS="$PROBLEMAS aapt2"
             fi
             echo '```'
             echo "**Assinatura (apksigner):**"
             echo '```'
             if [ -x "$BT/apksigner" ]; then
-              "$BT/apksigner" verify --print-certs "$APK" 2>&1 | head -6
+              "$BT/apksigner" verify --print-certs "$APK" 2>&1 | head -6 || true
             else
-              echo "apksigner ausente em $BT"; PROBLEMAS+=("apksigner ausente")
+              echo "apksigner ausente em $BT"; PROBLEMAS="$PROBLEMAS apksigner"
             fi
             echo '```'
-            echo "**Conteúdo:**"
+            echo "**Conteúdo do classes.dex:**"
             echo '```'
-            echo "classes.dex: $(unzip -l "$APK" 'classes*.dex' | awk '/classes/{s+=$1} END{print s" bytes"}')"
-            echo "classes no DEX: $(unzip -p "$APK" classes.dex | strings | grep -c 'Lcom/automaton/holding')"
+            echo -n "classes da app: "
+            unzip -p "$APK" classes.dex | strings | grep -c 'Lcom/automaton/holding' || echo 0
             echo "URL do backend embutida:"
-            unzip -p "$APK" classes.dex | strings | grep -oE 'http://[a-z0-9.:]+' | sort -u | head -5
+            unzip -p "$APK" classes.dex | strings | grep -oE 'https?://[a-z0-9.:]+' | sort -u | head -5 || true
             echo "strings de segurança:"
-            unzip -p "$APK" classes.dex | strings | grep -E '^X-Automaton-Token$|biometric_verified|KILL_SWITCH' | sort -u
+            unzip -p "$APK" classes.dex | strings \
+              | grep -E 'X-Automaton-Token|biometric_verified|KILL_SWITCH' | sort -u | head -6 || true
             echo '```'
           } > "$SALIDA"
 
           # Resultados dos testes unitários, se existirem.
-          XMLS=$(find android_apk/app/build/test-results -name '*.xml' 2>/dev/null | wc -l)
-          if [ "$XMLS" -gt 0 ]; then
-            TOTAL=$(grep -ho '<testcase' android_apk/app/build/test-results/**/*.xml 2>/dev/null | wc -l)
-            FALHAS=$(grep -ho '<failure' android_apk/app/build/test-results/**/*.xml 2>/dev/null | wc -l)
+          TOTAL=$(grep -rho '<testcase' android_apk/app/build/test-results 2>/dev/null | wc -l)
+          if [ "$TOTAL" -gt 0 ]; then
+            FALHAS=$(grep -rho '<failure' android_apk/app/build/test-results 2>/dev/null | wc -l)
             {
               echo
               echo "**Testes unitários:** $TOTAL casos, $FALHAS falhas"
               echo '```'
-              grep -ho 'testcase name="[^"]*"' android_apk/app/build/test-results/**/*.xml 2>/dev/null \
-                | sed 's/testcase name=//' | tr -d '"' | sort | head -20
+              grep -rho 'testcase name="[^"]*"' android_apk/app/build/test-results 2>/dev/null \
+                | sed 's/testcase name=//' | tr -d '"' | sort || true
               echo '```'
             } >> "$SALIDA"
           fi
+
+          {
             echo
             echo "**Notas da verificação:**"
-            if [ ${#PROBLEMAS[@]} -eq 0 ]; then
+            if [ -z "$PROBLEMAS" ]; then
               echo "- todas as ferramentas responderam"
             else
-              for p in "${PROBLEMAS[@]}"; do echo "- $p"; done
+              echo "- ferramentas ausentes:$PROBLEMAS"
             fi
           } >> "$SALIDA"
 
           cat "$SALIDA" >> "$GITHUB_STEP_SUMMARY"
-          cp "$SALIDA" /tmp/apk_evidence.md
-          echo "--- evidência ---"; cat "$SALIDA"
+          echo "--- evidência ---"
+          cat "$SALIDA"
 
       - name: Publicar evidência do APK no PR
         if: ${{ success() && github.event_name == 'pull_request' }}
