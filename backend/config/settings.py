@@ -108,6 +108,9 @@ class Settings:
     port: int = 8000
     secret_key: str = "insecure-development-key-change-me"
     api_access_token: str = ""
+    # Intervalo do heartbeat do /ws/live. 25 s mantém viva a ligação atrás de
+    # proxies; em testes baixa-se para não esperar meio minuto por ligação.
+    ws_heartbeat_seconds: float = 25.0
     cors_origins: List[str] = field(default_factory=lambda: ["*"])
 
     # -------------------------------------------------------------------- vault
@@ -334,6 +337,7 @@ def _build_settings() -> Settings:
         port=env_int("PORT", 8000, minimum=1),
         secret_key=env_str("SECRET_KEY", "insecure-development-key-change-me"),
         api_access_token=env_str("API_ACCESS_TOKEN", ""),
+        ws_heartbeat_seconds=env_float("WS_HEARTBEAT_SECONDS", 25.0, minimum=0.1),
         cors_origins=env_list("CORS_ORIGINS", ["*"]),
         vault_dir=vault_dir,
         daily_spend_cap_usd=env_float("DAILY_SPEND_CAP_USD", 0.0, minimum=0.0),

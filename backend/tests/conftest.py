@@ -31,6 +31,9 @@ _TEST_VAULT = Path(tempfile.mkdtemp(prefix="automaton-test-vault-"))
 os.environ["VAULT_DIR"] = str(_TEST_VAULT)
 os.environ.setdefault("API_ACCESS_TOKEN", "test-token")
 os.environ.setdefault("APP_ENV", "test")
+# O heartbeat do /ws/live é de 25 s; em teste isso significa esperar meio
+# minuto por ligação fechada. 0,2 s mantém o comportamento, não a espera.
+os.environ.setdefault("WS_HEARTBEAT_SECONDS", "0.2")
 os.environ.setdefault("GENAI_VIDEO_ENABLED", "false")
 os.environ.setdefault("RESEARCH_ENABLED", "true")
 
@@ -45,6 +48,23 @@ def vault_isolation() -> Iterator[Path]:
     # Reafirma no caso de outro conftest/plugin ter mexido no ambiente.
     os.environ["VAULT_DIR"] = str(_TEST_VAULT)
     yield _TEST_VAULT
+
+
+@pytest.fixture(autouse=True)
+def _kill_switch_liberado(vault_isolation: Path) -> Iterator[None]:
+    """Cada teste começa com o sistema operacional.
+
+    O kill switch é estado global persistido. Um teste que o accione e falhe a
+    meio deixa o interruptor ligado e os testes seguintes passam a receber 423
+    em vez do que esperam — falhas em cascata que parecem bugs noutros sítios.
+    Já aconteceu: um teste do ciclo abortado derrubou quatro testes
+    aparentemente não relacionados.
+    """
+    from backend.core.security_guard import kill_switch
+
+    kill_switch.release(actor="pytest-setup")
+    yield
+    kill_switch.release(actor="pytest-teardown")
 
 
 @pytest.fixture(scope="session")

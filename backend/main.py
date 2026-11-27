@@ -1128,9 +1128,25 @@ def scan_content(text: str = Body(..., embed=True), source: str = Body(default="
 # ==========================================================================
 @app.websocket("/ws/live")
 async def websocket_live(websocket: WebSocket) -> None:
-    """Streaming de eventos para a aba LiveOps do APK."""
+    """Streaming de eventos para a aba LiveOps do APK.
+
+    Duas fontes concorrentes de mensagens:
+      * eventos do bus (via subscrição);
+      * heartbeat a cada 25 s, para manter viva a ligação atrás de proxies.
+
+    O laço termina assim que o cliente fecha. A versão anterior bloqueava no
+    `receive` até 25 s quando o cliente desaparecia — fechar uma ligação
+    custava um ciclo de heartbeat (medido: 25,0 s por ligação em teste). Aqui
+    um `receive()` concorrente detecta a desconexão imediatamente.
+    """
     await websocket.accept()
     queue = event_bus.subscribe()
+
+    async def _desligar() -> None:
+        await websocket.receive()
+
+    tarefa_desligar = asyncio.create_task(_desligar())
+
     try:
         backlog = event_bus.recent(limit=50)
         await websocket.send_json(
@@ -1149,22 +1165,31 @@ async def websocket_live(websocket: WebSocket) -> None:
             }
         )
         while True:
-            try:
-                event = await asyncio.wait_for(queue.get(), timeout=25.0)
-            except asyncio.TimeoutError:
-                # Heartbeat para manter a ligação viva atrás de proxies.
-                await websocket.send_json(
-                    {"type": "heartbeat", "agent": "api", "message": "ping",
-                     "payload": {"kill_switch": kill_switch.status()},
-                     "ts": utcnow_iso()}
-                )
+            receber = asyncio.create_task(queue.get())
+            concluidas, _ = await asyncio.wait(
+                {receber, tarefa_desligar},
+                timeout=settings.ws_heartbeat_seconds,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if tarefa_desligar in concluidas:
+                receber.cancel()
+                log.info("Cliente WebSocket desligado.")
+                break
+            if receber in concluidas:
+                await websocket.send_json(receber.result())
                 continue
-            await websocket.send_json(event)
+            # Nem evento nem desconexão em 25 s: heartbeat.
+            await websocket.send_json(
+                {"type": "heartbeat", "agent": "api", "message": "ping",
+                 "payload": {"kill_switch": kill_switch.status()},
+                 "ts": utcnow_iso()}
+            )
     except WebSocketDisconnect:
         log.info("Cliente WebSocket desligado.")
     except Exception as exc:
         log.warning("WebSocket encerrado por erro: %s", exc)
     finally:
+        tarefa_desligar.cancel()
         event_bus.unsubscribe(queue)
         with contextlib.suppress(Exception):
             await websocket.close()

@@ -8,6 +8,7 @@ import com.automaton.holding.data.AiCatalog
 import com.automaton.holding.data.ApiService
 import com.automaton.holding.data.ApprovalItem
 import com.automaton.holding.data.GovernanceResponse
+import com.automaton.holding.data.KillSwitchState
 import com.automaton.holding.data.LiveEvent
 import com.automaton.holding.data.PortfolioResponse
 import com.automaton.holding.data.SystemStatusResponse
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import org.json.JSONObject
 
 /**
@@ -71,6 +73,10 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
 
     private val _busyAction = MutableStateFlow<String?>(null)
     val busyAction: StateFlow<String?> = _busyAction.asStateFlow()
+
+    /** Instante do último sinal de vida do backend (snapshot ou heartbeat). */
+    private val _lastSignalAt = MutableStateFlow(0L)
+    val lastSignalAt: StateFlow<Long> = _lastSignalAt.asStateFlow()
 
     private var pollJob: Job? = null
     private var streamJob: Job? = null
@@ -171,9 +177,30 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /** O evento `snapshot` traz o backlog completo; os restantes são pontuais. */
+    /**
+     * O snapshot e o heartbeat trazem ambos o estado do kill switch em
+     * `payload.kill_switch`. Aplica-o ao estado da UI, se legível.
+     */
+    private fun aplicarKillSwitchDoPayload(event: LiveEvent) {
+        val bruto = (event.payload as? JsonObject)?.get("kill_switch") ?: return
+        runCatching {
+            kotlinx.serialization.json.Json.decodeFromString(
+                KillSwitchState.serializer(), bruto.toString()
+            )
+        }.onSuccess { estado ->
+            _status.value = _status.value?.copy(killSwitch = estado)
+        }
+    }
+
     private suspend fun ingest(event: LiveEvent) {
         when (event.type) {
             "snapshot" -> {
+                _lastSignalAt.value = System.currentTimeMillis()
+                // O backend manda o estado do kill switch no snapshot. Ignorá-lo
+                // obrigava a esperar pelo polling (20 s) para o ecrã reflectir
+                // que o sistema estava parado — precisamente o instante em que
+                // essa informação mais importa.
+                aplicarKillSwitchDoPayload(event)
                 val backlog = api.parseSnapshotEvents(event)
                 val known = _events.value.filter { it.sequence <= lastSequence }
                 val merged = (known + backlog)
@@ -190,7 +217,12 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }
-            "heartbeat" -> Unit   // silencioso: apenas confirma que o socket vive
+            "heartbeat" -> {
+                // Não aparece na lista (seria ruído), mas alimenta o indicador
+                // de ligação e actualiza o kill switch: o heartbeat traz-no.
+                _lastSignalAt.value = System.currentTimeMillis()
+                aplicarKillSwitchDoPayload(event)
+            }
             else -> {
                 addEvent(event)
                 lastSequence = maxOf(lastSequence, event.sequence)

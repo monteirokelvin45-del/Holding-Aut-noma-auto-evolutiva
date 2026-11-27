@@ -189,6 +189,37 @@ class ApiContractTest {
         assertEquals(backlog.map { it.sequence }.sorted(), backlog.map { it.sequence })
     }
 
+    @Test
+    fun `snapshot e heartbeat trazem o estado do kill switch`() {
+        // O backend envia payload.kill_switch no snapshot E no heartbeat (aos
+        // 25 s). Se o APK ignorasse esse campo, o ecrã só reflectiria o
+        // sistema parado no polling seguinte — 20 s de atraso num indicador
+        // de emergência.
+        val snapshot = json.decodeFromString(
+            LiveEvent.serializer(), fixture("ws_live_snapshot")
+        )
+        val bruto = (snapshot.payload as? kotlinx.serialization.json.JsonObject)
+            ?.get("kill_switch")
+        assertNotNull("snapshot sem payload.kill_switch", bruto)
+        val estado = json.decodeFromString(KillSwitchState.serializer(), bruto.toString())
+        assertFalse(estado.engaged)
+        assertTrue(estado.version >= 0)
+
+        // O heartbeat tem a mesma forma (sem sequence/level).
+        val heartbeat = """
+            {"type":"heartbeat","agent":"api","message":"ping",
+             "payload":{"kill_switch":{"engaged":true,"reason":"teste",
+             "engaged_by":"pytest","engaged_at":null,"released_at":null,
+             "version":7}},"ts":"2026-11-27T00:00:00+00:00"}
+        """.trimIndent()
+        val ev = json.decodeFromString(LiveEvent.serializer(), heartbeat)
+        assertEquals("heartbeat", ev.type)
+        val kb = (ev.payload as? kotlinx.serialization.json.JsonObject)!!.get("kill_switch")
+        val st = json.decodeFromString(KillSwitchState.serializer(), kb.toString())
+        assertTrue("o APK tem de ver o sistema parado", st.engaged)
+        assertEquals(7, st.version)
+    }
+
     // -------------------------------------------------------------- robustez --
     @Test
     fun `campos desconhecidos nao partem a app`() {

@@ -697,3 +697,53 @@ def test_kill_switch_permite_escritas_depois_de_libertar(client, auth_headers):
         headers=auth_headers,
     )
     assert resposta.status_code == 200, resposta.text
+
+
+# --------------------------------------------------------------------------- #
+# 9. /ws/live over a real TCP connection
+# --------------------------------------------------------------------------- #
+def test_websocket_live_entrega_snapshot_e_eventos_reais():
+    """Liga ao /ws/live como o APK faz e confirma o contrato do stream.
+
+    Interessa o formato que o APK descodifica, não o socket simulado: o
+    snapshot tem payload.events E payload.kill_switch, e um evento publicado
+    no bus chega ao cliente com os campos que a LiveOps mostra.
+    """
+    import json
+
+    from fastapi.testclient import TestClient
+
+    from backend.core.runtime_bus import event_bus
+    from backend.core.security_guard import kill_switch
+    from backend.main import app
+
+    kill_switch.release(actor="pytest")
+    with TestClient(app) as cliente:
+        with cliente.websocket_connect("/ws/live") as ws:
+            snapshot = json.loads(ws.receive_text())
+            assert snapshot["type"] == "snapshot"
+            assert "events" in snapshot["payload"]
+            assert snapshot["payload"]["kill_switch"]["engaged"] is False
+
+            # Um evento publicado no bus tem de chegar com o contrato completo.
+            event_bus.publish(
+                "pytest_evento",
+                agent="pytest",
+                message="evento de teste do stream",
+                level="info",
+            )
+            # O snapshot já foi lido; o próximo item é o evento publicado. Se
+            # o ciclo de heartbeat (25 s) disparar primeiro, salta-se — mas
+            # nunca se espera por ele: era isso que fazia este teste demorar
+            # 25 s em vez de milissegundos.
+            evento = json.loads(ws.receive_text())
+            tentativas = 0
+            while evento.get("type") == "heartbeat" and tentativas < 2:
+                evento = json.loads(ws.receive_text())
+                tentativas += 1
+            assert evento["type"] == "pytest_evento"
+            assert isinstance(evento["sequence"], int)
+            assert evento["agent"] == "pytest"
+            assert evento["level"] == "info"
+            assert evento["message"] == "evento de teste do stream"
+            assert evento["ts"]
