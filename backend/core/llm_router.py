@@ -187,6 +187,29 @@ class RateLimiter:
             entry["cost_usd"] = round(float(entry.get("cost_usd", 0.0)) + float(cost_usd), 6)
             self._persist()
 
+    def headroom(
+        self,
+        provider: str,
+        *,
+        rpm_limit: int,
+        rpd_limit: int,
+        tpd_limit: int,
+    ) -> float:
+        """Fracção já consumida do limite mais apertado (0.0 a 1.0).
+
+        Serve o failover preventivo: a 85% do limite o provedor é abandonado
+        *antes* de bater no 429, para o ciclo nunca parar a meio.
+        """
+        usage = self.usage(provider)
+        ratios = [0.0]
+        if rpm_limit > 0:
+            ratios.append(float(usage.get("requests_last_minute", 0)) / rpm_limit)
+        if rpd_limit > 0:
+            ratios.append(float(usage.get("requests_today", 0)) / rpd_limit)
+        if tpd_limit > 0:
+            ratios.append(float(usage.get("tokens_today", 0)) / tpd_limit)
+        return min(1.0, max(ratios))
+
     def snapshot(self) -> Dict[str, Any]:
         with self._lock:
             return {provider: self.usage(provider) for provider in sorted(self._daily)}
@@ -684,6 +707,23 @@ class LLMRouter:
             if not allowed:
                 chain.append(f"{provider}:skip({reason})")
                 log.info("Provider %s ignorado: %s", provider, reason)
+                continue
+
+            # Failover preventivo a 85% do limite: em vez de esperar o 429,
+            # guarda o resto da quota para as tarefas críticas.
+            used = self.limiter.headroom(
+                provider,
+                rpm_limit=spec.rpm_limit,
+                rpd_limit=spec.rpd_limit,
+                tpd_limit=spec.tpd_limit,
+            )
+            if used >= settings.llm_failover_threshold:
+                chain.append(f"{provider}:skip(quota_{used:.0%})")
+                log.info(
+                    "Provider %s em %.0f%% da quota (limiar %.0f%%): a passar "
+                    "para o seguinte.", provider, used * 100,
+                    settings.llm_failover_threshold * 100,
+                )
                 continue
 
             chain.append(f"{provider}:try")

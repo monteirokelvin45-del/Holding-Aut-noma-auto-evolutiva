@@ -27,6 +27,8 @@ vault_data/artifacts/
 vault_data/logs/
 vault_data/smoke_tests/
 vault_data/ledger.archive.json
+# Estado efémero de execução (contadores de quota, caches de runtime)
+vault_data/runtime/
 
 # ==== Testes / ferramentas ====
 .pytest_cache/

@@ -69,7 +69,8 @@ def _money(value: Any) -> float:
 def phase_for_monthly_revenue(monthly_revenue_usd: float) -> int:
     """Fase determinística a partir da facturação mensal em USD."""
     revenue = _money(monthly_revenue_usd)
-    if revenue >= PHASE_3_THRESHOLD_USD:
+    # Mandato: Fase 2 = [1 500,00 ; 15 000,00] inclusive; Fase 3 só acima.
+    if revenue > PHASE_3_THRESHOLD_USD:
         return 3
     if revenue >= PHASE_2_THRESHOLD_USD:
         return 2
@@ -583,6 +584,22 @@ class CFOTreasury:
             }
         log.info("Taxa USD/MZN actualizada para %.4f (%s).", rate, source)
         return {"usd_mzn": rate, "source": source, "updated_at": utcnow_iso()}
+
+    def process_incoming_revenue(
+        self, gross_usd: float, squad_id: str, *, source: str = "external"
+    ) -> RevenueSplit:
+        """Nome do mandato para ``record_revenue`` (receita de um esquadrão).
+
+        Mantém a semântica exacta: provisão fiscal de 5%, líquido somado à
+        facturação mensal, multiplicadores da fase escolhidos pelo total
+        mensal e gravação atómica do ledger (``vault.transaction``).
+        """
+        return self.record_revenue(
+            gross_usd,
+            source=source,
+            squad=squad_id or "unknown",
+            description=f"Receita atribuída ao esquadrão {squad_id or 'unknown'}",
+        )
 
     def convert_usd_to_mzn(self, amount_usd: float) -> Dict[str, Any]:
         data = self.ledger()

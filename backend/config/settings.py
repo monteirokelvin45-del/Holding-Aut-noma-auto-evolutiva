@@ -145,6 +145,9 @@ class Settings:
     llm_provider_order: List[str] = field(
         default_factory=lambda: ["groq", "gemini", "openrouter", "ollama", "local"]
     )
+    #: Fracção do limite de um provedor a partir da qual se muda de rota, antes
+    #: de bater no 429. 0.85 = 85% do RPM/RPD/TPD mais apertado.
+    llm_failover_threshold: float = 0.85
 
     # -------------------------------------------------------- observabilidade
     langfuse_enabled: bool = False
@@ -297,6 +300,7 @@ class Settings:
                 "approval_threshold_usd": self.approval_threshold_usd,
             },
             "llm_provider_order": list(self.llm_provider_order),
+            "llm_failover_threshold": self.llm_failover_threshold,
             "genai_video": {
                 "enabled": self.genai_video_enabled,
                 "order": list(self.genai_video_order),
@@ -363,6 +367,7 @@ def _build_settings() -> Settings:
         llm_provider_order=env_list(
             "LLM_PROVIDER_ORDER", ["groq", "gemini", "openrouter", "ollama", "local"]
         ),
+        llm_failover_threshold=env_float("LLM_FAILOVER_THRESHOLD", 0.85),
         langfuse_enabled=env_bool("LANGFUSE_ENABLED", False),
         langfuse_public_key=env_str("LANGFUSE_PUBLIC_KEY"),
         langfuse_secret_key=env_str("LANGFUSE_SECRET_KEY"),

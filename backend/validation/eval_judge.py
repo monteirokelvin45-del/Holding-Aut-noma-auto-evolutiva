@@ -36,6 +36,19 @@ log = get_logger("validation.judge")
 
 CONTENT_TYPES = {"video_short", "blog_article", "ebook", "code", "landing_page", "copy"}
 
+#: Os quatro critérios do mandato, cada um de 0 a 25 pontos.
+#: As chaves internas mantêm-se (`hook`/`clarity`/`technical`/`compliance`)
+#: porque já são usadas pelo APK, pelos testes e pelo histórico do cofre.
+AXIS_MAX_POINTS = 25.0
+
+#: Nome de negócio de cada eixo (relatórios e APK).
+AXIS_LABELS: Dict[str, str] = {
+    "hook": "Gancho / Retenção Inicial",
+    "clarity": "Potencial de Monetização / SEO",
+    "technical": "Qualidade Técnica / Áudio / Código",
+    "compliance": "Segurança de Direitos de Autor",
+}
+
 WEIGHTS: Dict[str, Dict[str, float]] = {
     "video_short": {"hook": 0.40, "clarity": 0.25, "technical": 0.20, "compliance": 0.15},
     "blog_article": {"hook": 0.25, "clarity": 0.25, "technical": 0.20, "compliance": 0.30},
@@ -88,6 +101,13 @@ class JudgeVerdict:
             "passed": self.passed,
             "content_type": self.content_type,
             "axes": {k: round(v, 2) for k, v in self.axes.items()},
+            # Pontos por eixo (0-25), como o mandato especifica.
+            "points": {
+                key: round(value / 100.0 * AXIS_MAX_POINTS, 2)
+                for key, value in self.axes.items()
+            },
+            "axis_labels": dict(AXIS_LABELS),
+            "axis_max_points": AXIS_MAX_POINTS,
             "findings": list(self.findings),
             "critical_findings": list(self.critical_findings),
             "suggestions": list(self.suggestions),
@@ -470,6 +490,80 @@ class EvalJudge:
             return None
 
     # ---------------------------------------------------------------- público
+    # ------------------------------------------------------- artefactos reais
+    @staticmethod
+    def _read_artifact(asset: Dict[str, Any]) -> Dict[str, Any]:
+        """Normaliza o que o Juiz recebe: texto, caminho .mp4, ebook ou código.
+
+        O mandato fala em "caminho de vídeo .mp4, texto de e-book ou script de
+        código". Aqui o ficheiro é medido a sério (tamanho, duração, tipo) em
+        vez de se assumir que existe.
+        """
+        import os
+
+        path = str(asset.get("path") or asset.get("video_path") or "").strip()
+        content = str(asset.get("content") or asset.get("text") or "")
+        info: Dict[str, Any] = {
+            "path": path,
+            "exists": False,
+            "size_bytes": 0,
+            "kind": asset.get("content_type") or "copy",
+            "measured": {},
+        }
+        if path and os.path.isfile(path):
+            info["exists"] = True
+            info["size_bytes"] = os.path.getsize(path)
+            extension = os.path.splitext(path)[1].lower()
+            if extension in {".mp4", ".mov", ".webm", ".mkv"}:
+                info["kind"] = "video_short"
+                info["measured"] = EvalJudge._probe_video(path)
+        elif not content:
+            info["missing_content"] = True
+        return info
+
+    @staticmethod
+    def _probe_video(path: str) -> Dict[str, Any]:
+        """Duração/resolução via ffprobe-like (ffmpeg do imageio-ffmpeg)."""
+        import re
+        import shutil
+        import subprocess
+
+        binary = shutil.which("ffprobe")
+        if not binary:
+            try:
+                import imageio_ffmpeg  # type: ignore
+
+                ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+                binary = ffmpeg.replace("ffmpeg", "ffprobe")
+                if not shutil.which(binary) and not __import__("os").path.isfile(binary):
+                    binary = ffmpeg  # alguns builds trazem tudo num só binário
+            except Exception:
+                return {}
+        try:
+            completed = subprocess.run(
+                [binary, "-hide_banner", "-i", path],
+                capture_output=True, text=True, timeout=60, check=False,
+            )
+        except (subprocess.SubprocessError, OSError):
+            return {}
+        output = (completed.stderr or "") + (completed.stdout or "")
+        measured: Dict[str, Any] = {}
+        duration = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.?\d*)", output)
+        if duration:
+            hours, minutes, seconds = duration.groups()
+            measured["duration_seconds"] = round(
+                int(hours) * 3600 + int(minutes) * 60 + float(seconds), 2
+            )
+        resolution = re.search(r"(\d{2,5})x(\d{2,5})", output)
+        if resolution:
+            width, height = resolution.groups()
+            measured["width"] = int(width)
+            measured["height"] = int(height)
+            measured["vertical"] = int(height) > int(width)
+        if "Audio:" in output:
+            measured["has_audio"] = True
+        return measured
+
     def evaluate(
         self,
         *,

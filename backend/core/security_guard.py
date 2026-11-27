@@ -543,6 +543,101 @@ class PromptShield:
             source=source, truncated=truncated,
         )
 
+def _ledger_reader() -> Dict[str, Any]:
+    """Leitura do ledger para o tecto diário (import tardio: evita ciclo)."""
+    try:
+        from .vault_store import LEDGER, vault
+
+        return dict(vault.read(LEDGER) or {})
+    except Exception:  # pragma: no cover - cofre indisponível
+        return {}
+
+
+def _request_approval(**kwargs: Any) -> str:
+    """Cria o pedido em ``pending_approvals.json`` (APK + Telegram lêem-no)."""
+    from .approvals import approval_gate
+
+    return approval_gate.request(**kwargs)
+
+
+#: Instância usada pelo contrato público (5.2).
+spend_guard = SpendGuard(
+    ledger_reader=_ledger_reader, approval_requester=_request_approval
+)
+
+
+def verify_execution_permission(
+    agent_name: str,
+    estimated_cost_usd: float,
+    *,
+    purpose: str = "execução de tarefa",
+) -> SpendAuthorization:
+    """Contrato do mandato (5.2): permissão de execução com custo estimado.
+
+    Ordem exacta das travas:
+
+    1. **Kill switch** activo -> interrompe imediatamente (``KillSwitchActive``).
+    2. ``gasto_de_hoje + estimado > tecto_diário`` -> ``SpendCapExceeded``.
+    3. ``estimado > APPROVAL_THRESHOLD_USD`` -> grava pedido em
+       ``pending_approvals.json`` (que o APK e o Telegram lêem) e levanta
+       ``ApprovalRequired``: a thread fica à espera da assinatura biométrica.
+
+    A execução só continua quando o chamador tratar ``SpendAuthorization``;
+    nenhuma excepção é engolida em silêncio.
+    """
+    try:
+        estimated = float(estimated_cost_usd)
+    except (TypeError, ValueError):
+        raise SpendCapExceeded(
+            f"Custo estimado inválido: {estimated_cost_usd!r}",
+            details={"agent": agent_name, "purpose": purpose},
+        )
+    if estimated != estimated or estimated == float("inf"):
+        raise SpendCapExceeded(
+            "Custo estimado tem de ser finito.",
+            details={"agent": agent_name, "estimated_cost_usd": estimated_cost_usd},
+        )
+    # Custo zero é o caso normal desta holding (tudo em free-tier). Não é um
+    # erro: valida as travas (kill switch, tecto diário) e devolve autorização
+    # sem consumir orçamento.
+    if estimated <= 0:
+        kill_switch.ensure_operational(f"execução de {agent_name}")
+        return SpendAuthorization(
+            approved=True,
+            amount_usd=0.0,
+            agent_id=agent_name,
+            purpose=purpose,
+            requires_approval=False,
+            receipt={
+                "agent_id": agent_name,
+                "amount_usd": 0.0,
+                "purpose": purpose,
+                "authorized_at": utcnow_iso(),
+                "daily_cap_usd": settings.daily_spend_cap_usd,
+                "note": "custo zero (free-tier/local)",
+            },
+        )
+    return spend_guard.authorize_spend(
+        agent_name, estimated, purpose, require_approval_above_threshold=True
+    )
+
+
+def sanitize_input(raw_text: str, source: str = "user") -> str:
+    """Contrato do mandato (5.2): texto externo limpo ou bloqueado.
+
+    Delega no ``PromptShield`` (LLM Guard: PromptInjection, Secrets,
+    Toxicity, mais os padrões locais). Devolve **texto vazio** quando o
+    conteúdo é bloqueado — o chamador não deve receber lixo e o motivo fica
+    no log/veredicto em vez de ser inventado aqui.
+    """
+    verdict = prompt_shield.scan(raw_text, source=source)
+    if verdict.blocked:
+        return ""
+    return verdict.text
+
+
+
+
     def wrap_untrusted(self, text: str, source: str = "web") -> str:
         """Embrulha conteúdo não confiável em delimitadores explícitos.
 
@@ -593,7 +688,10 @@ def assert_commercial_licenses(packages: Iterable[str]) -> Dict[str, Any]:
 __all__ = [
     "KillSwitch",
     "kill_switch",
+    "verify_execution_permission",
+    "sanitize_input",
     "SpendGuard",
+    "spend_guard",
     "SpendAuthorization",
     "PromptShield",
     "prompt_shield",

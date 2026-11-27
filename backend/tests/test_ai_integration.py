@@ -138,13 +138,18 @@ def test_provedor_llm_simulado_marca_is_llm_verdadeiro(monkeypatch) -> None:
 
     monkeypatch.setattr(router_module.LLMRouter, "_call_groq", fake_groq)
     monkeypatch.setattr(router_module.LLMRouter, "provider_specs", lambda self: specs)
+    # Guardar a configuração real ANTES de a substituir: o shim delegava em
+    # ``router_module.settings``, que passa a ser ele próprio -> recursão
+    # infinita assim que o router lê um campo novo.
+    real_settings = router_module.settings
+
     class SettingsShim:
         """Proxy da configuração real, com a ordem de provedores forçada."""
 
         def __getattr__(self, name: str) -> Any:
             if name == "llm_provider_order":
                 return ["groq", "local"]
-            return getattr(router_module.settings, name)
+            return getattr(real_settings, name)
 
     monkeypatch.setattr(router_module, "settings", SettingsShim())
 
