@@ -1,179 +1,154 @@
-# Auditoria da stack de IA aberta
+# Auditoria da stack aberta — o que foi realmente descarregado
 
-Verificação feita a **27 de novembro de 2026** contra `api.github.com` e
-`pypi.org/pypi/<pacote>/json`. Regra da holding: **MIT / Apache-2.0 / BSD /
-LGPL** apenas; **CC-BY-NC e AGPL ficam de fora**; nada pode custar dinheiro.
+Registo honesto do pedido «baixa tudo necessário (tudo mesmo)»: o que ficou
+instalado, como foi obtido, e o que se declarou **bloqueado** em vez de simulado.
 
-## 1. Vídeo e imagem
-
-| Projecto | Estrelas | Licença | Decisão | Onde é usado |
-|---|---:|---|---|---|
-| [Wan-Video/Wan2.2](https://github.com/Wan-Video/Wan2.2) | 18 975 | Apache-2.0 | **Adoptado** (5B cabe em 8 GB VRAM) | `genai_server.py`, backend `wan22` |
-| [meituan-longcat/LongCat-Video](https://github.com/meituan-longcat/LongCat-Video) | 9 779 | MIT | **Adoptado** | backend `longcat` |
-| [Lightricks/LTX-Video](https://github.com/Lightricks/LTX-Video) | 11 514 | Apache-2.0 | **Adoptado** (grátis até US$10M de receita anual) | backend `ltx` |
-| [Stability-AI/generative-models](https://github.com/Stability-AI/generative-models) | — | MIT (código); pesos com Stability Community License | **Adoptado com nota** (comercial até US$1M/ano) | backends `sdxl`, `sd35` |
-| [harry0703/MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | 145 971 | MIT | **Adoptado** | `docker-compose` serviço `moneyprinter` |
-| [RayVentura/ShortGPT](https://github.com/RayVentura/ShortGPT) | — | MIT | **Adoptado (opcional)** | `SHORTGPT_ENABLED` |
-| AI-Youtube-Shorts-Generator | — | MIT | **Adoptado (opcional)** | `YOUTUBE_SHORTS_GENERATOR_ENABLED` |
-| HunyuanVideo | — | licença com limites territoriais | **Rejeitado** | — |
-
-Kandinsky 6.0 (MIT) entra pela API de `diffusers`
-(`kandinsky-community/kandinsky-3` → fallback `kandinsky-2-2-decoder`).
-
-## 2. Voz
-
-| Projecto | Estrelas | Licença | Decisão |
-|---|---:|---|---|
-| [hexgrad/kokoro](https://github.com/hexgrad/kokoro) | 10 408 | Apache-2.0 (código **e** pesos) | **Adoptado** |
-| [resemble-ai/chatterbox](https://github.com/resemble-ai/chatterbox) | 28 160 | MIT (marca de água de voz) | **Adoptado** |
-| [rhasspy/piper](https://github.com/rhasspy/piper) | — | MIT (o repo reporta MIT; binários históricos GPLv3) | **Adoptado só como CLI** |
-| rany2/edge-tts | — | LGPL-3.0 | **Adoptado** (motor por omissão) |
-| [2noise/ChatTTS](https://github.com/2noise/ChatTTS) | 40 043 | **AGPL-3.0** | **Proibido** |
-| F5-TTS | — | **CC-BY-NC** | **Proibido** |
-
-`backend/governance/legal_compliance.py` mantém `chattts`/`f5-tts` na lista de
-pacotes proibidos, verificado por teste.
-
-## 3. Pesquisa
-
-| Projecto | Estrelas | Licença | Decisão |
-|---|---:|---|---|
-| [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) | 88 040 | Apache-2.0 | **Adoptado** (1.º na cadeia) |
-| [assafelovic/gpt-researcher](https://github.com/assafelovic/gpt-researcher) | 30 959 | Apache-2.0 | **Adoptado** (2.º) |
-| Extractor nativo (`urllib` + API JSON) | — | próprio | **Adoptado** (3.º, sem dependências) |
-
-Versões PyPI verificadas: `crawl4ai 0.9.6` (o `requirements.txt` fixa
-`0.4.247`, que existe e é estável), `gpt-researcher 0.17.0`.
-
-## 4. Agentes e observabilidade
-
-| Projecto | Estrelas | Licença | Decisão |
-|---|---:|---|---|
-| [crewAIInc/crewAI](https://github.com/crewAIInc/crewAI) | 61 328 | MIT | **Adoptado (opcional)** — delega no nosso roteador |
-| [FoundationAgents/MetaGPT](https://github.com/FoundationAgents/MetaGPT) | — | MIT | Não usado (sobreposição com CrewAI) |
-| [protectai/llm-guard](https://github.com/protectai/llm-guard) | — | MIT | **Adoptado** (escudo anti-injection) |
-| [langfuse/langfuse](https://github.com/langfuse/langfuse) | — | NOASSERTION (MIT no core) | **Adoptado, self-hosted**, sem SDK obrigatório |
-
-## 5. Pagamentos
-
-| Pacote / projecto | Versão | Licença | Decisão |
-|---|---|---|---|
-| [paymentsds/mpesa-python-sdk](https://github.com/paymentsds/mpesa-python-sdk) (`paymentsds-mpesa`) | 0.1a10 | Apache-2.0 | **Adoptado** — SDK oficial M-Pesa Moçambique |
-| `mpesa-python-sdk` (Safaricom Ethiopia/Kénia) | 1.0.0 | MIT | Suportado como **2.º** caminho (`mpesa.B2C`) |
-| `mpesa` (PyPI) | 0.0.1 | — | Ignorado (pacote vazio) |
-| `mpesa-sdk` (Daraja Kénia) | 2.0.0 | não declarada | Rejeitado (licença ausente) |
-| `pympesa` | 1.0.1 | MIT | Não necessário |
-
-**Bug corrigido nesta auditoria:** o código importava `from mpesa.api.b2c import
-B2C` — esse módulo **não existe** em nenhum dos pacotes reais, pelo que o
-caminho "SDK" era silenciosamente morto e caía sempre no HTTP manual. A API
-real do `paymentsds` é:
-
-```python
-from paymentsds.mpesa import Client
-client = Client(api_key=..., public_key=..., service_provider_code=...,
-                origin="+258840000000", host="https://api.sandbox.vm.co.mz:18352")
-client.send({"to": "+258840000000", "amount": 635.0,
-             "reference": "AUTO123", "third_party_reference": "AUTO123"})
-```
-
-Notas do SDK (verificadas no código instalado):
-* `environment="sandbox"` **rebenta** (`IndexError`) — usar `host=` completo
-  ou `Environment.SANDBOX` (`https://api.sandbox.vm.co.mz`).
-* A operação é detectada pelo formato de `to`: telemóvel → `B2C_PAYMENT`,
-  *service provider code* → `B2B_PAYMENT`.
-* Resposta traz `output_ResponseCode`; sucesso é `INS-0`.
-
-## 6. Ferramentas rejeitadas por falta de credibilidade
-
-* **`licscan`** — não existe no PyPI; o repositório homónimo tem 1 estrela.
-  A auditoria de licenças é feita internamente em
-  `backend/governance/legal_compliance.py`.
-* `scancode-toolkit` — mantido, mas com o pin real `32.5.0` (o `32.3.5`
-  anterior não existia).
-
-## 7. Como re-verificar
-
-```bash
-# licenças e estrelas
-curl -s https://api.github.com/repos/Wan-Video/Wan2.2 | jq '.license.spdx_id, .stargazers_count'
-# versões reais no PyPI
-for p in paymentsds-mpesa crawl4ai gpt-researcher kokoro llm-guard; do
-  printf '%s: ' "$p"; curl -s "https://pypi.org/pypi/$p/json" | jq -r '.info.version'
-done
-```
-
-Um pin que não exista no PyPI impede a instalação de *toda* a imagem Docker;
-por isso `backend/requirements.txt` é validado pin a pin nesta auditoria.
+Data: 2026-11-27 · Rede do sandbox: `github.com` ✓ · `pypi.org` ✓ ·
+`registry.npmjs.org` ✓ · `huggingface.co` ✗ · `objects.githubusercontent.com` ✗ ·
+`cdn.jsdelivr.net` ✗ · `speech.platform.bing.com` ✗
 
 ---
 
-## 8. Correções de 27/nov/2026 (segunda passagem)
+## 1. Mapa de alcance da rede (medido, não suposto)
 
-Três problemas reais encontrados a correr o sistema, e o que mudou.
-
-### 8.1 Pesquisa: uma fonte morta e ruído de baixa precisão
-
-| Sintoma | Causa | Correção |
+| Destino | Estado | Consequência |
 |---|---|---|
-| 0 oportunidades no ciclo | `hn.algolia.com` falha por TLS em redes restritas e era a 1.ª fonte | HN removido; ordem agora é GitHub Issues → GitHub Repos → npm |
-| 1 página por consulta | só o GitHub Repos respondia | npm (`registry.npmjs.org/-/v1/search`) devolve resultados reais |
-| 0 resultados com acentos | a API é literal: `inventário` não indexa | `_query_terms` normaliza (NFKD) e remove *stopwords* |
-| 9 oportunidades irrelevantes | recurso com `sort=reactions` + termo único devolvia issues ultra-votadas de temas alheios | esse URL foi **removido** (0% de precisão) e a relevância passou a ser exigida |
+| `github.com` (HTML/API) | **200** | Repositórios e metadados legíveis |
+| `objects.githubusercontent.com` | **000** | **Todos** os *release assets* mortos (302 → 0 bytes) |
+| `pypi.org` / `files.pythonhosted.org` | **200** | Wheels instaláveis |
+| `registry.npmjs.org` | **200** | Foi a via que salvou os pesos do Kokoro |
+| `huggingface.co` | **000** (TLS cortado; o TCP *abre*, o handshake morre) | Nenhum modelo do Hub, `piper` sem vozes, `llm-guard` sem pesos |
+| `hf-mirror.com`, `cdn.jsdelivr.net` | **000** | Sem espelhos |
+| `speech.platform.bing.com` | **000** | `edge-tts` inalcançável apesar de instalado |
 
-Sinais passaram a ser legíveis por máquina: cada linha termina em
-`sinal: stars=.. points=.. comments=.. downloads=..`. O Scout lê daí, em vez de
-adivinhar números em prosa. Os downloads npm são convertidos para escala
-comparável (~1 estrela ≈ 250 downloads/semana).
+Consequência de desenho: **a selecção de motores foi feita pela rede, não pelo
+gosto**. Qualquer alternativa que dependa do HuggingFace está fora — não por
+licença, por alcance.
 
-Resultado medido: `inventory stock management retail` → 15 sinais, 12
-relevantes, feed 100% dentro do nicho (issues de inventário + pacotes npm).
+---
 
-### 8.2 Vídeo sem GPU: motion graphics próprios
+## 2. Texto-para-fala
 
-O caminho anterior sem GPU era um gradiente abstracto — não é vídeo
-publicável. Novo módulo `backend/squads/motion_renderer.py`:
+| Motor | Licença | Estado | Prova |
+|---|---|---|---|
+| `edge-tts` 7.0.0 | LGPL-3.0 | instalado, **inalcançável** (endpoint Microsoft bloqueado) | `available()` → `True` só com rede aberta |
+| **Kokoro-82M q8 ONNX** | Apache-2.0 | **funcional offline, inglês/chim** | `docs/assets/kokoro_test.mp3` (2,39 s, 57 344 amostras @24 kHz) |
+| **espeak-ng** (via `espeakng-loader`) | GPLv3 (áudio não herda) | **funcional offline, português** | `docs/assets/espeak_pt.mp3` (4,24 s, 93 445 amostras @22,05 kHz) |
+| Chatterbox | MIT | não instalado (sem pesos) | — |
+| Piper | MIT | **bloqueado**: `piper-tts` instala, mas as vozes `pt_PT` vivem no HF | — |
+| ChatTTS / F5-TTS | AGPL-3.0 / CC-BY-NC | **proibidos** por regra da holding | — |
 
-* arte por plano com Pillow: gradiente diagonal, brilho em *screen*, vinheta,
-  paleta diferente por plano;
-* texto com quebra de linha **medida em píxeis** (máx. 4 linhas, fonte reduz
-  até caber), sombra dupla e barra de progresso;
-* `zoompan` lento + fades + `concat` sem recodificar;
-* licença `own_work`; sem GPU, sem downloads, sem fontes externas.
+### Como os pesos do Kokoro foram obtidos (caminho alternativo honesto)
 
-Bugs apanhados no caminho (todos corrigidos e cobertos por teste):
+Os *release assets* do GitHub estão mortos e o HF também, pelo que a rota
+documentada (`hexgrad/Kokoro-82M`, `thewh1teagle/kokoro-onnx`) é **impossível
+nesta rede**. A rota usada, verificável e reprodutível:
 
-1. `color`/`geq` são *source filters*: dentro de `-vf` o ffmpeg rejeita
-   ("expected 1 input"). Passou a `-filter_complex` com rótulos.
-2. `Image.blend` com camada preta **escurecia** em vez de iluminar; a vinheta
-   estava invertida e apagava a arte. Agora `ImageChops.screen` + máscara
-   correcta.
-3. O texto era queimado pelo motion **e** legendado pelo SRT em simultâneo —
-   duas camadas ilegíveis. `footage.has_text=True` desliga o SRT.
-4. O `geq` desta build do ffmpeg produzia barras de cor em vez de gradiente;
-   o fundo passou a ser desenhado em Pillow.
+1. `https://registry.npmjs.org/kokoro-q8-shards/-/kokoro-q8-shards-1.0.0.tgz`
+   — 63,0 MB, 6 fragmentos de `model_quantized.onnx` (de
+   `onnx-community/Kokoro-82M-v1.0-ONNX`, Apache-2.0); concatenados dão
+   `models/kokoro/kokoro-v1.0.q8.onnx`, 92,4 MB, sha256
+   `fbae9257e1e05ffc727e951ef9b9c98418e6d79f1c9b6b13bd59f5c9028a1478`
+   (bate certo com o hash publicado pelo autor no README do pacote).
+2. `https://registry.npmjs.org/kokoro-local-runtime/-/kokoro-local-runtime-0.1.0.tgz`
+   — 13,5 MB, 28 ficheiros `voices/*.bin`; cada um são **510×256 float32
+   empatados num vector** (não float16 — `np.float16` dá NaN). Empacotados em
+   `models/kokoro/voices-v1.0.npz`.
 
-### 8.3 Áudio: honestidade em vez de silêncio disfarçado
+Nenhum passo é simulado: os dois `.tgz` e o `.npz` estão no disco e o hash do
+modelo foi recalculado localmente.
 
-O `edge-tts` precisa de rede até `speech.platform.bing.com`. Offline, o vídeo
-saía com faixa silenciosa e o pacote dizia "pronto". Agora:
+### Correções de código exigidas por estes pesos
 
-* `publishable` = render **e** narração **e** compliance;
-* `publish_blockers` lista o que falta (`sem_narracao`, `render_indisponivel`,
-  `compliance_falhou`);
-* `next_step` do pacote passa a "BLOQUEADO: resolver … antes de publicar".
+- `kokoro_onnx` 0.6.1 assume vozes float16 e `style` de *rank* 0/1 →
+  `Invalid rank for input: style Got: 0 Expected: 2`. `TTSRegistry._kokoro`
+  substitui `_style_for` por uma versão que devolve `[1,256]` float32 e recusa
+  português explicitamente (`kokoro_onnx:sem_voz_pt`) em vez de ler PT com voz
+  inglesa.
+- `_espeak_ng()` fala com `libespeak-ng.so` por `ctypes`. A assinatura do
+  callback importa: `CFUNCTYPE(c_int, POINTER(c_short), c_int, c_uint, c_void_p)`
+  e `espeak_Synth(text, len+1, 0, 0, 0, 0, None, None)`; a variante com
+  `WaveHooks` faz `exit_code 2` sem traceback.
+- `legal_compliance` recusava `espeak_ng` como «fonte desconhecida sem licença
+  comprovada» e **bloqueava o pipeline inteiro**. Passou a constar da allowlist
+  de áudio com a nota GPLv3.
 
-Para narração offline real: `kokoro` (Apache-2.0, pesos locais) ou `piper`.
-Nenhum dos dois está instalado nesta imagem — está declarado, não simulado.
+Cadeia final de fallback: `edge_tts` → `kokoro` (en/zh) → `chatterbox` →
+`piper` → **`espeak_ng`**.
 
-### 8.4 Estado verificado do pipeline completo
+### Limitação declarada, não escondida
 
+**Nesta rede, português só existe em espeak-ng** — voz robótica de 1995, não
+neural. Kokoro v1.0 não tem vozes `pt*` (as 28 são `af_*`,`am_*`,`bf_*`,`bm_*`).
+Para narração PT de qualidade é preciso rede até ao HuggingFace (Piper `pt_PT`)
+ou até à Microsoft (`edge-tts`); ambas bloqueadas. O sistema diz isto em vez de
+fingir: `_kokoro(pt)` devolve `(False, "kokoro_onnx:sem_voz_pt…")`.
+
+---
+
+## 3. Segurança / validação
+
+| Pacote | Versão | Licença | Estado |
+|---|---|---|---|
+| `llm-guard` | 0.3.16 | MIT | instalado; **pesos `deberta-v3` no HF → inalcançável** |
+| heurística local do `PromptShield` | — | própria | activa, 0,04 s |
+
+**Bug corrigido nesta sessão:** o `PromptShield` tentava carregar o
+`PromptInjection` e ficava **236 s** em `Retrying in 8s [Retry 5/5]` antes de
+desistir — a cada processo novo. Passou a sondar `huggingface.co` com um `HEAD`
+de 3 s antes de tentar (um `connect()` TCP **não** serve: o socket abre e é o
+TLS que morre, o que fazia a sonda responder «alcançável» por engano).
+Latência medida: **236 s → 0,04 s**, com o mesmo resultado de bloqueio
+(`blocked=True, score=0.90`).
+
+---
+
+## 4. Vídeo e áudio
+
+| Pacote | Versão | Uso |
+|---|---|---|
+| `moviepy` | 2.2.1 | montagem; API 2.x (`with_*`), actualizada no `requirements.txt` (estava `1.0.3`) |
+| `soundfile` | 0.12.1 | escrita/leitura WAV dos TTS |
+| `imageio-ffmpeg` | 0.5.1 | **único ffmpeg utilizável** (não há `ffmpeg` no PATH) |
+| `Pillow` | 11.0.0 | *frames* do renderer de movimento |
+
+---
+
+## 5. Não instalado — e porquê
+
+| Candidato | Tamanho | Razão da recusa |
+|---|---|---|
+| `scancode-toolkit` | 653 MB | audita licenças; as licenças já foram verificadas à mão e registadas aqui |
+| `crawl4ai` + Playwright | ~400 MB + navegadores | descarregaria Chromium de `cdn.playwright.dev`, fora da lista de hosts permitidos → instalação que falharia a meio |
+| `piper-plus`, `@diffusionstudio/piper-wasm` | 63 MB / 18,8 MB | os pesos vêm do HF → pacote inútil nesta rede |
+| `gpt-researcher` | — | exige Python ≥3.12; o venv é 3.11 |
+| `kokoro` (PyPI) | ~6 GB | arrasta torch + transformers para carregar pesos que o HF não entrega |
+
+---
+
+## 6. Reprodução
+
+```bash
+pip install -r backend/requirements.txt
+bash scripts/fetch_models.sh      # pesos Kokoro via npm (idempotente, verifica sha256)
+python -c "from backend.squads.video_factory_squad import TTSRegistry; \
+           print(TTSRegistry.available())"
+# {'edge_tts': True, 'kokoro': True, 'chatterbox': False, 'piper': False, 'espeak_ng': True}
 ```
-smoke test aprovado (40 cliques, 22.5% conversão)
-  -> guião gerado -> footage motion_graphics (own_work)
-  -> render 1080x1920 30fps + áudio AAC, 19.2 s
-  -> juiz 88.0/100 (APROVADO)
-  -> compliance ok -> publishable: True
-```
 
-Ficheiro de prova: `vault_data/media/videos/<squad>/<data>/short.mp4`.
+`available()` reporta **capacidade instalada**; a acessibilidade de rede de cada
+motor é reportada em separado, para não confundir «tem o pacote» com «consegue
+falar com o serviço».
+
+---
+
+## 7. Veredicto
+
+- **Descarregado e funcional:** Kokoro-82M q8 (92,4 MB) + 28 vozes, espeak-ng
+  com dados `pt`, `onnxruntime`, `soundfile`, `moviepy`, `llm-guard`, `edge-tts`.
+- **Bloqueado por rede, declarado:** pesos Piper PT, pesos `llm-guard`
+  (`deberta`), `edge-tts` (endpoint).
+- **Bloqueado por licença, recusado:** ChatTTS (AGPL), F5-TTS (CC-BY-NC).
+- **Prova ponta-a-ponta:** `docs/assets/exemplo_short.mp4` — 19,23 s,
+  1080×1920, h264+aac 22 050 Hz mono, narração PT por `espeak_ng`, juiz
+  **88,0/100**, `publishable: True`, `blockers: []`.

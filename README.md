@@ -197,7 +197,28 @@ coberto por teste).
 
 Exemplo real, produzido por este repositório sem GPU:
 [`docs/assets/exemplo_short.mp4`](docs/assets/exemplo_short.mp4) — 1080×1920,
-30 fps, 19 s, áudio AAC, juiz 88/100.
+30 fps, 19 s, áudio AAC, juiz 88/100. Reproduzível num comando:
+
+```bash
+PYTHONPATH=. python scripts/make_demo_video.py
+```
+
+O script **não** contorna portões: cria o Smoke Test de demanda, regista
+tráfego declaradamente sintético (`campaign_source="demo-script"`), deixa o
+`DemandValidator` aprovar e só então corre o esquadrão.
+
+### Voz: o que funciona sem rede
+
+| Motor | Licença | Estado nesta rede |
+|---|---|---|
+| edge-tts (`pt-BR-Antonio`, `pt-PT-Duarte`) | LGPL-3.0 | instalado, **endpoint Microsoft bloqueado** |
+| Kokoro-82M q8 (local, `models/kokoro/`) | Apache-2.0 | **funciona offline** — vozes en/zh |
+| Piper (`pt_PT`) | MIT | bloqueado: as vozes vivem no HuggingFace ✗ |
+| espeak-ng (local) | GPLv3 | **funciona offline, com português** — voz sintética |
+
+Nesta rede o português sai em espeak-ng. O código não disfarça: `_kokoro(pt)`
+devolve `kokoro_onnx:sem_voz_pt` em vez de ler português com voz inglesa.
+Detalhes e hashes: [`docs/stack_audit.md`](docs/stack_audit.md).
 
 ## 🛡 Regras inegociáveis
 

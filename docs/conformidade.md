@@ -103,13 +103,24 @@ O `to_dict()` do veredicto passou a expor `points` (0–25 por eixo) e
 | Requisito | Estado |
 |---|---|
 | Roteiro viral (Hook + Corpo + CTA) via `llm_router` | cumpre |
-| Kokoro → Chatterbox → edge-tts | cumpre (`TTSRegistry.synthesize`) |
-| Vozes `pt-BR-Antonio`, `pt-PT-Duarte`, `en-US-Christopher` | cumpre (`TTS_VOICE_PT`/`EN`, configurável) |
+| Kokoro → Chatterbox → edge-tts | cumpre, **com `espeak_ng` no fim da cadeia** |
+| Vozes `pt-BR-Antonio`, `pt-PT-Duarte`, `en-US-Christopher` | cumpre (`TTS_VOICE_PT`/`EN`), mas **inalcançáveis nesta rede** |
+| Voz neural offline (sem rede) | Kokoro-82M q8 local para **en/zh**; **português só em espeak-ng** (robótico) |
 | Pexels/Pixabay verticais HD | cumpre |
 | Wan 2.2 / LongCat / LTX por API | cumpre (`ai_video_backends`) |
 | Render 1080×1920 com legendas sincronizadas | cumpre |
 | `youtube-copyright-scanner` + `eval_judge` antes da aprovação | cumpre (`audit_media` + juiz) |
 | Integração com a **API do MoneyPrinterTurbo** | **lacuna** |
+
+**Estado real do TTS (medido, não presumido).** `edge-tts` está instalado mas
+`speech.platform.bing.com` está bloqueado; o HuggingFace também, o que mata as
+vozes Piper `pt_PT`. Os pesos do Kokoro-82M estão no repositório
+(`models/kokoro/`, 107 MB, Apache-2.0), obtidos por rota npm e verificados por
+sha256 — ver `docs/stack_audit.md`. Consequência assumida: **nesta rede,
+português sai em espeak-ng** (voz robótica). O motor não mente: `_kokoro(pt)`
+devolve `kokoro_onnx:sem_voz_pt` em vez de ler PT com voz inglesa. O vídeo de
+exemplo `docs/assets/exemplo_short.mp4` foi produzido exactamente assim:
+juiz 88,0/100, `publishable: True`, `blockers: []`.
 
 O `MONEYPRINTER_BASE_URL` existe na configuração e o contentor está no
 `docker-compose`, mas o pipeline **não** chama a API do MoneyPrinterTurbo:
