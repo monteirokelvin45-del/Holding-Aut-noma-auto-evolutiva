@@ -280,7 +280,12 @@ jobs:
       - name: Verificar o APK gerado
         id: verificar
         run: |
+          # set -e NÃO: aqui queremos recolher tudo o que der, registando o que
+          # falhou em vez de abortar na primeira ferramenta ausente. Mas também
+          # não pode falhar em silêncio — foi o que aconteceu na execução
+          # anterior, com o build verde e o passo a sair com código 1.
           set -uo pipefail
+          PROBLEMAS=()
           APK=$(find android_apk/app/build/outputs/apk/debug -name '*.apk' | head -1)
           if [ -z "$APK" ]; then
             echo "::error::Nenhum APK de debug foi produzido"; exit 1
@@ -298,12 +303,21 @@ jobs:
             echo
             echo "**Identidade (aapt2):**"
             echo '```'
-            "$BT/aapt2" dump badging "$APK" 2>/dev/null \
-              | grep -E "^package|sdkVersion|targetSdkVersion|application-label|uses-permission" | head -12
+            if [ -x "$BT/aapt2" ]; then
+              "$BT/aapt2" dump badging "$APK" 2>&1 \
+                | grep -E "^package|sdkVersion|targetSdkVersion|application-label|uses-permission" | head -12 \
+                || echo "(aapt2 não devolveu identidade)"
+            else
+              echo "aapt2 ausente em $BT"; PROBLEMAS+=("aapt2 ausente")
+            fi
             echo '```'
             echo "**Assinatura (apksigner):**"
             echo '```'
-            "$BT/apksigner" verify --print-certs "$APK" 2>&1 | head -6
+            if [ -x "$BT/apksigner" ]; then
+              "$BT/apksigner" verify --print-certs "$APK" 2>&1 | head -6
+            else
+              echo "apksigner ausente em $BT"; PROBLEMAS+=("apksigner ausente")
+            fi
             echo '```'
             echo "**Conteúdo:**"
             echo '```'
@@ -330,8 +344,18 @@ jobs:
               echo '```'
             } >> "$SALIDA"
           fi
+            echo
+            echo "**Notas da verificação:**"
+            if [ ${#PROBLEMAS[@]} -eq 0 ]; then
+              echo "- todas as ferramentas responderam"
+            else
+              for p in "${PROBLEMAS[@]}"; do echo "- $p"; done
+            fi
+          } >> "$SALIDA"
+
           cat "$SALIDA" >> "$GITHUB_STEP_SUMMARY"
           cp "$SALIDA" /tmp/apk_evidence.md
+          echo "--- evidência ---"; cat "$SALIDA"
 
       - name: Publicar evidência do APK no PR
         if: ${{ success() && github.event_name == 'pull_request' }}
