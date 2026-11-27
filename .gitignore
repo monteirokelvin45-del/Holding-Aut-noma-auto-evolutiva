@@ -1,0 +1,58 @@
+# ==== Python ====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ==== Segredos ====
+.env
+.env.local
+*.pem
+*.p12
+*.keystore
+!android_apk/gradle/wrapper/gradle-wrapper.jar
+
+# ==== Dados voláteis (o cofre é versionado são apenas os 4 ficheiros de estado) ====
+vault_data/*.lock
+vault_data/*.tmp
+vault_data/media/
+vault_data/cache/
+vault_data/artifacts/
+vault_data/logs/
+vault_data/smoke_tests/
+vault_data/ledger.archive.json
+
+# ==== Testes / ferramentas ====
+.pytest_cache/
+.report.json
+
+# ==== Android / Gradle ====
+# O wrapper (gradle/wrapper/*) é versionado para builds reprodutíveis; só os
+# binários gerados/local.properties ficam de fora.
+android_apk/.gradle/
+android_apk/build/
+android_apk/app/build/
+android_apk/local.properties
+android_apk/.idea/
+android_apk/*.iml
+*.apk
+*.aab
+*.jks
+captures/
+
+# ==== Node / frontend auxiliar ====
+node_modules/
+dist/
+.next/
+out/
+
+# ==== Sistema ====
+.DS_Store
+Thumbs.db
+*.log

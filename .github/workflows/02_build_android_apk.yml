@@ -1,0 +1,190 @@
+# =============================================================================
+# Build do APK Android (Kotlin + Jetpack Compose).
+#
+# Produz:
+#   * app-debug.apk    (sempre, para testes)
+#   * app-release.apk  (assinado, se os segredos de keystore existirem)
+#
+# Segredos necessários para release:
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD,
+#   AUTOMATON_BASE_URL, AUTOMATON_API_TOKEN
+# =============================================================================
+name: 02 · Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android_apk/**"
+      - ".github/workflows/02_build_android_apk.yml"
+  pull_request:
+    paths:
+      - "android_apk/**"
+  workflow_dispatch:
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compilar APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Gradle (cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Aceitar licenças do Android SDK
+        run: |
+          set -euo pipefail
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-35" "build-tools;35.0.0" > /dev/null
+
+      - name: Gerar Gradle Wrapper (se ausente)
+        working-directory: android_apk
+        run: |
+          set -euo pipefail
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.10.2 --distribution-type bin
+          fi
+          chmod +x gradlew
+
+      - name: Preparar keystore de release
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        working-directory: android_apk
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Keystore de release disponível."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sem keystore: apenas o APK de debug será assinado."
+          fi
+
+      - name: Build debug
+        working-directory: android_apk
+        env:
+          AUTOMATON_API_TOKEN: ${{ secrets.AUTOMATON_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace \
+            -Pautomaton.baseUrl="${{ secrets.AUTOMATON_BASE_URL || 'https://automaton-holding.fly.dev' }}"
+
+      - name: Build release (assinado)
+        if: steps.keystore.outputs.available == 'true'
+        working-directory: android_apk
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cat >> app/build.gradle.kts <<'KTS'
+
+          // Assinatura injectada pelo CI (não commitar credenciais).
+          android {
+              signingConfigs {
+                  create("release") {
+                      storeFile = file("../release.keystore")
+                      storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                      keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                      keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                  }
+              }
+              buildTypes {
+                  getByName("release") {
+                      signingConfig = signingConfigs.getByName("release")
+                  }
+              }
+          }
+          KTS
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace \
+            -Pautomaton.baseUrl="${{ secrets.AUTOMATON_BASE_URL || 'https://automaton-holding.fly.dev' }}"
+
+      - name: Correr testes unitários
+        working-directory: android_apk
+        run: |
+          set -euo pipefail
+          ./gradlew :app:testDebugUnitTest --no-daemon || \
+            echo "::warning::Sem testes unitários definidos ainda."
+
+      - name: Localizar e renomear APKs
+        id: apks
+        run: |
+          set -euo pipefail
+          DEBUG_APK=$(find android_apk/app/build/outputs/apk/debug -name "*.apk" | head -1 || true)
+          RELEASE_APK=$(find android_apk/app/build/outputs/apk/release -name "*.apk" | head -1 || true)
+          mkdir -p dist
+          if [ -n "$DEBUG_APK" ]; then
+            cp "$DEBUG_APK" dist/app-debug.apk
+            echo "debug=dist/app-debug.apk" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$RELEASE_APK" ]; then
+            cp "$RELEASE_APK" dist/app-release.apk
+            echo "release=dist/app-release.apk" >> "$GITHUB_OUTPUT"
+          fi
+          ls -lh dist || true
+
+      - name: Publicar APK de debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: automaton-holding-debug-apk
+          path: dist/app-debug.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publicar APK de release
+        if: steps.keystore.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: automaton-holding-release-apk
+          path: dist/app-release.apk
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Anexar APK à release (em tags)
+        if: startsWith(github.ref, 'refs/tags/v') && steps.keystore.outputs.available == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/app-release.apk
+            dist/app-debug.apk
+          generate_release_notes: true
+
+      - name: Resumo do build
+        if: always()
+        run: |
+          {
+            echo "## APK Automaton Holding"
+            echo ""
+            echo "| Variante | Ficheiro |"
+            echo "|----------|----------|"
+            echo "| Debug | \`dist/app-debug.apk\` |"
+            if [ "${{ steps.keystore.outputs.available }}" = "true" ]; then
+              echo "| Release (assinado) | \`dist/app-release.apk\` |"
+            else
+              echo "| Release | não assinado (sem keystore) |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

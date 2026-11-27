@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="holding_background">#0B0F17</color>
+    <color name="holding_surface">#131A26</color>
+    <color name="holding_accent">#22D3EE</color>
+    <color name="holding_danger">#EF4444</color>
+    <color name="holding_success">#22C55E</color>
+</resources>

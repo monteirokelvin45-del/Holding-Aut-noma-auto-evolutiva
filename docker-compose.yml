@@ -1,0 +1,174 @@
+# =============================================================================
+# Automaton Holding Corp — orquestração completa
+#
+# Perfis:
+#   default      -> backend + postgres + redis
+#   observability-> + langfuse (web/worker) para tracing
+#   video        -> + MoneyPrinterTurbo (fábrica de vídeo)
+#   micro_saas   -> + contentor isolado para executar código gerado
+#
+# Uso:
+#   docker compose up -d                       # núcleo
+#   docker compose --profile observability up -d
+# =============================================================================
+name: automaton-holding
+
+services:
+  # ---------------------------------------------------------------- backend --
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: automaton-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      VAULT_DIR: /app/vault_data
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      LANGFUSE_HOST: http://langfuse:3000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./vault_data:/app/vault_data
+      - media_cache:/app/vault_data/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - holding
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # --------------------------------------------------------------- postgres --
+  postgres:
+    image: postgres:16-alpine
+    container_name: automaton-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-automaton}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-automaton_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-automaton}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-automaton}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - holding
+    # Não expor a base de dados ao exterior por omissão.
+    expose:
+      - "5432"
+
+  # ------------------------------------------------------------------ redis --
+  redis:
+    image: redis:7-alpine
+    container_name: automaton-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb",
+              "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - holding
+    expose:
+      - "6379"
+
+  # -------------------------------------------------------------- langfuse --
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: automaton-langfuse
+    restart: unless-stopped
+    profiles: ["observability"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-automaton}:${POSTGRES_PASSWORD:-automaton_local_dev}@postgres:5432/${POSTGRES_DB:-automaton}
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-troque-este-segredo-langfuse}
+      SALT: ${LANGFUSE_SALT:-troque-este-salt-langfuse}
+      NEXTAUTH_URL: http://localhost:3000
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "true"
+    ports:
+      - "3001:3000"
+    networks:
+      - holding
+
+  # --------------------------------------------------- MoneyPrinterTurbo ---
+  moneyprinter:
+    image: ghcr.io/harry0703/moneyprinterturbo:latest
+    container_name: automaton-moneyprinter
+    restart: unless-stopped
+    profiles: ["video"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8080
+      PEXELS_API_KEY: ${PEXELS_API_KEY:-}
+      PIXABAY_API_KEY: ${PIXABAY_API_KEY:-}
+    ports:
+      - "8081:8080"
+    volumes:
+      - moneyprinter_cache:/MoneyPrinterTurbo/storage
+    networks:
+      - holding
+
+  # --------------------------------- contentor isolado para código gerado ---
+  # O esquadrão de micro-SaaS gera FastAPI apps. Nunca correm no host da
+  # tesouraria: sobem aqui, sem rede de saída, com limites de CPU/memória.
+  micro_saas:
+    image: python:3.11-slim
+    container_name: automaton-micro-saas
+    profiles: ["micro_saas"]
+    working_dir: /srv
+    command: >
+      sh -c "pip install --no-cache-dir fastapi==0.115.6 uvicorn==0.34.0
+      pydantic==2.10.4 pytest==8.3.4 httpx==0.28.1 &&
+      uvicorn app:app --host 0.0.0.0 --port 8090"
+    volumes:
+      - ./vault_data/artifacts:/srv:ro
+    ports:
+      - "8090:8090"
+    networks:
+      - isolated
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 512m
+    cpus: 1.0
+
+networks:
+  holding:
+    driver: bridge
+  isolated:
+    driver: bridge
+    internal: true   # sem saída para a internet: código de terceiros fica contido
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_cache:
+  moneyprinter_cache:

@@ -1,0 +1,8 @@
+{
+  "engaged": false,
+  "reason": "estado_inicial",
+  "engaged_by": "system",
+  "engaged_at": null,
+  "released_at": null,
+  "version": 1
+}

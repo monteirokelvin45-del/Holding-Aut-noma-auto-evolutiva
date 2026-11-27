@@ -1,0 +1,202 @@
+# =============================================================================
+# Fluxo de tarefas da holding (CrewAI sequential + hierárquico no CEO).
+#
+# Cada tarefa declara: agente, entradas, saída esperada e a condição de
+# desbloqueio (`gate`). Os gates são aplicados em código por
+# governance/ceo_orchestrator.py — o YAML é a especificação auditável.
+#
+# Ordem: descoberta -> validação -> produção -> qualidade -> finanças -> RH.
+# =============================================================================
+
+version: 1
+defaults:
+  output_format: json
+  retries: 2
+  require_citations: true
+
+tasks:
+
+  # ------------------------------------------------------------------ CAMADA 1
+  scan_market:
+    description: >
+      Varrer GitHub Trending (últimos 30 dias), r/ SideProject, Entrepreneur e
+      PassiveIncome. Registar sinais com métricas observáveis (estrelas,
+      upvotes, comentários, recência) e citar a URL de origem.
+    agent: scout_hunter
+    inputs: []
+    output: |
+      {
+        "opportunities": [
+          {"title", "source", "url", "niche", "demand_score", "squad_type", "rationale"}
+        ]
+      }
+    gate: kill_switch_clear
+
+  filter_with_cemetery:
+    description: >
+      Cruzar cada oportunidade com post_mortem_memory.json. Descartar qualquer
+      ideia com similaridade >= 0.40 de um negócio morto e explicar a razão.
+    agent: scout_hunter
+    depends_on: [scan_market]
+    output: '{ "viable": [...], "blocked": [...] }'
+    gate: cemetery_check
+
+  design_smoke_test:
+    description: >
+      Para as melhores oportunidades viáveis, desenhar um Smoke Test gratuito:
+      landing page com CTA e 3 posts de teste. Definir meta de cliques e
+      conversão e prazo (3-7 dias).
+    agent: demand_validator
+    depends_on: [filter_with_cemetery]
+    output: |
+      {
+        "idea", "hypothesis", "cta", "price_anchor_usd",
+        "min_clicks", "min_conversion_rate", "window_days"
+      }
+    gate: cemetery_check
+
+  measure_demand:
+    description: >
+      Medir cliques e inscrições do smoke test. Aprovar produção apenas se
+      cliques >= meta E conversão >= meta dentro da janela.
+    agent: demand_validator
+    depends_on: [design_smoke_test]
+    output: '{ "decision": "passed|failed|expired", "metrics": {...} }'
+    gate: smoke_test_passed
+
+  # ------------------------------------------------------------------ CAMADA 2
+  produce_video_short:
+    description: >
+      Escrever guião de 9:16 com gancho de 3s, sintetizar voz com edge-tts ou
+      Kokoro-82M, obter footage licenciado (Pexels/Pixabay) e renderizar com
+      ffmpeg. Declarar todas as fontes.
+    agent: video_factory
+    depends_on: [measure_demand]
+    output: |
+      {
+        "title", "hook", "body", "cta", "hashtags",
+        "video_path", "audio_path", "duration_seconds", "sources"
+      }
+    gate: smoke_test_passed
+
+  produce_infoproduct:
+    description: >
+      Criar e-book, artigo SEO ou funil de afiliados com declaração de
+      afiliação obrigatória, links sponsored nofollow e zero promessas de
+      rendimento.
+    agent: infoproducts_affiliate
+    depends_on: [measure_demand]
+    output: |
+      {
+        "title", "product_type", "files", "price_usd",
+        "platform", "affiliate_declaration"
+      }
+    gate: smoke_test_passed
+
+  build_micro_saas:
+    description: >
+      Desenhar blueprint, gerar código FastAPI completo, escrever e executar
+      testes (QA) e validar estrutura em contentor isolado.
+    agent: micro_saas_dev
+    depends_on: [measure_demand]
+    output: |
+      {
+        "blueprint", "files", "qa": {"passed", "checks"}, "delivery"
+      }
+    gate: smoke_test_passed
+
+  # ------------------------------------------------------------------ CAMADA 3
+  audit_compliance:
+    description: >
+      Verificar licenças de todos os pacotes e mídias, e analisar os Termos de
+      Serviço das plataformas alvo. Bloquear em caso de violação crítica.
+    agent: legal_department
+    depends_on:
+      [produce_video_short, produce_infoproduct, build_micro_saas]
+    output: '{ "passed": bool, "reports": [...], "critical_count": int }'
+    gate: fail_closed
+
+  judge_quality:
+    description: >
+      Avaliar a entrega de 0 a 100 em retenção, clareza, qualidade técnica e
+      compliance. Abaixo de 85, devolver ao produtor com motivos accionáveis.
+    agent: eval_judge
+    depends_on: [audit_compliance]
+    output: |
+      {
+        "score", "passed", "axes": {"hook","clarity","technical","compliance"},
+        "findings", "suggestions"
+      }
+    gate: eval_min_85
+
+  # ------------------------------------------------------------------ CAMADA 4
+  record_revenue:
+    description: >
+      Registar receita bruta, reter 5% para impostos e dividir o líquido pelos
+      cofres segundo a fase actual (10/20/70, 10/40/50 ou 50/30/20).
+    agent: cfo_treasury
+    depends_on: [judge_quality]
+    output: |
+      {
+        "gross_usd", "tax_usd", "net_usd",
+        "owner_pocket_usd", "savings_vault_usd", "reinvestment_pool_usd", "phase"
+      }
+    gate: kill_switch_clear
+
+  execute_payout:
+    description: >
+      Converter o valor do bolso do Presidente em MZN e enviar via M-Pesa,
+      e-Mola, PayPal ou Wise. Obrigatório: aprovação biométrica prévia no APK
+      com montante e destino idênticos aos aprovados.
+    agent: cfo_treasury
+    depends_on: [record_revenue]
+    output: |
+      { "payout_id", "status", "channel", "amount_usd", "amount_mzn", "provider_ref" }
+    gate: approval_approved_and_biometric
+
+  audit_squads:
+    description: >
+      Calcular TTFD, CAC e LTV de cada esquadrão. Emitir ordem de abate se não
+      houver tracção em 7 dias ou o primeiro dólar em 21 dias.
+    agent: accountant_auditor
+    depends_on: [record_revenue]
+    output: |
+      { "verdicts": [...], "kill_orders": [...] }
+    gate: kill_switch_clear
+
+  review_agents:
+    description: >
+      Avaliar ROI de cada agente. Reescrever prompts abaixo do limiar de
+      sucesso ou propor substituição por repositório GitHub elegível.
+    agent: hr_department
+    depends_on: [audit_squads]
+    output: '{ "reviews": [...], "actions_needed": [...] }'
+    gate: kill_switch_clear
+
+  # ------------------------------------------------------------------ CAMADA 5
+  batch_approvals:
+    description: >
+      Agrupar todas as decisões pendentes num lote único com resumo. Apenas
+      itens críticos (saques, abates, gastos acima do limiar) interrompem o
+      Presidente imediatamente.
+    agent: ceo_orchestrator
+    depends_on: [execute_payout, audit_squads, review_agents]
+    output: |
+      {
+        "batch_id", "pending_count", "critical_count",
+        "total_pending_usd", "items"
+      }
+    gate: kill_switch_clear
+
+  report_cycle:
+    description: >
+      Publicar o relatório do ciclo no bus de eventos (APK LiveOps + Telegram),
+      gravar no cofre e devolver o resumo executivo.
+    agent: ceo_orchestrator
+    depends_on: [batch_approvals]
+    output: |
+      {
+        "cycle_id", "status", "duration_seconds",
+        "steps", "approvals_created", "summary"
+      }
+    gate: always

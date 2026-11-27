@@ -1,0 +1,60 @@
+# =============================================================================
+# Dependências do backend da Automaton Holding Corp.
+# Regra de licenças: MIT / Apache-2.0 / BSD / LGPL apenas.
+# Proibido: qualquer coisa com licença CC-BY-NC (ChatTTS, F5-TTS, ...).
+# =============================================================================
+
+# --- Núcleo da API -----------------------------------------------------------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# --- Orquestração de agentes (CrewAI, MIT) -----------------------------------
+# Instalado apenas quando se usa o motor CrewAI (o backend funciona sem ele
+# através do llm_router + esquadrões nativos). Ver config/agents.yaml.
+crewai==0.86.0
+crewai-tools==0.32.1
+
+# --- LLMs (clientes HTTP oficiais) -------------------------------------------
+groq==0.13.1
+google-generativeai==0.8.3
+ollama==0.4.5
+httpx==0.28.1
+
+# --- Segurança (LLM Guard, MIT) ----------------------------------------------
+llm-guard==0.3.16
+
+# --- Observabilidade (Langfuse, MIT) ----------------------------------------
+langfuse==2.57.0
+
+# --- Pesquisa / scraping (Crawl4AI, Apache-2.0; GPT-Researcher, Apache-2.0) --
+crawl4ai==0.4.247
+gpt-researcher==0.11.0
+
+# --- Voz neural comercialmente livre ----------------------------------------
+# edge-tts (LGPL) é o motor preferido; os restantes são opcionais.
+edge-tts==7.0.0
+kokoro==0.9.4
+soundfile==0.12.1
+# Chatterbox e Piper são instalados via extras (pesados / GPLv3 CLI):
+#   pip install chatterbox-tts
+#   apt-get install piper-tts
+# PROIBIDO: 2noise/ChatTTS e F5-TTS (CC-BY-NC).
+
+# --- Vídeo e mídia -----------------------------------------------------------
+imageio-ffmpeg==0.5.1
+moviepy==1.0.3
+Pillow==11.0.0
+
+# --- Pagamentos e criptografia ----------------------------------------------
+mpesa-python-sdk==1.2.0
+cryptography==44.0.0
+requests==2.32.3
+
+# --- Qualidade / ferramentas de licença (licscan, ScanCode, Apache-2.0) ------
+scancode-toolkit==32.3.5
+licscan==0.2.1
+
+# --- Testes ----------------------------------------------------------------
+pytest==8.3.4
+pytest-asyncio==0.25.0
