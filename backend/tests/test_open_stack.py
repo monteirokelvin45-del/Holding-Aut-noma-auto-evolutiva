@@ -651,3 +651,49 @@ def test_espeak_ng_escreve_wav_com_amostras_nao_silenciosas(tmp_path):
         assert wav.getframerate() == 22050
         amostras = wav.readframes(wav.getnframes())
     assert any(byte != 0 for byte in amostras), "áudio silencioso não serve"
+
+
+# --------------------------------------------------------------------------- #
+# 8. Kill switch: o botão vermelho do APK tem de parar as escritas
+# --------------------------------------------------------------------------- #
+def test_kill_switch_bloqueia_escritas_e_libera_o_proprio_release(client, auth_headers):
+    """Regressão: o kill switch travava ciclos e gastos de agentes, mas as
+    rotas de escrita da API continuavam a aceitar pedidos — o botão vermelho
+    do APK não parava nada. Agora devolve 423, excepto o próprio release."""
+    from backend.core.security_guard import kill_switch
+
+    kill_switch.release(actor="pytest")
+    try:
+        assert client.post("/kill-switch/engage", json={"reason": "pytest"}, headers=auth_headers).status_code == 200
+        assert kill_switch.status()["engaged"] is True
+
+        # Leituras continuam a funcionar: o APK tem de ver o estado.
+        assert client.get("/health", headers=auth_headers).status_code == 200
+        assert client.get("/treasury", headers=auth_headers).status_code == 200
+
+        # Escritas recusadas.
+        bloqueado = client.post(
+            "/approvals",
+            json={"title": "Pedido durante paragem", "kind": "custom", "amount_usd": 1.0},
+            headers=auth_headers,
+        )
+        assert bloqueado.status_code == 423, bloqueado.text
+        assert bloqueado.json()["error"] == "KILL_SWITCH_ACTIVE"
+
+        # O release não pode ser bloqueado pelo próprio bloqueio.
+        assert client.post("/kill-switch/release", headers=auth_headers).status_code == 200
+        assert kill_switch.status()["engaged"] is False
+    finally:
+        kill_switch.release(actor="pytest-cleanup")
+
+
+def test_kill_switch_permite_escritas_depois_de_libertar(client, auth_headers):
+    from backend.core.security_guard import kill_switch
+
+    kill_switch.release(actor="pytest")
+    resposta = client.post(
+        "/approvals",
+        json={"title": "Compra normal", "kind": "custom", "amount_usd": 12.0},
+        headers=auth_headers,
+    )
+    assert resposta.status_code == 200, resposta.text

@@ -136,6 +136,55 @@ app.add_middleware(
 
 
 # ==========================================================================
+# Kill switch (bloqueio global de operações)
+# ==========================================================================
+# Caminhos que continuam a funcionar com o sistema parado. Sem eles, seria
+# impossível desligar o interruptor: o APK precisaria de chamar
+# /kill-switch/release e era bloqueado pelo próprio bloqueio.
+_KILL_SWITCH_EXEMPT_PREFIXES = (
+    "/kill-switch",          # ler estado, accionar e libertar
+    "/health",               # liveness: o APK precisa de saber o estado
+    "/docs", "/redoc", "/openapi.json",
+    "/ws/live",              # stream de eventos: é como o APK vê o bloqueio
+    "/events",
+    "/telegram/webhook",     # o comando /release chega por aqui
+)
+_KILL_SWITCH_EXEMPT_EXACT = {"/"}
+
+_READ_ONLY_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
+@app.middleware("http")
+async def kill_switch_guard(request: Request, call_next):
+    """Recusa **escritas** enquanto o kill switch estiver accionado.
+
+    O interruptor já travava ciclos e os gastos dos agentes, mas as rotas de
+    escrita da API (aprovações, saques, abates, ciclos) continuavam a aceitar
+    pedidos com o sistema «morto» — o botão vermelho do APK não parava nada
+    de facto. Devolve 423 Locked, com o motivo no corpo.
+
+    Leituras continuam permitidas: o APK tem de conseguir ver o estado para
+    mostrar ao Presidente porque é que nada acontece.
+    """
+    path = request.url.path
+    method = request.method.upper()
+
+    if method in _READ_ONLY_METHODS:
+        return await call_next(request)
+    if path in _KILL_SWITCH_EXEMPT_EXACT:
+        return await call_next(request)
+    if any(path == p or path.startswith(p + "/") for p in _KILL_SWITCH_EXEMPT_PREFIXES):
+        return await call_next(request)
+    try:
+        kill_switch.ensure_operational(f"{method} {path}")
+    except KillSwitchActive as exc:
+        log.warning("Pedido recusado pelo kill switch: %s %s", method, path)
+        return JSONResponse(status_code=exc.http_status, content=exc.to_dict())
+
+    return await call_next(request)
+
+
+# ==========================================================================
 # Autenticação
 # ==========================================================================
 def require_token(x_automaton_token: Optional[str] = Header(default=None)) -> None:

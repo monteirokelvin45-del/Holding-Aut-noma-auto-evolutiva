@@ -127,14 +127,29 @@ def test_juiz_reprova_copy_enganosa_e_aprova_boa(client) -> None:
 
 
 def test_kill_switch_congela_o_ciclo(client) -> None:
+    """Com o interruptor accionado, o ciclo é recusado à entrada.
+
+    Antes o sistema deixava o pedido entrar e devolvia 200 com
+    ``status="aborted"``; hoje o middleware recusa com 423 antes de tocar em
+    nada. É o comportamento correcto para um botão de emergência: não se
+    começa trabalho para o abortar a seguir.
+    """
     engage = client.post("/kill-switch/engage", json={"reason": "teste automatizado"})
     assert engage.status_code == 200
     assert engage.json()["state"]["engaged"] is True
 
+    try:
+        cycle = client.post("/cycle/run", json={"force_scan": False, "produce": False})
+        assert cycle.status_code == 423
+        assert cycle.json()["error"] == "KILL_SWITCH_ACTIVE"
+
+        # Leituras continuam a responder — o APK mostra o estado.
+        assert client.get("/system/status").status_code == 200
+    finally:
+        release = client.post("/kill-switch/release")
+        assert release.status_code == 200
+        assert release.json()["state"]["engaged"] is False
+
+    # Libertado o sistema, o ciclo volta a correr.
     cycle = client.post("/cycle/run", json={"force_scan": False, "produce": False})
     assert cycle.status_code == 200
-    assert cycle.json()["status"] == "aborted"
-
-    release = client.post("/kill-switch/release")
-    assert release.status_code == 200
-    assert release.json()["state"]["engaged"] is False
