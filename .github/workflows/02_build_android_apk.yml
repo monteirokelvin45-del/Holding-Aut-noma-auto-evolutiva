@@ -51,15 +51,27 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # setup-gradle NÃO instala o Gradle quando o repositório não tem wrapper
-      # — só trata de cache. Sem o input gradle-version, o passo seguinte
-      # falhava com "gradle: command not found" (exit 127), que foi o que
-      # aconteceu na primeira execução. Com ele, a distribuição é descarregada
-      # de services.gradle.org dentro do runner (aí a rede é aberta).
-      - name: Configurar Gradle (instalação + cache)
+      # setup-gradle trata de cache; quando recebe gradle-version também
+      # instala — mas só em cache miss, o que tornava o passo seguinte
+      # dependente de um detalhe invisível. O Gradle passa a ser descarregado
+      # explicitamente de services.gradle.org (rede aberta no runner), de
+      # forma determinística e verificável com --version.
+      - name: Instalar Gradle 8.10.2
+        run: |
+          set -euo pipefail
+          VERSION=8.10.2
+          URL="https://services.gradle.org/distributions/gradle-${VERSION}-bin.zip"
+          echo "A descarregar $URL"
+          curl -fsSL --retry 3 --retry-delay 2 "$URL" -o /tmp/gradle.zip
+          ls -lh /tmp/gradle.zip
+          sudo mkdir -p /opt/gradle && sudo unzip -q /tmp/gradle.zip -d /opt/gradle
+          echo "/opt/gradle/gradle-${VERSION}/bin" >> "$GITHUB_PATH"
+          export PATH="/opt/gradle/gradle-${VERSION}/bin:$PATH"
+          gradle --version
+
+      - name: Configurar cache do Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.10.2"
           cache-read-only: false
 
       - name: Aceitar licenças do Android SDK
@@ -74,11 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ ! -f gradlew ]; then
-            if ! command -v gradle >/dev/null 2>&1; then
-              echo "::error::gradle não está no PATH e o repositório não tem wrapper."
-              echo "Sem uma destas duas coisas não há build possível."
-              exit 1
-            fi
+            echo "Sem wrapper no repositório: a gerá-lo com a distribuição instalada."
             gradle wrapper --gradle-version 8.10.2 --distribution-type bin
           fi
           chmod +x gradlew
