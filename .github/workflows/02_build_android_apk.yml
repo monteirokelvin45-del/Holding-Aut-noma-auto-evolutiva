@@ -284,8 +284,13 @@ jobs:
           # falhou em vez de abortar na primeira ferramenta ausente. Mas também
           # não pode falhar em silêncio — foi o que aconteceu antes, com o
           # build verde e o passo a sair com código 1 sem explicar nada.
-          set -uo pipefail
+          set -uo pipefail  # NÃO -e: queremos ver todos os problemas de uma vez
+          echo "SHELL=$(readlink -f /bin/sh)  BASH=${BASH_VERSION:-?}"
+          echo "PWD=$(pwd)"
+          echo "ANDROID_HOME=${ANDROID_HOME:-<vazio>}  ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<vazio>}"
+          ls android_apk/app/build/outputs/apk/debug/ 2>&1 | head -5
           APK=$(find android_apk/app/build/outputs/apk/debug -name '*.apk' | head -1)
+          echo "APK='$APK'"
           if [ -z "$APK" ]; then
             echo "::error::Nenhum APK de debug foi produzido"
             exit 1
