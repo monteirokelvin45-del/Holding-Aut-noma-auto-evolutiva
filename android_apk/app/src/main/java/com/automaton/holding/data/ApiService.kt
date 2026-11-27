@@ -453,9 +453,29 @@ data class KillSwitchBody(val reason: String)
 // Cliente REST + WebSocket
 // ==========================================================================
 class ApiService(
-    private val baseUrl: String = BuildConfig.BASE_URL.trimEnd('/'),
-    private val token: String = BuildConfig.API_TOKEN,
+    baseUrl: String = BuildConfig.BASE_URL.trimEnd('/'),
+    token: String = BuildConfig.API_TOKEN,
 ) {
+    /**
+     * Endereço e token são mutáveis: o utilizador configura-os no telefone
+     * (ecrã de ligação) e a app reabre o stream com o novo valor, sem
+     * reinstalar nada. Tudo o que usa estes campos lê-os no momento da
+     * chamada, por isso a troca é atómica do ponto de vista do chamador.
+     */
+    @Volatile
+    var baseUrl: String = baseUrl.trimEnd('/')
+        private set
+
+    @Volatile
+    var token: String = token
+        private set
+
+    fun reconfigurar(novoBaseUrl: String, novoToken: String) {
+        baseUrl = novoBaseUrl.trim().trimEnd('/')
+        token = novoToken.trim()
+        Log.i(TAG, "ApiService reconfigurado para $baseUrl")
+    }
+
     val json: Json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
@@ -706,3 +726,10 @@ class ApiService(
 /** Erro HTTP com o corpo devolvido pelo backend (útil para mensagens ao Presidente). */
 class ApiException(val code: Int, val payload: String) :
     IOException("HTTP $code: $payload")
+
+    /**
+     * Endereço actual, para diagnóstico. O ViewModel mostra-o no ecrã de
+     * ligação em vez de `BuildConfig.BASE_URL`: o que interessa ao utilizador
+     * é onde a app está a tentar ligar-se *agora*.
+     */
+    fun endpointAtual(): String = baseUrl

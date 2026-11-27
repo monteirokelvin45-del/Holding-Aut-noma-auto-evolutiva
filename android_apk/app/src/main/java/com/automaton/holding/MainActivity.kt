@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -65,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.automaton.holding.data.BiometricAuthManager
+import com.automaton.holding.ui.ConnectionDialog
 import com.automaton.holding.ui.HoldingViewModel
 import com.automaton.holding.ui.screens.ApprovalDeckScreen
 import com.automaton.holding.ui.screens.GovernanceScreen
@@ -124,6 +127,23 @@ fun HoldingApp(
     val error by viewModel.error.collectAsState()
     val toast by viewModel.toast.collectAsState()
     val busyAction by viewModel.busyAction.collectAsState()
+
+    val endpoint by viewModel.endpoint.collectAsState()
+    val ligado by viewModel.ligado.collectAsState()
+    val testando by viewModel.testando.collectAsState()
+    val diagnostico by viewModel.diagnostico.collectAsState()
+
+    // Abre sozinho quando o primeiro refresh falhou: um ecrã vazio sem
+    // explicação é o pior resultado possível para quem instala o APK.
+    var mostrarLigacao by remember { mutableStateOf(false) }
+    var abriuAutomaticamente by remember { mutableStateOf(false) }
+    LaunchedEffect(status, loading, ligado) {
+        val semDados = status == null && !loading
+        if (semDados && ligado != true && !abriuAutomaticamente) {
+            mostrarLigacao = true
+            abriuAutomaticamente = true
+        }
+    }
 
     var tab by remember { mutableStateOf(HoldingTab.LIVE_OPS) }
     var showKillDialog by remember { mutableStateOf(false) }
@@ -191,6 +211,20 @@ fun HoldingApp(
                     }
                 },
                 actions = {
+                    // Indicador/troca de endpoint: verde quando o backend
+                    // respondeu, vermelho quando não, cinza quando por testar.
+                    IconButton(onClick = { mostrarLigacao = true }) {
+                        Icon(
+                            imageVector = if (ligado == false) Icons.Filled.WifiOff
+                            else Icons.Filled.Wifi,
+                            contentDescription = "Ligação ao backend: $endpoint",
+                            tint = when (ligado) {
+                                true -> HoldingsColors.Accent
+                                false -> HoldingsColors.Danger
+                                null -> HoldingsColors.TextMuted
+                            },
+                        )
+                    }
                     IconButton(onClick = { viewModel.refreshAll() }) {
                         if (loading) {
                             CircularProgressIndicator(
@@ -384,6 +418,19 @@ fun HoldingApp(
         )
     }
 
+    // ---------------- Ecrã de ligação ao backend ----------------
+    if (mostrarLigacao) {
+        ConnectionDialog(
+            endpointAtual = endpoint,
+            tokenAtual = tokenAtualDoModelo(viewModel),
+            ligado = ligado,
+            testando = testando,
+            diagnostico = diagnostico,
+            onTestar = { url, tk -> viewModel.testarELigar(url, tk) },
+            onFechar = { mostrarLigacao = false },
+        )
+    }
+
     // Aviso persistente quando o sistema está congelado.
     AnimatedVisibility(visible = killEngaged) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -404,3 +451,10 @@ fun HoldingApp(
         }
     }
 }
+
+/**
+ * O token nunca é mostrado no ecrã de ligação por omissão: expô-lo num ecrã
+ * que se abre no meio do trabalho é um risco desnecessário. O campo começa
+ * vazio e só substitui o existente se o utilizador escrever algo.
+ */
+private fun tokenAtualDoModelo(viewModel: HoldingViewModel): String = ""

@@ -1,11 +1,14 @@
 package com.automaton.holding.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.automaton.holding.data.ApiException
 import com.automaton.holding.data.AiCatalog
 import com.automaton.holding.data.ApiService
+import com.automaton.holding.data.EndpointRules
+import com.automaton.holding.data.EndpointSettings
 import com.automaton.holding.data.ApprovalItem
 import com.automaton.holding.data.GovernanceResponse
 import com.automaton.holding.data.KillSwitchState
@@ -20,6 +23,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonObject
 import org.json.JSONObject
 
@@ -36,7 +42,29 @@ import org.json.JSONObject
  */
 class HoldingViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val api = ApiService()
+    private val contexto: Context = application.applicationContext
+
+    // O ApiService arranca com o que estiver guardado no telefone (ou com a
+    // sugestão do build, se nunca foi configurado).
+    private val api = ApiService(
+        baseUrl = EndpointSettings.lerUrl(contexto),
+        token = EndpointSettings.lerToken(contexto),
+    )
+
+    /** Endereço actualmente em uso (mostrado no ecrã de ligação). */
+    private val _endpoint = MutableStateFlow(api.endpointAtual())
+    val endpoint: StateFlow<String> = _endpoint.asStateFlow()
+
+    /** Verdadeiro quando o backend respondeu ao último teste. */
+    private val _ligado = MutableStateFlow<Boolean?>(null)
+    val ligado: StateFlow<Boolean?> = _ligado.asStateFlow()
+
+    private val _testando = MutableStateFlow(false)
+    val testando: StateFlow<Boolean> = _testando.asStateFlow()
+
+    /** Leitura mais recente do /health, para diagnóstico no ecrã. */
+    private val _diagnostico = MutableStateFlow<String?>(null)
+    val diagnostico: StateFlow<String?> = _diagnostico.asStateFlow()
 
     private val _status = MutableStateFlow<SystemStatusResponse?>(null)
     val status: StateFlow<SystemStatusResponse?> = _status.asStateFlow()
@@ -139,10 +167,122 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
         // quem instala o APK precisa de saber que a URL foi fixada no build.
         is java.net.UnknownHostException,
         is java.net.ConnectException ->
-            "não consigo chegar a ${com.automaton.holding.BuildConfig.BASE_URL} " +
-                "(verifique a rede; o endereço vem do build)"
+            "não consigo chegar a $baseUrl (toque no ícone de ligação " +
+                "no topo para mudar o endereço)"
         is java.net.SocketTimeoutException -> "o backend não respondeu a tempo"
         else -> error.message ?: "erro de rede"
+    }
+
+    /** Endereço em uso; lido de `api` porque pode mudar em execução. */
+    private val baseUrl: String get() = api.baseUrl
+
+    // ------------------------------------------------------- ligação ao backend
+    /**
+     * Testa o endereço **antes** de o adoptar.
+     *
+     * Guardar primeiro e descobrir depois que estava errado deixava o
+     * utilizador sem backend e sem saber porquê. Aqui o teste é explícito:
+     * `GET /health`, e só se responder é que se grava e se recomeça o stream.
+     * Não grava nada em caso de falha.
+     */
+    fun testarELigar(endereco: String, token: String) {
+        viewModelScope.launch {
+            _testando.value = true
+            _diagnostico.value = null
+            _ligado.value = null
+
+            val validacao = EndpointRules.validar(endereco)
+            if (validacao is EndpointRules.Validacao.Erro) {
+                _diagnostico.value = validacao.motivo
+                _ligado.value = false
+                _testando.value = false
+                return@launch
+            }
+            val url = (validacao as EndpointRules.Validacao.Ok).url
+
+            val sonda = ApiService(baseUrl = url, token = token)
+            val inicio = System.currentTimeMillis()
+            // Com 20 s de connectTimeout, um IP errado na mesma Wi-Fi ficava
+            // 20 s a "testar…". Uma sonda de saúde deve desistir depressa; o
+            // timeout normal do cliente serve para tráfego, não para isto.
+            val resultado = withContext(Dispatchers.IO) {
+                withTimeoutOrNull(8_000) { sonda.health() }
+                    ?: Result.failure(
+                        java.net.SocketTimeoutException("sonda de /health excedeu 8 s")
+                    )
+            }
+            val ms = System.currentTimeMillis() - inicio
+
+            resultado
+                .onSuccess { saude ->
+                    // Só agora se adopta o endereço — respondeu de facto.
+                    EndpointSettings.gravar(contexto, url, token)
+                    api.reconfigurar(url, token)
+                    _endpoint.value = api.endpointAtual()
+                    _ligado.value = true
+                    _diagnostico.value = buildString {
+                        append("ligado em ${ms} ms")
+                        if (!saude.status.isNullOrBlank()) append(" · ${saude.status}")
+                        if (!saude.version.isNullOrBlank()) append(" · v${saude.version}")
+                        if (token.isBlank()) append(" · sem token (só leitura)")
+                    }
+                    reiniciarTudo()
+                }
+                .onFailure {
+                    _ligado.value = false
+                    _diagnostico.value = explicarFalhaDeLigacao(url, it)
+                }
+            _testando.value = false
+        }
+    }
+
+    /**
+     * Falhas de ligação explicadas por causa provável, em vez de
+     * «erro de rede». Cada caso corresponde a um problema real que o
+     * utilizador pode resolver sozinho.
+     */
+    private fun explicarFalhaDeLigacao(url: String, erro: Throwable): String {
+        val alvo = url.substringAfter("://")
+        return when (erro) {
+            is java.net.UnknownHostException ->
+                "não encontro \"$alvo\". Confirme o endereço e que o telemóvel " +
+                    "está na mesma rede Wi-Fi do computador."
+            is java.net.ConnectException ->
+                "\"$alvo\" recusou a ligação. O backend está a correr? Está " +
+                    "publicado com --host 0.0.0.0 (e não 127.0.0.1)?"
+            is java.net.SocketTimeoutException ->
+                "\"$alvo\" não respondeu a tempo. Firewall do computador a " +
+                    "bloquear a porta?"
+            is ApiException -> when (erro.code) {
+                401 -> "o backend respondeu, mas o token não serve (401)."
+                404 -> "o backend respondeu, mas /health não existe (404). " +
+                    "É o serviço certo?"
+                else -> "o backend respondeu HTTP ${erro.code}."
+            }
+            else -> {
+                val msg = erro.message.orEmpty()
+                if (errPatternCleartext.containsMatchIn(msg)) {
+                    "o Android bloqueou HTTP em claro para \"$alvo\". " +
+                        "Use https:// ou um endereço da rede local."
+                } else {
+                    "falhou: ${msg.ifBlank { erro::class.simpleName ?: "erro" }}"
+                }
+            }
+        }
+    }
+
+    private val errPatternCleartext =
+        Regex("Cleartext|cleartext", RegexOption.IGNORE_CASE)
+
+    /** Recomeça polling e stream com o endpoint actual. */
+    private fun reiniciarTudo() {
+        pollJob?.cancel()
+        streamJob?.cancel()
+        _events.value = emptyList()
+        lastSequence = 0L
+        refreshAll()
+        startPolling()
+        startLiveStream()
     }
 
     private fun startPolling() {
