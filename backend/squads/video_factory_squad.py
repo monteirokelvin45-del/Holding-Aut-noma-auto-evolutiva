@@ -45,7 +45,7 @@ from .squad_base import BaseSquad, SquadRunResult
 
 log = get_logger("squads.video")
 
-ALLOWED_TTS = {"edge_tts", "kokoro", "chatterbox", "piper"}
+ALLOWED_TTS = {"edge_tts", "kokoro", "chatterbox", "piper", "espeak_ng"}
 FORBIDDEN_TTS = {"chattts", "f5_tts", "f5-tts"}
 SAFE_FOOTAGE_SOURCES = {"pexels", "pixabay", "generated", "own", "local"}
 
@@ -126,6 +126,10 @@ class TTSRegistry:
             "kokoro": self._module("kokoro") or self._module("kokoro_onnx"),
             "chatterbox": self._module("chatterbox"),
             "piper": shutil.which("piper") is not None,
+            # espeak-ng (GPLv3) via libespeakng-loader: síntese offline, inclui
+            # português. Usado como último recurso quando não há rede nem
+            # pesos neurais — a voz é robótica, e isso fica declarado.
+            "espeak_ng": self._module("espeakng_loader"),
         }
 
     @staticmethod
@@ -164,6 +168,10 @@ class TTSRegistry:
             ok, message = self._piper(text, out_path)
             if ok:
                 return True, "piper"
+        if self._module("espeakng_loader"):
+            ok, message = self._espeak_ng(text, out_path, language)
+            if ok:
+                return True, "espeak_ng"
 
         return False, (
             "Nenhum motor TTS disponível. Instalar 'edge-tts' (LGPL) "
@@ -190,7 +198,101 @@ class TTSRegistry:
             return False, f"edge_tts:{exc}"
 
     @staticmethod
+    def _espeak_ng(text: str, out_path: Path, language: str) -> Tuple[bool, str]:
+        """Síntese offline com espeak-ng (GPLv3, via ``espeakng-loader``).
+
+        É o único motor que funciona **sem rede e sem pesos neurais**, e o único
+        com voz portuguesa instalada neste ambiente. A qualidade é robótica —
+        por isso vem por último e o motor devolvido diz ``espeak_ng`` para o
+        registo ficar honesto sobre o que gerou o áudio.
+        """
+        try:
+            import array
+            import ctypes as C
+            import wave
+
+            import espeakng_loader  # type: ignore
+
+            lib = C.CDLL(espeakng_loader.get_library_path())
+            rate = lib.espeak_Initialize(
+                0x02, 0, espeakng_loader.get_data_path().encode(), 0
+            )
+            if rate <= 0:
+                return False, "espeak_ng:init_falhou"
+            voice = b"pt" if language.startswith("pt") else b"en"
+            if lib.espeak_SetVoiceByName(voice) != 0:
+                return False, f"espeak_ng:voz_{voice.decode()}_ausente"
+
+            buffer = array.array("h")
+            callback_type = C.CFUNCTYPE(
+                C.c_int, C.POINTER(C.c_short), C.c_int, C.c_uint, C.c_void_p
+            )
+
+            @callback_type
+            def on_wave(wav, count, events, user):  # noqa: ANN001
+                if wav and count > 0:
+                    buffer.extend(wav[i] for i in range(count))
+                return 0
+
+            lib.espeak_SetSynthCallback(on_wave)
+            payload = text.encode("utf-8")
+            rc = lib.espeak_Synth(
+                payload, len(payload) + 1, 0, 0, 0, 0, None, None
+            )
+            if rc != 0 or not buffer:
+                return False, f"espeak_ng:rc_{rc}"
+            with wave.open(str(out_path), "wb") as handle:
+                handle.setnchannels(1)
+                handle.setsampwidth(2)
+                handle.setframerate(rate)
+                handle.writeframes(buffer.tobytes())
+            return True, "espeak_ng:ok"
+        except Exception as exc:
+            return False, f"espeak_ng:{exc}"
+
+    #: Modelo e vozes descarregados em ``models/kokoro/`` (ver docs/stack_audit.md).
+    KOKORO_MODEL = Path("models/kokoro/kokoro-v1.0.q8.onnx")
+    KOKORO_VOICES = Path("models/kokoro/voices-v1.0.npz")
+
+    @staticmethod
+    def _configure_phonemizer() -> Optional[str]:
+        """Aponta o ``phonemizer`` para a ``libespeak-ng.so`` do espeakng-loader.
+
+        O Kokoro converta texto em fonemas via ``phonemizer``, que por omissão
+        procura a espeak-ng *no sistema*. Não há binário nem ``.so`` em
+        ``/usr/lib`` neste ambiente: só existe a cópia que vem dentro do
+        pacote ``espeakng_loader``. Sem esta configuração o ``phonemizer``
+        instancia a biblioteca do sistema e falha com
+        ``language "en" is not supported by the espeak backend`` — mensagem
+        enganadora, porque o problema é a biblioteca não estar carregada.
+
+        Devolve ``None`` em caso de sucesso, ou a razão da falha.
+        """
+        try:
+            import espeakng_loader  # type: ignore
+            from phonemizer.backend.espeak.wrapper import (  # type: ignore
+                EspeakWrapper,
+            )
+        except ImportError as exc:
+            return f"phonemizer_indisponivel:{exc}"
+        if getattr(TTSRegistry, "_phonemizer_ok", False):
+            return None
+        try:
+            EspeakWrapper.set_library(espeakng_loader.get_library_path())
+            EspeakWrapper.set_data_path(espeakng_loader.get_data_path())
+        except Exception as exc:  # noqa: BLE001 - reportar, não rebentar
+            return f"phonemizer_config:{exc}"
+        TTSRegistry._phonemizer_ok = True
+        return None
+
+    @staticmethod
     def _kokoro(text: str, out_path: Path, language: str) -> Tuple[bool, str]:
+        """Síntese offline com Kokoro-82M (Apache-2.0, ONNX int8).
+
+        Duas variantes: ``kokoro`` (PyTorch, precisa de pesos do HuggingFace) e
+        ``kokoro_onnx`` (ONNX, corre só com os ficheiros locais). A segunda é a
+        que funciona sem rede — e é a que existe neste repositório.
+        """
         try:
             import numpy as np  # type: ignore
 
@@ -199,7 +301,10 @@ class TTSRegistry:
 
                 pipeline = KPipeline(lang_code="p" if language.startswith("pt") else "a")
                 chunks = [
-                    audio for _, _, audio in pipeline(text, voice="pf_dora" if language.startswith("pt") else "af_heart")
+                    audio
+                    for _, _, audio in pipeline(
+                        text, voice="pf_dora" if language.startswith("pt") else "af_heart"
+                    )
                 ]
                 if not chunks:
                     return False, "kokoro:sem_audio"
@@ -210,8 +315,37 @@ class TTSRegistry:
             except ImportError:
                 from kokoro_onnx import Kokoro  # type: ignore
 
-                kokoro = Kokoro("kokoro-v1.0.onnx", "voices-v1.0.bin")
-                samples, rate = kokoro.create(text, voice="pf_dora", speed=1.0, lang="pt-pt")
+                model = TTSRegistry.KOKORO_MODEL
+                voices = TTSRegistry.KOKORO_VOICES
+                if not model.is_file() or not voices.is_file():
+                    return False, (
+                        "kokoro_onnx:pesos_ausentes (esperado "
+                        f"{model} + {voices})"
+                    )
+                # O phonemizer tem de saber onde está a libespeak-ng.so antes
+                # do primeiro ``create``; caso contrário o Kokoro nem arranca.
+                phonemizer_error = TTSRegistry._configure_phonemizer()
+                if phonemizer_error:
+                    return False, f"kokoro_onnx:{phonemizer_error}"
+                kokoro = Kokoro(str(model), str(voices))
+                # Esta exportação espera style com rank 2 ([1, 256]); a lib
+                # devolve [256] e o onnxruntime recusa. Compat explícita.
+                kokoro._style_for = (  # noqa: SLF001 - correcção de forma
+                    lambda voice, length: np.asarray(
+                        voice[min(length, len(voice)) - 1], dtype=np.float32
+                    ).reshape(1, 256)
+                )
+                # Não há vozes portuguesas no pacote de vozes v1.0 (só en/zh).
+                # Usar uma voz inglesa a ler português sairia incompreensível:
+                # devolvemos falha explícita e o registo passa ao próximo motor.
+                if language.startswith("pt"):
+                    return False, (
+                        "kokoro_onnx:sem_voz_pt (o pacote voices-v1.0 só tem "
+                        "vozes en/zh; usar edge-tts para português)"
+                    )
+                samples, rate = kokoro.create(
+                    text, voice="af_heart", speed=1.0, lang="en-us"
+                )
                 import soundfile as sf  # type: ignore
 
                 sf.write(str(out_path), samples, rate)

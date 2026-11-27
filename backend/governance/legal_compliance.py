@@ -528,6 +528,11 @@ class LegalCompliance:
             "stable_diffusion", "sdxl", "sd3.5", "sd35", "wan2.2", "wan22",
             "longcat", "kandinsky", "ltx", "ltx-video", "kokoro", "kokoro_82m",
             "edge_tts", "edge-tts", "chatterbox", "piper", "public_domain",
+            # espeak-ng: GPLv3 (permitida pela regra da holding: MIT/Apache/
+            # BSD/LGPL/GPL). O áudio gerado NÃO herda a licença — é saída de
+            # programa, não obra derivada do motor. Usado só como último
+            # recurso offline; o pacote regista o motor que sintetizou.
+            "espeak_ng", "espeak-ng", "espeak",
             "public-domain", "moneyprinter", "moneyprinterturbo", "shortgpt",
             "ffmpeg", "sd", "sdxl_turbo",
         }
