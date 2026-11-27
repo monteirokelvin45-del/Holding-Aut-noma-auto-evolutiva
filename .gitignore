@@ -61,6 +61,20 @@ models/*/*.npz
 dist/*.apk
 dist/SHA256SUMS.txt
 
+# Android platform-tools (adb/fastboot): 22 MB, reconstruíveis por
+# scripts/fetch_adb.sh com verificação sha256.
+tools/adb
+tools/fastboot
+tools/etc1tool
+tools/hprof-conv
+tools/make_f2fs
+tools/make_f2fs_casefold
+tools/mke2fs
+tools/sqlite3
+tools/lib64/
+tools/index.js
+tools/package.json
+
 # ==== Node / frontend auxiliar ====
 node_modules/
 dist/
