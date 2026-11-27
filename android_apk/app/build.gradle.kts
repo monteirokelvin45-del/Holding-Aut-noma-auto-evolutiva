@@ -44,13 +44,24 @@ android {
     buildTypes {
         release {
             // Um release a apontar para o emulador (ou sem URL) não serve.
+            //
+            // IMPORTANTE: este bloco é avaliado na fase de configuração, que
+            // corre para *qualquer* tarefa — inclusive assembleDebug. Lançar
+            // aqui sem mais partia os builds de debug quando a URL não estava
+            // definida. Só falha se alguém pedir efectivamente um release.
             if (urlExplicita.isNullOrBlank()) {
-                throw GradleException(
-                    "Build de release sem URL do backend: passe " +
-                        "-Pautomaton.baseUrl=https://... ou defina AUTOMATON_BASE_URL."
-                )
+                val pedeRelease = gradle.startParameter.taskNames.any {
+                    it.contains("release", ignoreCase = true)
+                }
+                if (pedeRelease) {
+                    throw GradleException(
+                        "Build de release sem URL do backend: passe " +
+                            "-Pautomaton.baseUrl=https://... ou defina AUTOMATON_BASE_URL."
+                    )
+                }
+            } else {
+                buildConfigField("String", "BASE_URL", "\"$urlExplicita\"")
             }
-            buildConfigField("String", "BASE_URL", "\"$urlExplicita\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
