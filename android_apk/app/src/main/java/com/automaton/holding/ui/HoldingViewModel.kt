@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.automaton.holding.data.ApiException
+import com.automaton.holding.data.AiCatalog
 import com.automaton.holding.data.ApiService
 import com.automaton.holding.data.ApprovalItem
 import com.automaton.holding.data.GovernanceResponse
@@ -52,6 +53,9 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
 
     private val _validation = MutableStateFlow<ValidationReport?>(null)
     val validation: StateFlow<ValidationReport?> = _validation.asStateFlow()
+
+    private val _ai = MutableStateFlow<AiCatalog?>(null)
+    val ai: StateFlow<AiCatalog?> = _ai.asStateFlow()
 
     private val _events = MutableStateFlow<List<LiveEvent>>(emptyList())
     val events: StateFlow<List<LiveEvent>> = _events.asStateFlow()
@@ -103,6 +107,10 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
             api.getValidation()
                 .onSuccess { _validation.value = it }
                 .onFailure { registerError("validação", it) }
+            // Catálogo de agentes e modo do motor de IA (CrewAI vs nativo).
+            api.getAgents()
+                .onSuccess { _ai.value = it }
+                .onFailure { registerError("agentes de IA", it) }
 
             _loading.value = false
         }

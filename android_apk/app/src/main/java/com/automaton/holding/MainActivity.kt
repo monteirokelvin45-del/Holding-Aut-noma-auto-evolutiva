@@ -118,6 +118,7 @@ fun HoldingApp(
     val portfolio by viewModel.portfolio.collectAsState()
     val governance by viewModel.governance.collectAsState()
     val validation by viewModel.validation.collectAsState()
+    val ai by viewModel.ai.collectAsState()
     val events by viewModel.events.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -318,6 +319,7 @@ fun HoldingApp(
                     governance = governance,
                     status = status,
                     validation = validation,
+                    ai = ai,
                     busy = loading,
                 )
 

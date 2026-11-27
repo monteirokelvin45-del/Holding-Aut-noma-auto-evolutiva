@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.automaton.holding.data.AiCatalog
 import com.automaton.holding.data.GovernanceResponse
 import com.automaton.holding.data.SystemStatusResponse
 import com.automaton.holding.data.ValidationReport
@@ -50,6 +51,7 @@ fun GovernanceScreen(
     governance: GovernanceResponse?,
     status: SystemStatusResponse?,
     validation: ValidationReport?,
+    ai: AiCatalog?,
     busy: Boolean,
 ) {
     val scroll = rememberScrollState()
@@ -213,6 +215,53 @@ fun GovernanceScreen(
             Spacer(Modifier.height(6.dp))
             Text(
                 "Limiar obrigatório: 85/100. Abaixo disto, refazer.",
+                style = MaterialTheme.typography.labelSmall,
+                color = HoldingsColors.TextMuted,
+            )
+        }
+
+        // -------------------------- Motor de IA --------------------------
+        GovernanceCard(
+            icon = Icons.Filled.Groups,
+            title = "Motor de IA",
+            accent = if (ai?.bridge?.providers?.isNotEmpty() == true) HoldingsColors.Success
+            else HoldingsColors.Warning,
+        ) {
+            val providers = ai?.bridge?.providers ?: emptyList()
+            val online = providers.isNotEmpty()
+            Row(modifier = Modifier.fillMaxWidth()) {
+                StatBlock(
+                    label = "Estado",
+                    value = if (online) "ONLINE" else "LOCAL",
+                    accent = if (online) HoldingsColors.Success else HoldingsColors.Warning,
+                    modifier = Modifier.weight(1f),
+                )
+                StatBlock(
+                    label = "Motor",
+                    value = (ai?.bridge?.mode ?: "nativo").uppercase(),
+                    modifier = Modifier.weight(1f),
+                )
+                StatBlock(
+                    label = "Modelos",
+                    value = providers.size.toString(),
+                    accent = HoldingsColors.Accent,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                if (online)
+                    "Provedores activos: ${providers.joinToString(", ")}"
+                else
+                    "Sem provedor externo: os agentes usam o motor heurístico " +
+                        "local (is_llm=false). Adiciona GROQ_API_KEY no backend.",
+                style = MaterialTheme.typography.labelSmall,
+                color = HoldingsColors.TextMuted,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "CrewAI ${if (ai?.bridge?.crewaiInstalled == true) "instalado" else "ausente (caminho nativo)"}"
+                    + " · orquestração declarativa em agents.yaml",
                 style = MaterialTheme.typography.labelSmall,
                 color = HoldingsColors.TextMuted,
             )

@@ -331,6 +331,22 @@ data class GovernanceResponse(
     val cemetery: JsonElement? = null,
 )
 
+// --------------------------------------------------------------- agentes --
+@Serializable
+data class BridgeInfo(
+    val mode: String = "nativo",
+    @SerialName("crewai_installed") val crewaiInstalled: Boolean = false,
+    @SerialName("native_engine") val nativeEngine: String = "",
+    val providers: List<String> = emptyList(),
+)
+
+@Serializable
+data class AiCatalog(
+    val bridge: BridgeInfo = BridgeInfo(),
+    val validation: JsonObject? = null,
+    val llm: JsonObject? = null,
+)
+
 // ------------------------------------------------------------- validação --
 @Serializable
 data class ValidationSummary(
@@ -585,6 +601,12 @@ class ApiService(
             requestBuilder("/squads/$squadId/kill").post(bodyOf(payload)).build()
         ) { text -> json.decodeFromString(KillSquadResponse.serializer(), text) }
     }
+
+    // --------------------------------------------------------------- agentes
+    suspend fun getAgents(): Result<AiCatalog> =
+        execute(requestBuilder("/agents").get().build()) { text ->
+            json.decodeFromString(AiCatalog.serializer(), text)
+        }
 
     // ----------------------------------------------------------- governança
     suspend fun getGovernance(): Result<GovernanceResponse> =

@@ -95,6 +95,49 @@ vault_data/      estado auditável (ledger, aprovações, métricas, post-mortem
 
 ---
 
+## 🤖 Integração com IA — o que está ligado, exactamente
+
+Três camadas, todas auditáveis:
+
+**1. Roteador LLM (`backend/core/llm_router.py`).** Cadeia com *fallback* e
+*rate limiting* por provedor, todos em tier gratuito:
+
+| Provedor | Limite grátis | Papel na cadeia |
+|---|---|---|
+| Groq | 30 RPM · 1 000 req/dia · 200k tokens/dia | rápido (Qwen/LLaMA) e raciocínio (GPT-OSS) |
+| Gemini AI Studio | 10 RPM · 250 req/dia | contexto longo |
+| OpenRouter | 20 RPM · 50 req/dia (1 000 após upgrade $10) | reserva |
+| Ollama | ilimitado (local) | zero-latência, offline |
+| Heurístico local | ilimitado | **último recurso determinístico** |
+
+**2. Agentes declarativos (`backend/config/agents.yaml` + `tasks.yaml`).**
+11 agentes (Scout, Validador, Vídeo, Infoprodutos, Micro-SaaS, Juiz, CFO,
+Contabilista, RH, Jurídico, CEO) e 15 tarefas com gates
+(`kill_switch_clear`, `cemetery_check`, `smoke_test_passed`, `eval_min_85`,
+`fail_closed`, `approval_approved_and_biometric`). A ponte
+`backend/core/crew_bridge.py` lê-os em runtime, valida referências, tiers e
+ciclos, e executa as tarefas.
+
+**3. CrewAI (MIT), opcional mas suportado a sério.** Se `crewai` estiver
+instalado, é construído um `BaseLLM` que **delega no nosso roteador** — o
+CrewAI nunca instancia LiteLLM nem gasta dinheiro. Sem CrewAI, as mesmas
+tarefas correm no caminho nativo com o mesmo prompt de sistema.
+
+### Verificar em 5 segundos
+
+```bash
+curl -s localhost:8000/agents/probe | jq '.conclusion, .results'
+# ["IA ligada via groq (tier gratuito, custo $0.00)."]
+curl -s localhost:8000/agents | jq '.validation'
+curl -X POST localhost:8000/agents/run -H "X-Automaton-Token: $TOKEN" \
+     -H 'Content-Type: application/json' \
+     -d '{"task_id":"scan_market","inputs":{"niche":"retalho"}}' | jq '.is_llm'
+```
+
+O campo `is_llm` (e `engine` nas entregas das squads) diz sempre a verdade:
+`false` = motor heurístico local determinístico; `true` + `provider` = modelo
+real respondeu. Sem chaves o sistema **não falha** — degrada e avisa.
+
 ## 🛡 Regras inegociáveis
 
 | Regra | Implementação |

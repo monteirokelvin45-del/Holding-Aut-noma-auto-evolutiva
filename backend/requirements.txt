@@ -10,8 +10,11 @@ uvicorn[standard]==0.34.0
 pydantic==2.10.4
 
 # --- Orquestração de agentes (CrewAI, MIT) -----------------------------------
-# Instalado apenas quando se usa o motor CrewAI (o backend funciona sem ele
-# através do llm_router + esquadrões nativos). Ver config/agents.yaml.
+# Lido em runtime por backend/core/crew_bridge.py a partir de
+# config/agents.yaml + config/tasks.yaml. É OPCIONAL: sem ele, as mesmas
+# tarefas correm no caminho nativo (llm_router + esquadrões). Quando instalado,
+# os agentes usam um BaseLLM que delega no nosso roteador — nunca LiteLLM
+# pago, nunca fora do orçamento.
 crewai==0.86.0
 crewai-tools==0.32.1
 

@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from ..config.settings import settings
 from ..core.clock import utcnow_iso
-from ..core.llm_router import LLMRequest, llm_router
+from ..core.llm_router import LLMRequest, _extract_json_object, llm_router
 from ..core.logger import get_logger
 from ..core.runtime_bus import event_bus
 from ..core.vault_store import SQUAD_METRICS, vault
@@ -95,6 +95,29 @@ class JudgeVerdict:
             "attempts": self.attempts,
             "evaluated_at": self.evaluated_at,
         }
+
+
+def _extract_axes(data: Dict[str, Any]) -> Dict[str, float]:
+    """Normaliza os eixos de avaliação, aceitando 3 formas comuns do modelo.
+
+    Aceita ``{"hook": 90, ...}``, ``{"axes": {"hook": 90, ...}}`` e
+    ``{"scores": {...}}``; devolve ``{}`` se nada for utilizável.
+    """
+    candidates: Dict[str, Any] = {}
+    for container in (data, data.get("axes"), data.get("scores")):
+        if isinstance(container, dict):
+            for key in ("hook", "clarity", "technical", "compliance"):
+                if key in container:
+                    candidates.setdefault(key, container[key])
+    axes: Dict[str, float] = {}
+    for key in ("hook", "clarity", "technical", "compliance"):
+        if key not in candidates:
+            continue
+        try:
+            axes[key] = _clamp(float(candidates[key]))
+        except (TypeError, ValueError):
+            continue
+    return axes
 
 
 class EvalJudge:
@@ -413,18 +436,23 @@ class EvalJudge:
                     },
                 },
             )
-            data, response = llm_router.complete_json(
-                request,
-                required_keys=["hook", "clarity", "technical", "compliance"],
-            )
+            # Um único ``complete`` em vez de ``complete_json``: este último
+            # exigiria as 4 chaves de eixo e, se o modelo devolvesse outra
+            # forma (ex.: ``axes: {...}``), o modo local preenchia-as com 0 e
+            # reprovava uma entrega boa. Aqui aceitamos as duas formas e, sem
+            # eixos utilizáveis, devolvemos ``None`` para pontuar só com as
+            # métricas objectivas.
+            response = llm_router.complete(request)
             if not response.is_llm:
                 return None
-            axes = {}
-            for key in ("hook", "clarity", "technical", "compliance"):
-                try:
-                    axes[key] = _clamp(float(data.get(key, 0)))
-                except (TypeError, ValueError):
-                    axes[key] = 0.0
+            data = _extract_json_object(response.text) or {}
+            axes = _extract_axes(data)
+            if not axes:
+                log.warning(
+                    "Juiz LLM devolveu sem eixos utilizáveis (%s); a usar só "
+                    "métricas objectivas.", response.provider,
+                )
+                return None
             findings = data.get("findings") or []
             suggestions = data.get("suggestions") or []
             if isinstance(findings, str):

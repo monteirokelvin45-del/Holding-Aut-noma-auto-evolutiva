@@ -36,6 +36,7 @@ from pydantic import BaseModel, Field
 from .config.settings import settings
 from .core.approvals import approval_gate
 from .core.clock import utcnow_iso
+from .core.crew_bridge import agent_registry, crew_bridge
 from .core.errors import (
     ApprovalRequired,
     AutomatonError,
@@ -47,6 +48,7 @@ from .core.errors import (
     ValidationBlocked,
 )
 from .core.llm_router import LLMRequest, llm_router
+from .core.llm_smoke import run_probe
 from .core.logger import get_logger
 from .core.observability_langfuse import (
     install_observability,
@@ -272,6 +274,17 @@ class MicroSaasRequest(BaseModel):
     smoke_test_id: str
     price_usd: float = 9.0
     allow_code_execution: bool = False
+
+
+class CrewTaskRequest(BaseModel):
+    task_id: str = Field(min_length=3, max_length=80)
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+    require_json: bool = False
+
+
+class CrewPipelineRequest(BaseModel):
+    task_ids: Optional[List[str]] = None
+    inputs: Dict[str, Any] = Field(default_factory=dict)
 
 
 class JudgeRequest(BaseModel):
@@ -851,6 +864,60 @@ def llm_chat(payload: ChatRequest) -> Dict[str, Any]:
         )
     )
     return {"text": response.text, "meta": response.to_dict()}
+
+
+# ==========================================================================
+# Agentes (agents.yaml / tasks.yaml) — ponte CrewAI + roteador LLM
+# ==========================================================================
+@app.get("/agents", tags=["agentes"])
+def list_agents() -> Dict[str, Any]:
+    """Catálogo de agentes e tarefas declarados nos YAML, com validação."""
+    validation = agent_registry.validate()
+    return {
+        "validation": validation,
+        "bridge": crew_bridge.availability(),
+        "agents": [spec.to_dict() for spec in agent_registry.agents()],
+        "tasks": [task.to_dict() for task in agent_registry.tasks()],
+        "defaults": agent_registry.defaults(),
+        "llm": llm_router.status(),
+    }
+
+
+@app.get("/agents/probe", tags=["agentes"])
+def probe_llm_providers() -> Dict[str, Any]:
+    """Testa de verdade cada provedor de IA (chamada real, custo $0.00).
+
+    Devolve ``status`` por provedor e uma conclusão legível — a resposta
+    directa à pergunta «a IA está ligada?».
+    """
+    return run_probe()
+
+
+@app.post("/agents/reload", tags=["agentes"], dependencies=[Depends(require_token)])
+def reload_agents() -> Dict[str, Any]:
+    """Recarrega os YAML sem reiniciar o processo (hot reload auditável)."""
+    agent_registry.reload(force=True)
+    return agent_registry.validate()
+
+
+@app.post("/agents/run", tags=["agentes"], dependencies=[Depends(require_token)])
+def run_agent_task(payload: CrewTaskRequest) -> Dict[str, Any]:
+    """Executa uma tarefa declarada em ``tasks.yaml`` com o agente dono dela.
+
+    Usa CrewAI quando instalado; caso contrário o roteador LLM nativo. Nunca
+    gasta dinheiro: provedores pagos não estão na cadeia.
+    """
+    result = crew_bridge.run_task(
+        payload.task_id, payload.inputs, require_json=payload.require_json
+    )
+    return {"ok": True, **result}
+
+
+@app.post("/agents/pipeline", tags=["agentes"], dependencies=[Depends(require_token)])
+def run_agent_pipeline(payload: CrewPipelineRequest) -> Dict[str, Any]:
+    """Corre um pipeline de tarefas respeitando ``depends_on`` e os gates."""
+    result = crew_bridge.run_pipeline(payload.task_ids, payload.inputs)
+    return {"ok": True, **result}
 
 
 @app.post("/security/scan", tags=["segurança"])

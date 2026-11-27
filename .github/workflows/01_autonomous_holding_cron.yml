@@ -83,8 +83,12 @@ jobs:
           # Apenas o subconjunto necessário ao ciclo: mantém o job rápido e
           # evita dependências pesadas (torch) no runner.
           pip install fastapi==0.115.6 uvicorn==0.34.0 pydantic==2.10.4 \
-                      httpx==0.28.1 PyYAML==6.0.2 pytest==8.3.4 \
+                      httpx==0.28.1 PyYAML==6.0.2 pytest==8.3.4 pytest-asyncio==0.25.0 \
                       edge-tts==7.0.0 imageio-ffmpeg==0.5.1
+          # CrewAI (MIT) é opcional: com ele o ciclo usa orquestração
+          # multi-agente; sem ele corre no caminho nativo. Nunca falha o job.
+          pip install crewai==0.86.0 || \
+            echo "::notice::CrewAI não instalado — caminho nativo activo."
 
       - name: Verificar chaves e limites de custo
         env:
@@ -106,6 +110,47 @@ jobs:
           if not any(keys.values()):
               print("::warning::Sem chaves LLM — o ciclo usará o motor "
                     "heurístico local (resultados marcados como não-LLM).")
+          PY
+
+      - name: Diagnosticar integração com IA (chamada real, custo $0.00)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LLM_PROVIDER_ORDER: "groq,gemini,openrouter,local"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from backend.core.crew_bridge import agent_registry, crew_bridge
+          from backend.core.llm_smoke import run_probe
+
+          catalog = agent_registry.validate()
+          print("Agentes declarados:", catalog["agents"], "| tarefas:", catalog["tasks"])
+          print("Erros de configuração:", catalog["errors"])
+          print("Ponte:", crew_bridge.availability())
+
+          probe = run_probe()
+          print("DIAGNÓSTICO IA:", probe["conclusion"])
+          for item in probe["results"]:
+              print(f"  - {item['provider']}: {item['status']} "
+                    f"({item.get('latency_ms', '-')} ms)")
+
+          output = os.environ.get("GITHUB_STEP_SUMMARY")
+          if output:
+              with open(output, "a", encoding="utf-8") as handle:
+                  handle.write("### Integração com IA\n\n")
+                  handle.write(f"{probe['conclusion']}\n\n")
+                  handle.write("| Provedor | Estado | Modelo |\n|---|---|---|\n")
+                  for item in probe["results"]:
+                      handle.write(
+                          f"| {item['provider']} | {item['status']} | "
+                          f"{item.get('model', '-')} |\n")
+          if not probe["reachable"] and not probe["configured"]:
+              print("::warning::Sem chaves de LLM: o ciclo usa o motor local "
+                    "heurístico (is_llm=false). Adiciona GROQ_API_KEY.")
+          elif probe["configured"] and not probe["reachable"]:
+              print("::warning::Chaves presentes mas nenhum provedor respondeu.")
           PY
 
       - name: Executar o ciclo da holding
