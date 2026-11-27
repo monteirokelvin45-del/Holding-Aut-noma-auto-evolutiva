@@ -747,3 +747,44 @@ def test_websocket_live_entrega_snapshot_e_eventos_reais():
             assert evento["level"] == "info"
             assert evento["message"] == "evento de teste do stream"
             assert evento["ts"]
+
+
+# --------------------------------------------------------------------------- #
+# 10. Nomes do mandato em payout_bridge (delegados, não segunda porta)
+# --------------------------------------------------------------------------- #
+def test_withdraw_to_mpesa_delega_e_passa_pelo_gate_biometrico():
+    """A especificação pede withdraw_to_mpesa(); ele tem de passar pelo mesmo
+    caminho de request_payout, não por um atalho."""
+    from backend.core.approvals import approval_gate
+    from backend.finance.cfo_treasury import cfo
+    from backend.finance.payout_bridge import (
+        MozambiquePayoutBridge,
+        payout_bridge,
+    )
+
+    assert MozambiquePayoutBridge is type(payout_bridge)
+
+    # Sem aprovação aprovada, recusa.
+    from backend.core.errors import NotFound
+
+    try:
+        payout_bridge.withdraw_to_mpesa(amount_usd=5.0, approval_id="apr_inexistente")
+    except NotFound:
+        pass
+    else:  # pragma: no cover
+        raise AssertionError("aceitou um saque sem aprovação existente")
+
+    # Com receita e aprovação, chega ao conector (dry_run sem credenciais).
+    cfo.process_incoming_revenue(200.0, "sq_teste_withdraw")
+    aid = approval_gate.request(
+        title="Saque de teste", kind="payout", reason="pytest",
+        amount_usd=5.0, requested_by="pytest",
+    )
+    approval_gate.decide(aid, approve=True, decided_by="pytest",
+                         biometric_verified=True, note="pytest")
+    resultado = payout_bridge.withdraw_to_mpesa(
+        amount_usd=5.0, approval_id=aid, msisdn="841234567", note="pytest"
+    )
+    assert resultado.channel == "mpesa"
+    # Sem credenciais M-Pesa configuradas, tem de ser dry_run — nunca "enviado".
+    assert resultado.status in {"dry_run", "failed", "blocked"}

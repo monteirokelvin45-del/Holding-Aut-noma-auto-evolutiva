@@ -856,6 +856,36 @@ class PayoutBridge:
         return result
 
     # ------------------------------------------------------------------- fx
+    # ------------------------------------------------- compatibilidade (mandato)
+    # A especificação pede `withdraw_to_mpesa(...)`. Em vez de abrir uma segunda
+    # porta de saída de dinheiro — dois caminhos para o mesmo movimento são
+    # duas auditorias, dois gates biométricos e duas formas de falhar — estes
+    # nomes delegam em `request_payout`, que já valida, reserva, exige
+    # aprovação aprovada e é coberto por testes.
+    def withdraw_to_mpesa(
+        self,
+        amount_usd: float,
+        approval_id: str,
+        msisdn: str = "",
+        note: str = "",
+        idempotency_key: str = "",
+    ) -> PayoutResult:
+        """Atalho nominal para saque M-Pesa. Delega em `request_payout`."""
+        return self.request_payout(
+            PayoutRequest(
+                amount_usd=amount_usd,
+                channel="mpesa",
+                approval_id=approval_id,
+                destination=msisdn,
+                note=note,
+                idempotency_key=idempotency_key,
+            )
+        )
+
+    def withdraw(self, request: PayoutRequest) -> PayoutResult:
+        """Nome genérico do mandato para qualquer canal."""
+        return self.request_payout(request)
+
     def refresh_exchange_rate(self) -> Dict[str, Any]:
         """Tenta obter USD→MZN numa API pública gratuita; cai na taxa da config."""
         status, body = _http(
@@ -876,6 +906,10 @@ class PayoutBridge:
             log.info("Cotação online indisponível; a usar a taxa configurada (%.2f).", rate)
         return cfo.update_fx_rate(rate, source=source)
 
+
+# Nome usado na especificação (5.3). É o mesmo objecto: um único bridge, um
+# único caminho para o dinheiro.
+MozambiquePayoutBridge = PayoutBridge
 
 payout_bridge = PayoutBridge()
 

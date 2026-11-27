@@ -57,7 +57,7 @@ biométrico — exactamente a ordem do mandato.
 | Fases 10/20/70 → 10/40/50 → 50/30/20 | cumpre | `PHASES`, `split_for_phase` |
 | Fronteiras 1 500,00 e 15 000,00 | **corrigido** | `phase_for_monthly_revenue` (limite superior inclusivo) |
 | Ledger atómico e thread-safe | cumpre | `vault.transaction` + `RLock` |
-| `MozambiquePayoutBridge` / `withdraw_to_mpesa(...)` | **lacuna** | ver abaixo |
+| `MozambiquePayoutBridge` / `withdraw_to_mpesa(...)` | **cumpre (alias + delegado)** | ver abaixo |
 | SDK `paymentsds-mpesa` para `api.vm.co.mz` | cumpre | `MPesaConnector._payout_with_sdk` |
 
 **Duas notas de honestidade:**
@@ -67,7 +67,12 @@ biométrico — exactamente a ordem do mandato.
    pacote diferente (vazio no PyPI). O código suporta os dois caminhos.
 2. `api.vm.co.mz` é o **produção**; o sandbox é `api.sandbox.vm.co.mz`.
    `MPESA_BASE_URL` controla qual se usa; o código não força produção.
-3. Os nomes `MozambiquePayoutBridge`/`withdraw_to_mpesa` não existem: o
+3. **Resolvido**: `MozambiquePayoutBridge` é o próprio `PayoutBridge` (alias,
+   não uma segunda classe) e `withdraw_to_mpesa(amount_usd, approval_id,
+   msisdn=...)` delega em `request_payout` — que valida, reserva, exige
+   aprovação aprovada, passa pelo kill switch e é coberto por teste. Duas
+   portas para o mesmo dinheiro seriam duas auditorias. Nota original
+   mantida abaixo por transparência: os nomes não existiam; o
    equivalente é `MPesaConnector.payout(PayoutRequest(...))`, com conversão
    USD→MZN por `cfo.convert_usd_to_mzn` (taxa `USD_MZN_REFERENCE=63.50`) e
    `amount_usd` no pedido. Em vez de criar uma segunda porta de saída de
