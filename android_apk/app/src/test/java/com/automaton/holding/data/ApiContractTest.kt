@@ -164,14 +164,29 @@ class ApiContractTest {
     // ------------------------------------------------------------ websocket --
     @Test
     fun `snapshot do websocket entrega o backlog`() {
-        val evento = json.decodeFromString(
+        // O envelope `snapshot` não traz `sequence` nem `level` (é um aviso de
+        // sistema, não um evento do bus). O APK tem de o aceitar e ir buscar o
+        // histórico a payload.events — é o que este teste fixa.
+        val envelope = json.decodeFromString(
             LiveEvent.serializer(), fixture("ws_live_snapshot")
         )
-        assertEquals("snapshot", evento.type)
-        // O APK extrai payload.events para reconstruir o histórico ao ligar.
-        val backlog = ApiService().parseSnapshotEvents(evento)
+        assertEquals("snapshot", envelope.type)
+        assertEquals("envelope sem sequence usa o default", 0L, envelope.sequence)
+
+        val backlog = ApiService().parseSnapshotEvents(envelope)
         assertTrue("snapshot sem eventos legíveis", backlog.isNotEmpty())
-        assertTrue(backlog.all { it.message.isNotBlank() || it.type.isNotBlank() })
+
+        // Cada evento interno tem de trazer os campos que a LiveOps mostra.
+        backlog.forEach { ev ->
+            assertTrue("evento sem sequence: $ev", ev.sequence > 0L)
+            assertTrue("evento sem type: $ev", ev.type.isNotBlank())
+            assertTrue("evento sem agent: $ev", ev.agent.isNotBlank())
+            assertTrue("evento sem level: $ev", ev.level.isNotBlank())
+            assertTrue("evento sem ts: $ev", ev.timestamp.isNotBlank())
+        }
+        // O backlog vem ordenado: a UI depende disso para não baralhar a linha
+        // temporal ao reconectar.
+        assertEquals(backlog.map { it.sequence }.sorted(), backlog.map { it.sequence })
     }
 
     // -------------------------------------------------------------- robustez --
