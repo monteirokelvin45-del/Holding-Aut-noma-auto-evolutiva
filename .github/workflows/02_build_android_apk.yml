@@ -284,8 +284,15 @@ jobs:
           # falhou em vez de abortar na primeira ferramenta ausente. Mas também
           # não pode falhar em silêncio — foi o que aconteceu antes, com o
           # build verde e o passo a sair com código 1 sem explicar nada.
-          set -uo pipefail  # NÃO -e: queremos ver todos os problemas de uma vez
-          echo "SHELL=$(readlink -f /bin/sh)  BASH=${BASH_VERSION:-?}"
+          # Trace para ficheiro (fd 19): o log do Actions é ilegível a partir
+          # de fora desta rede, mas o passo seguinte publica este ficheiro no
+          # PR em caso de falha. Sem isto, "o passo saiu com 1" não diz onde.
+          exec 19>/tmp/verif_trace.log
+          BASH_XTRACEFD=19
+          set -uxo pipefail  # -x: trace para fd 19. NÃO -e: recolher tudo.
+          echo "=== instrumentação ==="
+          echo "BASH=${BASH_VERSION:-?} PWD=$(pwd)"
+          echo "ANDROID_HOME=${ANDROID_HOME:-<vazio>}"; echo "=== fim instrumentação ==="
           echo "PWD=$(pwd)"
           echo "ANDROID_HOME=${ANDROID_HOME:-<vazio>}  ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<vazio>}"
           ls android_apk/app/build/outputs/apk/debug/ 2>&1 | head -5
@@ -388,6 +395,13 @@ jobs:
             echo "### Build do APK falhou"
             echo
             echo '```'
+            if [ -f /tmp/verif_trace.log ]; then
+              echo "### Trace do passo \"Verificar o APK\""
+              echo '```'
+              tail -40 /tmp/verif_trace.log
+              echo '```'
+              echo
+            fi
             if [ -f android_apk/build.log ]; then
               # O rasto do Gradle são 60 linhas de "at org.gradle..." e não
               # ajudam nada. Primeiro as mensagens de erro a sério.
