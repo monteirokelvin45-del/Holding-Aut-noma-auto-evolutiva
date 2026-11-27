@@ -56,6 +56,11 @@ models/*/*.onnx
 models/*/*.npz
 !models/*/.gitkeep
 
+# APK compilado: 18 MB, reconstruível no CI (workflow 02) e disponível no
+# ramo `apk-artifact`. A cópia local existe para ser entregue, não versionada.
+dist/*.apk
+dist/SHA256SUMS.txt
+
 # ==== Node / frontend auxiliar ====
 node_modules/
 dist/
