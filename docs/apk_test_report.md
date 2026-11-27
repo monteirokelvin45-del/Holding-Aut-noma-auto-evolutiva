@@ -15,11 +15,12 @@ que **não** foi possível executar neste ambiente. Última actualização:
 | Autenticação e biometria | **testado** | 401 sem token, 428 sem biometria, 200 com |
 | Kill switch | **testado** (e corrigido) | 423 nas escritas, 200 no release |
 | WebSocket `/ws/live` | **testado** (fixture real) | snapshot com backlog |
-| Compilação Kotlin/Gradle/APK | **NÃO testada** | sem JDK, sem SDK, sem rede Maven |
+| Compilação Kotlin/Gradle/APK | **SIM — no CI** | APK 18 MB, sha256 `9d20e979…`, run 46055045863 |
+| Testes de contrato a correr | **SIM — no CI** | 13 casos, 0 falhas |
 | Execução em dispositivo/emulador | **NÃO testada** | sem emulador neste ambiente |
 
-A linha que importa: **o APK não foi compilado nem executado.** Tudo o resto
-foi verificado contra o backend a correr.
+O APK **foi compilado no GitHub Actions** e inspeccionado a partir do próprio
+binário (§7). O que continua por fazer é executá-lo num dispositivo.
 
 ---
 
@@ -205,3 +206,61 @@ mostrar o estado.
    que não existe neste ambiente.
 
 Nada disto está escondido atrás de um «✅»: está listado como não feito.
+
+
+---
+
+## 7. Build real no GitHub Actions
+
+O ambiente de desenvolvimento não tem JDK/SDK e a rede bloqueia Maven, Google
+e Adoptium, mas o **runner do GitHub tem tudo**. O que faltava era o Actions
+não estar acessível à conta de serviço desta sessão — e é: `POST /actions/
+workflows/...` devolve 403. Contudo, o workflow também dispara em
+`pull_request`, e **esse** evento funciona: basta abrir o PR #1.
+
+### Evidência do APK (não é "ficou lá", é medido)
+
+| Propriedade | Valor |
+|---|---|
+| Ficheiro | `app-debug.apk` |
+| Tamanho | 18 MB (18 681 376 bytes) |
+| sha256 | `9d20e979985d370ef3d2ca1e16dcf44d6abc252dfb63c453e8af08d9fb1a65d4` |
+| package | `com.automaton.holding.debug` v1.0.0 |
+| compileSdk / targetSdk | 35 / 35 |
+| label | Automaton Holding |
+| assinatura | `CN=Android Debug` (debug, como esperado) |
+| DEX | **8 ficheiros, 57 MB** |
+| classes da app | **518** |
+| URL embutida | `http://10.0.2.2:8000` (o `-Pautomaton.baseUrl` chegou ao `BuildConfig`) |
+| permissões | INTERNET, ACCESS_NETWORK_STATE, USE_BIOMETRIC, VIBRATE |
+| testes de contrato | **13 casos, 0 falhas** |
+
+Rotas encontradas dentro do DEX: `/health`, `/treasury/payouts/reserve`,
+`/approvals`, `/squads`, `/agents`, `/governance`, `/validation`,
+`/kill-switch/engage`, `/kill-switch/release`, `/cycle/run`.
+Contrato presente: `X-Automaton-Token`, `amount_usd`, `biometric_verified`.
+
+### O que o CI apanhou (e que nenhuma revisão de código apanharia)
+
+1. `urlExplicita` declarada dentro de `defaultConfig`, invisível em
+   `buildTypes.release` → **erro de compilação do script Gradle**.
+2. `api.getSystemStatus()` (suspend) chamado de `ingest()` que não era
+   suspend → **erro de compilação Kotlin**.
+3. `governance?.accounting?.report` — `AccountingPayload` não tem `report`.
+4. Antes disso, o próprio workflow: `setup-gradle` não instala o Gradle sem
+   `gradle-version`, e uma URL vazia era passada ao `-P`.
+
+Nenhum destes era visível por leitura. É a diferença entre «parece completo» e
+«compila».
+
+### Como repetir
+
+```bash
+gh workflow run 02_build_android_apk.yml      # precisa de permissão de Actions
+# ou: abrir um PR — o evento pull_request dispara o mesmo workflow
+```
+
+O workflow publica a evidência no PR em caso de sucesso e o diagnóstico em
+caso de falha. Foi assim que se diagnosticou tudo isto: os logs do Actions e
+os artefactos vivem em `*.blob.core.windows.net`, que **esta rede não
+alcança** (`curl` → 000, `gh run download` → EOF).
