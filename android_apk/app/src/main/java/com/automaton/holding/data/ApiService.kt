@@ -721,11 +721,6 @@ class ApiService(
             emptyList()
         }
     }
-}
-
-/** Erro HTTP com o corpo devolvido pelo backend (útil para mensagens ao Presidente). */
-class ApiException(val code: Int, val payload: String) :
-    IOException("HTTP $code: $payload")
 
     /**
      * Endereço actual, para diagnóstico. O ViewModel mostra-o no ecrã de
@@ -733,3 +728,8 @@ class ApiException(val code: Int, val payload: String) :
      * é onde a app está a tentar ligar-se *agora*.
      */
     fun endpointAtual(): String = baseUrl
+}
+
+/** Erro HTTP com o corpo devolvido pelo backend (útil para mensagens ao Presidente). */
+class ApiException(val code: Int, val payload: String) :
+    IOException("HTTP $code: $payload")

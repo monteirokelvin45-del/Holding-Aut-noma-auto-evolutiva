@@ -2,6 +2,7 @@ package com.automaton.holding.data
 
 import android.content.Context
 import android.util.Log
+import com.automaton.holding.BuildConfig
 
 /**
  * Endereço do backend e token, guardados no próprio telefone.
