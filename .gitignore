@@ -77,6 +77,9 @@ tools/package.json
 
 # ==== Node / frontend auxiliar ====
 node_modules/
+# dist/ é ignorado por inteiro (build de Node). O APK entregue ao utilizador
+# vive em dist/app-debug.apk mas o que se versiona é dist/INSTALAR.md, que é
+# forçado com `git add -f`.
 dist/
 .next/
 out/
