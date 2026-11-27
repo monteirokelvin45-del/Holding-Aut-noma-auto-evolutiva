@@ -48,6 +48,14 @@ android_apk/*.iml
 *.jks
 captures/
 
+# ==== Pesos de modelos (107 MB, reconstruíveis) ====
+# Não são versionados: são *reconstruíveis* por scripts/fetch_models.sh, que
+# verifica o sha256 do modelo antes de o dar como instalado. Estão fora do Git
+# pela mesma razão que o .venv — tamanho, não incerteza.
+models/*/*.onnx
+models/*/*.npz
+!models/*/.gitkeep
+
 # ==== Node / frontend auxiliar ====
 node_modules/
 dist/
