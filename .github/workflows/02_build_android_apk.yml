@@ -287,7 +287,12 @@ jobs:
             echo
             echo '```'
             if [ -f android_apk/build.log ]; then
-              grep -v '^\s*$' android_apk/build.log | tail -60
+              # O rasto do Gradle são 60 linhas de "at org.gradle..." e não
+              # ajudam nada. Primeiro as mensagens de erro a sério.
+              grep -E '^(e:|w: .*(error)|FAILURE:|\* What went wrong|> )|error:|Could not (resolve|find|GET)' \
+                android_apk/build.log | head -40 || true
+              echo "--- últimas linhas ---"
+              grep -v '^\s*$' android_apk/build.log | grep -v 'at org.gradle' | tail -25
             else
               echo "(sem build.log: a falha ocorreu antes de correr o Gradle)"
             fi
