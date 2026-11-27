@@ -17,7 +17,8 @@ que **não** foi possível executar neste ambiente. Última actualização:
 | WebSocket `/ws/live` | **testado** (fixture real) | snapshot com backlog |
 | Compilação Kotlin/Gradle/APK | **SIM — no CI** | APK 18 MB, sha256 `9d20e979…`, run 46055045863 |
 | Testes de contrato a correr | **SIM — no CI** | 13 casos, 0 falhas |
-| Execução em dispositivo/emulador | **NÃO testada** | sem emulador neste ambiente |
+| Protocolo do APK contra a API real | **SIM** | `scripts/device_sim.py` → 20/20 passos |
+| Execução em dispositivo/emulador | **NÃO** — bloqueado pelo ambiente | ver §8 |
 
 O APK **foi compilado no GitHub Actions** e inspeccionado a partir do próprio
 binário (§7). O que continua por fazer é executá-lo num dispositivo.
@@ -264,3 +265,62 @@ O workflow publica a evidência no PR em caso de sucesso e o diagnóstico em
 caso de falha. Foi assim que se diagnosticou tudo isto: os logs do Actions e
 os artefactos vivem em `*.blob.core.windows.net`, que **esta rede não
 alcança** (`curl` → 000, `gh run download` → EOF).
+
+
+---
+
+## 8. Emulador Android: o que foi tentado e porque não corre aqui
+
+O pedido «baixa um emulador» esbarra em quatro limites independentes, cada um
+suficiente para o impedir. Todos medidos, não presumidos:
+
+| Requisito | Estado neste ambiente | Consequência |
+|---|---|---|
+| Binário do emulador | `dl.google.com` → **000** (nem o `repository2-3.xml`) | sem `emulator.zip` |
+| Pacotes do sistema / SDK | `apt` sem root (uid 1001), `deb.debian.org` → **000** | sem `qemu-system-x86` |
+| Virtualização | `/dev/kvm` inexistente, `vmx`/`svm` ausentes em `/proc/cpuinfo` | arranque por emulação de software: lento a roçar o inutilizável |
+| Recursos | 2 vCPU, 3 GB RAM (o AVD mínimo pede ~2 GB + 8 GB de disco) | nem um AVD API 26 subiria |
+
+Fontes alternativas verificadas e descartadas:
+- **npm** (a única fonte que responde): `start-android-emulator`,
+  `android-emulator-webrtc`, `mcp-android-emulator` — inspeccionado o código,
+  todos assumem um SDK já instalado; o primeiro descarrega de
+  `dl.google.com/android/repository` (bloqueado). Invólucros, não binários.
+- **njre / java-caller** (JDK via npm): descarregam de `api.adoptium.net` →
+  GitHub releases → **000**.
+
+### O caminho que existe: emulador no CI
+
+O runner do GitHub tem KVM e o SDK completo. Como o backend arranca com
+apenas 5 pacotes (`fastapi`, `uvicorn`, `pydantic`, `pyyaml`, `httpx` —
+`backend.main` carrega as 65 rotas), é viável subir o backend e o AVD no
+mesmo job, instalar o APK e exercitá-lo a sério.
+
+O que **não** está feito, e porquê: escrever esse workflow agora seria
+publicá-lo sem nunca o ter executado — exactamente o tipo de coisa que este
+relatório existe para não fazer. Está especificado em `docs/emulator_ci.md`
+para ser escrito e validado numa sessão com orçamento de execuções.
+
+---
+
+## 9. O que foi substituído por um simulador honesto
+
+`scripts/device_sim.py` não substitui o emulador: **não executa o APK**. O que
+faz é exercitar o mesmo protocolo, na mesma ordem, contra a API real, e falhar
+se o contrato se partir:
+
+```
+1. arranque ......... as 8 leituras do refreshAll()         → 8/8 200
+2. autenticação ..... escrita sem token                      → 401
+3. biometria ........ decidir $12 sem biometria              → 428
+                     decidir com biometria                   → 200
+4. botão vermelho ... engage / leituras vivas / escritas 423 → 423
+                     release e retoma                        → 200
+5. saque e abate .... reserva M-Pesa / esquadrão inexistente → 200 / 400
+6. stream ........... snapshot com backlog e kill_switch     → ok
+                                                    20/20 passos OK
+```
+
+O que isto prova: o **contrato e as regras** estão certos. O que não prova: que
+a UI desenha, que a biometria abre, que o WebSocket sobrevive à rede de um
+telemóvel. Essa parte continua por fazer e está dita.
