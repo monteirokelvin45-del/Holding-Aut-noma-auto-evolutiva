@@ -195,6 +195,10 @@ O motion graphics já tem o texto queimado, por isso o render **não** sobrepõe
 legendas SRT (duas camadas de texto tornavam o vídeo ilegível — corrigido e
 coberto por teste).
 
+Exemplo real, produzido por este repositório sem GPU:
+[`docs/assets/exemplo_short.mp4`](docs/assets/exemplo_short.mp4) — 1080×1920,
+30 fps, 19 s, áudio AAC, juiz 88/100.
+
 ## 🛡 Regras inegociáveis
 
 | Regra | Implementação |
