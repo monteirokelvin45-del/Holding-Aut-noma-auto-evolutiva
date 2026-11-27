@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ..config.settings import settings
 from ..core.clock import utcnow_iso
 from ..core.errors import ValidationBlocked
+from .motion_renderer import motion_renderer
 from ..core.llm_router import LLMRequest, llm_router
 from ..core.logger import get_logger
 from ..governance.legal_compliance import legal_department
@@ -255,11 +256,21 @@ class FootageProvider:
     def __init__(self) -> None:
         self.sources: List[Dict[str, Any]] = []
 
-    def fetch(self, query: str, out_dir: Path, index: int = 0) -> Dict[str, Any]:
+    def fetch(
+        self,
+        query: str,
+        out_dir: Path,
+        index: int = 0,
+        *,
+        script: Optional["VideoScript"] = None,
+    ) -> Dict[str, Any]:
         """Escolhe o footage por esta ordem, sempre com proveniência.
 
         1. **IA local** (Wan 2.2 / LongCat / Kandinsky / LTX) quando há backend
            configurado — é footage original, sem dependência de banco de imagens;
+        1b. **motion graphics próprios** (Pillow + ffmpeg): planos animados com
+           o texto do guião. Funciona **sem GPU** e é o que garante que existe
+           vídeo real mesmo sem pesos de difusão;
         2. **Pexels** (licença gratuita para uso comercial);
         3. **Pixabay** (idem);
         4. **fundo procedimental** gerado por ffmpeg (declarado como tal).
@@ -284,6 +295,12 @@ class FootageProvider:
                 generation.reason,
             )
 
+        # ---- 1b. motion graphics próprios (sem GPU, sempre disponível) -----
+        item = self._motion(query, out_dir, index, script=script)
+        if item:
+            self.sources.append(item)
+            return item
+
         if settings.pexels_api_key:
             item = self._pexels(query, out_dir, index)
             if item:
@@ -302,6 +319,59 @@ class FootageProvider:
             "url": "",
             "query": query,
             "note": "Sem chave Pexels/Pixabay: fundo gerado localmente pelo ffmpeg.",
+        }
+
+    def _motion(
+        self,
+        query: str,
+        out_dir: Path,
+        index: int,
+        *,
+        script: Optional["VideoScript"] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Clipe de motion graphics gerado por nós (licença própria, sem GPU).
+
+        Só entra quando o renderer diz que consegue: ffmpeg + Pillow. Se falhar,
+        devolve ``None`` e a cadeia continua — nunca bloqueia a produção.
+        """
+        caps = motion_renderer.capabilities()
+        if not caps.get("available"):
+            return None
+        # Sem guião não há texto para animar: o motion graphics não se aplica
+        # (ex.: chamadas de teste). Nesse caso caímos para a fonte seguinte.
+        if script is None:
+            return None
+        try:
+            motion = motion_renderer.render(
+                script=script,
+                out_dir=out_dir / "motion",
+                target_duration=min(
+                    float(settings.video_max_duration_seconds),
+                    max(6.0, len(getattr(script, "full_narration", "") or "") / 14),
+                ),
+            )
+        except Exception as exc:  # pragma: no cover - falha inesperada
+            log.warning("Motion graphics falhou: %s", exc)
+            return None
+        if not motion.ok:
+            log.warning("Motion graphics indisponível: %s", "; ".join(motion.notes[:2]))
+            return None
+        return {
+            "source": "generated",
+            "kind": "motion_graphics",
+            "path": motion.path,
+            "license": "own_work",
+            "url": "",
+            "query": query,
+            "engine": motion.engine,
+            "scenes": len(motion.scenes),
+            # O motion graphics já tem o texto queimado: queimar legendas SRT
+            # por cima duplicava o texto e tornava-o ilegível.
+            "has_text": True,
+            "note": (
+                f"{len(motion.scenes)} planos animados gerados localmente "
+                f"(Pillow + ffmpeg), sem GPU e sem material de terceiros."
+            ),
         }
 
     def _pexels(self, query: str, out_dir: Path, index: int) -> Optional[Dict[str, Any]]:
@@ -601,7 +671,9 @@ class VideoFactorySquad(BaseSquad):
             )
 
         subtitles_filter = ""
-        if srt_path.is_file():
+        # Sem legendas sobre footage que já tem texto (motion graphics): duas
+        # camadas de texto sobrepostas tornam o vídeo ilegível.
+        if srt_path.is_file() and not footage.get("has_text"):
             # O caminho do SRT é escapado para o filtro do ffmpeg.
             escaped = str(srt_path).replace("\\", "/").replace(":", "\\:")
             subtitles_filter = (
@@ -713,7 +785,9 @@ class VideoFactorySquad(BaseSquad):
 
         out_dir = Path(settings.video_output_dir) / sid / utcnow_iso()[:10]
         footage_provider = FootageProvider()
-        footage = footage_provider.fetch(niche or idea, out_dir / "footage")
+        footage = footage_provider.fetch(
+            niche or idea, out_dir / "footage", script=script
+        )
 
         render = self.render(script=script, out_dir=out_dir, footage=footage)
 
@@ -761,8 +835,22 @@ class VideoFactorySquad(BaseSquad):
             metadata=judge_metadata,
         )
 
+        # Gate de áudio: um vídeo sem narração não é publicável. O pacote
+        # continua a ser gerado (é útil para revisão), mas fica marcado.
+        audio_ok = bool(render.audio_path)
+        publishable = bool(render.ok and audio_ok and compliance.passed)
         package = {
             "type": "video_package",
+            "publishable": publishable,
+            "publish_blockers": (
+                [] if publishable else [
+                    item for item in (
+                        None if render.ok else "render_indisponivel",
+                        None if audio_ok else "sem_narracao (TTS indisponível)",
+                        None if compliance.passed else "compliance_falhou",
+                    ) if item
+                ]
+            ),
             "squad_id": sid,
             "title": script.title,
             "description": script.description,
@@ -779,6 +867,14 @@ class VideoFactorySquad(BaseSquad):
             "created_at": utcnow_iso(),
             "next_step": (
                 "Revisão humana e upload manual. Nenhuma publicação é automática."
+                if publishable else
+                "BLOQUEADO: resolver " + ", ".join(
+                    item for item in (
+                        None if render.ok else "render",
+                        None if audio_ok else "narração",
+                        None if compliance.passed else "compliance",
+                    ) if item
+                ) + " antes de publicar."
             ),
         }
         package_path = out_dir / "publication_package.json"
@@ -807,7 +903,8 @@ class VideoFactorySquad(BaseSquad):
 
         summary = (
             f"Guião escrito ({script.engine}), juiz {verdict.score:.1f}/100, "
-            f"compliance {'ok' if compliance.passed else 'falhou'}. "
+            f"compliance {'ok' if compliance.passed else 'falhou'}, "
+            f"áudio {'ok' if audio_ok else 'em falta'}. "
             + ("Vídeo renderizado." if render.ok else "Vídeo não renderizado: "
                + "; ".join(render.warnings[:2]))
         )

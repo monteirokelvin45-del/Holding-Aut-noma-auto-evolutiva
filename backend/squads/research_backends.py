@@ -24,6 +24,7 @@ import importlib.util
 import json
 import re
 import threading
+import unicodedata
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -35,6 +36,13 @@ from ..core.logger import get_logger
 from ..core.security_guard import prompt_shield
 
 log = get_logger("squads.research")
+
+
+def _strip_accents(text: str) -> str:
+    """Remove diacríticos: ``gestão`` -> ``gestao`` (URLs e APIs não gostam)."""
+    normalised = unicodedata.normalize("NFKD", text or "")
+    return "".join(ch for ch in normalised if not unicodedata.combining(ch))
+
 
 USER_AGENT = settings.scout_user_agent
 
@@ -160,12 +168,102 @@ class ResearchBackends:
             log.warning("Crawl4AI falhou em %s: %s", url, exc)
             return None
 
+    @staticmethod
+    def _render_api(payload: Any) -> str:
+        """Converte a resposta de uma API de busca em linhas markdown.
+
+        Cobre as três formas que usamos — ``items`` (GitHub Issues),
+        ``hits``/``items`` (Algolia) e ``objects`` (npm) — e ordena por
+        relevância para que o sinal mais forte apareça primeiro.
+        """
+        rows: List[tuple] = []
+
+        def add(score: float, line: str, **signal: int) -> None:
+            """Guarda a linha com os sinais numéricos em forma parseável.
+
+            O Scout não adivinha números a partir de prosa: cada linha termina
+            com ``sinal: stars=.. comments=.. downloads=..`` — um contrato
+            estável entre a pesquisa e a pontuação de demanda.
+            """
+            if not line:
+                return
+            tail = " ".join(
+                f"{key}={int(value or 0)}" for key, value in signal.items()
+            )
+            rows.append((float(score or 0), f"{line} — sinal: {tail}"))
+
+        if isinstance(payload, dict):
+            for hit in (payload.get("hits") or [])[:10]:
+                if isinstance(hit, dict):
+                    add(
+                        hit.get("points") or hit.get("num_comments") or 0,
+                        f"- {hit.get('title') or hit.get('story_title') or ''} "
+                        f"— {hit.get('points', 0)} pontos, "
+                        f"{hit.get('num_comments', 0)} comentários — "
+                        f"{hit.get('url') or ''}",
+                        stars=0,
+                        points=int(hit.get("points") or 0),
+                        comments=int(hit.get("num_comments") or 0),
+                        downloads=0,
+                    )
+            for item in (payload.get("items") or [])[:10]:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get("title") or item.get("name") or ""
+                if not title:
+                    continue
+                # GitHub Issues: reacções + comentários medem a dor real.
+                reactions = item.get("reactions") or {}
+                heat = (
+                    (reactions.get("total_count") if isinstance(reactions, dict) else 0)
+                    or item.get("comments") or 0
+                )
+                add(
+                    heat or item.get("stargazers_count") or 0,
+                    f"- {title} — {heat} reacções/comentários, "
+                    f"estado: {item.get('state', 'n/d')} — "
+                    f"{item.get('html_url') or ''}",
+                    stars=int(item.get("stargazers_count") or 0),
+                    points=int(heat or 0),
+                    comments=int(item.get("comments") or 0),
+                    downloads=0,
+                )
+            for obj in (payload.get("objects") or [])[:10]:
+                if not isinstance(obj, dict):
+                    continue
+                package = obj.get("package") or {}
+                downloads = obj.get("downloads") or {}
+                weekly = downloads.get("weekly") if isinstance(downloads, dict) else 0
+                raw_score = obj.get("score")
+                score = (
+                    float(raw_score.get("final", 0))
+                    if isinstance(raw_score, dict)
+                    else float(raw_score or 0)
+                )
+                weekly_value = (
+                    int(downloads.get("weekly") or 0)
+                    if isinstance(downloads, dict) else 0
+                )
+                add(
+                    score * (weekly_value or 1) / 1000,
+                    f"- npm: {package.get('name', '')} — "
+                    f"{weekly_value} downloads/semana — "
+                    f"{package.get('description', '')[:120]}",
+                    stars=0,
+                    points=0,
+                    comments=0,
+                    downloads=weekly_value,
+                )
+        rows.sort(key=lambda pair: pair[0], reverse=True)
+        return "\n".join(line for _score, line in rows)
+
     def _native(self, url: str) -> ResearchPage:
         # Endpoints de API exigem Accept JSON; páginas exigem HTML. Escolhemos
         # pelo URL para não apanhar 415 do GitHub.
         is_api = any(
-            host in url for host in (
-                "api.github.com", "hn.algolia.com", "/api/", "raw.githubusercontent",
+            marker in url for marker in (
+                "api.github.com", "hn.algolia.com", "/api/",
+                "raw.githubusercontent", "registry.npmjs.org/-/v1", "api.",
             )
         )
         request = urllib.request.Request(url, headers={
@@ -181,32 +279,13 @@ class ResearchBackends:
                                 block_reason=f"network: {exc}")
 
         if is_api:
-            # JSON transformado em markdown legível (mesmo pipeline de escudo).
+            # JSON -> markdown legível (mesmo pipeline de escudo).
             try:
                 payload = json.loads(raw)
             except json.JSONDecodeError:
                 payload = None
             if payload is not None:
-                lines: List[str] = []
-                hits = payload.get("hits") or payload.get("items") or []
-                for hit in hits[:10]:
-                    if not isinstance(hit, dict):
-                        continue
-                    title_hit = (
-                        hit.get("title") or hit.get("name")
-                        or hit.get("full_name") or hit.get("story_title") or ""
-                    )
-                    stars = hit.get("points") or hit.get("stargazers_count") or 0
-                    comments = (
-                        hit.get("num_comments") or hit.get("open_issues_count") or 0
-                    )
-                    link = hit.get("url") or hit.get("html_url") or ""
-                    if title_hit:
-                        lines.append(
-                            f"- {title_hit} — {stars} points/stars, "
-                            f"{comments} comments/issues — {link}"
-                        )
-                rendered = "\n".join(lines)
+                rendered = self._render_api(payload)
                 clean, blocked, reason = _sanitize(rendered, source=url)
                 return ResearchPage(
                     url=url,
@@ -234,6 +313,16 @@ class ResearchBackends:
     # -------------------------------------------------------------- researcher
     def deep_research(self, query: str, max_results: Optional[int] = None) -> Dict[str, Any]:
         """Pesquisa multi-fonte. GPT-Researcher se instalado; senão, nativo."""
+        if not (query or "").strip():
+            return {
+                "ok": False,
+                "engine": self._active_engine(),
+                "query": query,
+                "results": [],
+                "blocked": 0,
+                "reason": "consulta vazia",
+                "generated_at": utcnow_iso(),
+            }
         limit = int(max_results or settings.research_max_results)
         engine = self._active_engine()
         if engine == "gpt_researcher":
@@ -297,22 +386,74 @@ class ResearchBackends:
             return None
 
     @staticmethod
-    def _candidate_urls(query: str, limit: int) -> List[str]:
-        """URLs de partida sem depender de um motor de busca pago.
+    def _query_terms(query: str, keep: int = 3) -> List[str]:
+        """Termos de pesquisa, sem *stopwords* nem acentos.
 
-        Usa o GitHub Search (API pública, sem chave para leitura básica) e o
-        Hacker News (Algolia, público) — ambos com ToS que permitem leitura.
+        APIs de busca são literais: ``gestão de inventário para mercearias``
+        não devolve nada, enquanto ``inventario mercearias`` devolve dezenas de
+        pedidos reais. Ficamos com os termos mais longos (os mais específicos).
         """
-        slug = re.sub(r"[^a-zA-Z0-9 ]", " ", query).strip()
-        encoded = urllib.parse.quote_plus(slug) if slug else "startup"
-        urls = [
-            "https://hn.algolia.com/api/v1/search?query=" + encoded,
-            # O GitHub devolve 415 a pedidos com Accept: text/html — pedimos a
-            # API JSON com o Accept explícito para não perdermos a fonte.
-            "https://api.github.com/search/repositories?q="
-            + urllib.parse.quote_plus(slug or "saas")
-            + "&sort=stars&order=desc&per_page=5",
+        stop = {
+            # gramática (pt/en)
+            "de", "da", "do", "das", "dos", "para", "com", "sem", "que", "uma",
+            "um", "os", "as", "o", "a", "e", "em", "no", "na", "por", "como",
+            "the", "for", "and", "with", "small", "micro", "saas", "app",
+            # termos genéricos: casam com tudo e enchem o feed de ruído
+            # ("business", "management" aparecem em milhares de issues de
+            # qualquer tema — não discriminam nicho nenhum).
+            "business", "management", "software", "service", "services",
+            "system", "systems", "platform", "tool", "tools", "solution",
+            "gestao", "sistema", "sistemas", "servico", "servicos",
+            "ferramenta", "ferramentas", "solucao", "empresa", "empresas",
+        }
+        words = [
+            w for w in _strip_accents(query or "").lower().split()
+            if len(w) > 2 and w not in stop
         ]
+        if not words:
+            words = ["inventory", "stock"]
+        words.sort(key=len, reverse=True)
+        return words[:keep]
+
+    @classmethod
+    def _candidate_urls(cls, query: str, limit: int) -> List[str]:
+        """URLs de partida **independentes de um motor de busca pago**.
+
+        Fontes, por ordem de utilidade como sinal de mercado, todas com ToS
+        que permitem leitura programática e sem chave:
+
+        1. **GitHub Issues** — pedidos reais de funcionalidades: o sinal mais
+           forte de "alguém já precisa disto".
+        2. **GitHub Repositories** — concorrência e maturidade do nicho.
+        3. **npm Registry** — adopção e downloads semanais (só termos ASCII).
+
+        O Hacker News (Algolia) esteve aqui e saiu: falha de forma sistemática
+        em redes que bloqueiam o domínio, e uma fonte que não responde não pode
+        ser a espinha dorsal da pesquisa.
+        """
+        terms = cls._query_terms(query)
+        if not terms:
+            terms = ["inventory", "stock"]
+        # GitHub Search faz AND entre os termos soltos. Com 3 termos longos o
+        # resultado é quase sempre vazio, por isso começamos por 2 e degradamos
+        # para 1 — sempre com resultados reais.
+        primary = " ".join(terms[:2])
+        fallback = terms[0]
+        enc_primary = urllib.parse.quote_plus(primary)
+        enc_fallback = urllib.parse.quote_plus(fallback)
+
+        urls = [
+            "https://api.github.com/search/issues?q="
+            + enc_primary + "+type:issue&sort=relevance&order=desc&per_page=5",
+            "https://api.github.com/search/repositories?q="
+            + enc_primary + "&sort=stars&order=desc&per_page=5",
+            # npm: índice público de downloads, aceita qualquer termo.
+            "https://registry.npmjs.org/-/v1/search?text=" + enc_fallback + "&size=5",
+        ]
+        # Nota: um 4.º URL com ``sort=reactions`` (termo único) foi testado e
+        # **rejeitado** — o GitHub devolve issues ultra-votadas mas de temas
+        # completamente alheios (ex.: uma issue do `openai/codex` para uma
+        # consulta sobre inventário). Fonte com 0% de precisão não entra.
         return urls[: max(1, limit)]
 
     # ------------------------------------------------------------------ helper

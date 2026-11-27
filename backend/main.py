@@ -50,6 +50,7 @@ from .core.errors import (
 from .core.llm_router import LLMRequest, llm_router
 from .core.llm_smoke import run_probe
 from .squads.ai_video_backends import genai_backends
+from .squads.motion_renderer import motion_renderer
 from .squads.research_backends import research_backends
 from .core.logger import get_logger
 from .core.observability_langfuse import (
@@ -937,6 +938,8 @@ def platform_stack() -> Dict[str, Any]:
     return {
         "video": {
             "generative_backends": genai_backends.status(),
+            # Motion graphics próprios: é o que garante vídeo real sem GPU.
+            "motion_graphics": motion_renderer.capabilities(),
             "stock_sources": {
                 "pexels": bool(settings.pexels_api_key),
                 "pixabay": bool(settings.pixabay_api_key),
@@ -991,6 +994,38 @@ def platform_stack() -> Dict[str, Any]:
             "forbidden_packages": ["chattts", "f5-tts"],
             "generated_at": utcnow_iso(),
         },
+    }
+
+
+@app.get("/platform/media", tags=["plataforma"])
+def platform_media() -> Dict[str, Any]:
+    """Pode a holding produzir vídeo **agora**, sem GPU?
+
+    Responde ao estado real: motion graphics (Pillow + ffmpeg) disponível,
+    TTS disponível, e por isso se um vídeo sairia com narração ou mudo.
+    """
+    motion = motion_renderer.capabilities()
+    tts = video_factory.tts.available()
+    audio_engines = [name for name, ready in tts.items() if ready]
+    return {
+        "can_render_video": motion["available"],
+        "requires_gpu": False,
+        "engine": motion.get("engine"),
+        "ffmpeg": motion.get("ffmpeg"),
+        "pillow": motion.get("pillow"),
+        "tts_engines_installed": audio_engines,
+        # Instalado != utilizável: o edge-tts precisa de rede até à Microsoft.
+        "audio_note": (
+            "edge-tts requer rede; sem ela o vídeo sai mudo e o pacote fica "
+            "marcado como não publicável."
+            if "edge_tts" in audio_engines else
+            "Nenhum motor de voz instalado: instalar edge-tts ou kokoro."
+        ),
+        "generative_video": genai_backends.status()["ready"],
+        "fallback_order": [
+            "IA local (GPU)", "motion graphics (Pillow+ffmpeg)",
+            "Pexels", "Pixabay", "fundo procedimental",
+        ],
     }
 
 

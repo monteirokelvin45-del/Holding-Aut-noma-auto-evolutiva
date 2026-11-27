@@ -162,13 +162,19 @@ jobs:
           python - <<'PY'
           import importlib.util
           from backend.squads.ai_video_backends import genai_backends
+          from backend.squads.motion_renderer import motion_renderer
           from backend.squads.research_backends import research_backends
 
           gen = genai_backends.status()
           print("Vídeo IA — ordem:", gen["order"])
-          print("Vídeo IA — prontos:", gen["ready"] or "nenhum (usa Pexels/Pixabay)")
+          print("Vídeo IA (GPU) — prontos:",
+                gen["ready"] or "nenhum")
           for name, meta in gen["backends"].items():
               print(f"  - {name}: {meta['license']} | ready={meta['ready']}")
+
+          motion = motion_renderer.capabilities()
+          print("Motion graphics (sem GPU):", motion["available"],
+                "|", motion.get("engine"))
 
           res = research_backends.availability()
           print("Pesquisa — motor activo:", res["active"])
@@ -182,12 +188,17 @@ jobs:
                   handle.write("\n### Stack de IA aberta\n\n")
                   handle.write(f"* backends de vídeo prontos: "
                                f"{gen['ready'] or 'nenhum (stock)'}\n")
+                  handle.write(f"* motion graphics sem GPU: "
+                               f"{'sim' if motion['available'] else 'não'}\n")
                   handle.write(f"* pesquisa: `{res['active']}`\n")
                   handle.write(f"* SDK M-Pesa: "
                                f"{'instalado' if sdk else 'fluxo HTTP directo'}\n")
-          if not gen["ready"]:
-              print("::notice::Sem GPU/endpoints de geração: footage vem do "
-                    "banco de imagens (comportamento esperado, não é erro).")
+          if not gen["ready"] and not motion["available"]:
+              print("::warning::Sem GPU e sem motion graphics: o footage virá "
+                    "do banco de imagens.")
+          elif not gen["ready"]:
+              print("::notice::Sem GPU: o vídeo é feito com motion graphics "
+                    "próprios (Pillow+ffmpeg), não com stock.")
           PY
 
       - name: Executar o ciclo da holding

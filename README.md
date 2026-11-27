@@ -154,8 +154,8 @@ abertos em hardware próprio). A auditoria completa está em
 | Pagamentos | **`paymentsds-mpesa`** (SDK oficial MZ) | Apache-2.0 | `finance/payout_bridge.py` |
 | B-roll de reserva | Pexels, Pixabay, fundo procedimental | Pexels/Pixabay ToS | `squads/video_factory_squad.py` |
 
-**Ordem de decisão no footage** (`FootageProvider.fetch`): IA local → Pexels →
-Pixabay → fundo procedimental. Cada geração leva proveniência
+**Ordem de decisão no footage** (`FootageProvider.fetch`): IA local (GPU) →
+**motion graphics próprios** → Pexels → Pixabay → fundo procedimental. Cada geração leva proveniência
 (`backend`, `license`, `prompt`, `seed`, `latency_ms`) e é auditada pelo
 `legal_compliance.audit_media` antes de entrar no render. Quando cai para banco
 de imagens, fica um `WARNING` explícito no log — nunca se faz passar stock por
@@ -168,6 +168,7 @@ curl -s localhost:8000/platform/stack | jq '.video.generative_backends.ready,
 # → []  "native"  "paymentsds-mpesa"     ($0.00: ainda sem endpoints/GPU)
 
 # Pesquisa profunda real (escudo anti-injection aplicado ao texto)
+# Fontes: GitHub Issues -> GitHub Repos -> npm (todas sem chave)
 curl -s -X POST localhost:8000/platform/research \
      -H 'Content-Type: application/json' \
      -d '{"query":"gestão de inventário retalho Moçambique","max_results":3}' | jq '.engine,.results|length'
@@ -179,8 +180,20 @@ curl -s -X POST localhost:8000/platform/genai/probe -H "X-Automaton-Token: $TOKE
 ```
 
 Sem GPU o endpoint `/generate` responde **503 com o motivo**
-(`diffusers` em falta / sem ComfyUI) e o sistema usa stock — é degradação
-declarada, não simulação.
+(`diffusers` em falta / sem ComfyUI). **Mas isso já não impede vídeo**: entra o
+`backend/squads/motion_renderer.py`, que gera planos animados a sério com
+Pillow + ffmpeg — fundo em gradiente com vinheta, texto com quebra de linha
+medida, zoom lento, fades e barra de progresso. Licença `own_work`, zero
+dependências novas (Pillow já era requisito) e zero GPU.
+
+```bash
+curl -s localhost:8000/platform/media | jq '.can_render_video, .requires_gpu'
+# → true  false        (produz vídeo agora, sem GPU)
+```
+
+O motion graphics já tem o texto queimado, por isso o render **não** sobrepõe
+legendas SRT (duas camadas de texto tornavam o vídeo ilegível — corrigido e
+coberto por teste).
 
 ## 🛡 Regras inegociáveis
 
@@ -236,7 +249,7 @@ POST /squads/video/produce · /squads/infoproducts/produce · /squads/micro-saas
 # validação e ciclo
 POST /validation · /validation/{id}/event · /validation/judge · /cycle/run
 # stack de IA aberta
-GET  /platform/stack · /platform/genai
+GET  /platform/stack · /platform/genai · /platform/media
 POST /platform/research          (público, só leitura)
 POST /platform/genai/probe       (token; gera 1 frame de teste)
 # tempo real
@@ -250,7 +263,7 @@ Documentação interactiva: **`/docs`**.
 ## 🧪 Testes
 
 ```bash
-.venv/bin/python -m pytest backend/tests -q     # 38 testes, ~1.5 s
+.venv/bin/python -m pytest backend/tests -q     # 47 testes, ~3 s
 ```
 
 Cobrem: token de escrita, as três fases, retenção fiscal de 5%, teto de gasto

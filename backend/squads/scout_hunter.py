@@ -329,9 +329,18 @@ class ScoutHunter(BaseSquad):
 
     # ----------------------------------------------------------------- ciclo
     def scan_sources(
-        self, sources: Optional[List[str]] = None
+        self,
+        sources: Optional[List[str]] = None,
+        *,
+        research_topic: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Varre as fontes pedidas e devolve oportunidades + fontes saltadas."""
+        """Varre as fontes pedidas e devolve oportunidades + fontes saltadas.
+
+        ``research_topic`` permite explorar um nicho específico. Sem ele, o
+        ciclo autónomo usa `DEFAULT_RESEARCH_TOPIC` e exige relevância — um
+        ciclo que propõe "issues" populares mas fora do nicho é pior do que
+        não propor nada.
+        """
         selected = sources or settings.scout_sources
         opportunities: List[ScoutOpportunity] = []
         skipped: List[Dict[str, str]] = []
@@ -349,7 +358,12 @@ class ScoutHunter(BaseSquad):
             elif source == "deep_research":
                 # Crawl4AI / GPT-Researcher / extrator nativo: páginas reais
                 # passadas pelo escudo anti-injection antes de virarem sinais.
-                items, meta = self._fetch_deep_research()
+                if research_topic:
+                    items, meta = self._fetch_deep_research(
+                        research_topic, require_match=False
+                    )
+                else:
+                    items, meta = self._fetch_deep_research()
                 research_used.append(meta)
             if source in SOURCES_REQUIRING_TOOLING and not items:
                 availability = research_backends.availability()
@@ -415,8 +429,15 @@ class ScoutHunter(BaseSquad):
         }
 
     # ----------------------------------------------------- pesquisa profunda
+    #: Tópico usado pelo ciclo autónomo. Explícito e em inglês porque as APIs
+    #: de busca (GitHub/npm) indexam sobretudo em inglês.
+    DEFAULT_RESEARCH_TOPIC = "inventory stock management retail small business"
+
     def _fetch_deep_research(
-        self, topic: str = "micro saas inventory management small business"
+        self,
+        topic: str = "inventory stock management retail small business",
+        *,
+        require_match: Optional[bool] = None,
     ) -> tuple[List[ScoutOpportunity], Dict[str, Any]]:
         """Converte páginas reais em oportunidades com sinal de demanda.
 
@@ -433,64 +454,118 @@ class ScoutHunter(BaseSquad):
         )
         result = research_backends.deep_research(normalized.strip() or "micro saas")
         items: List[ScoutOpportunity] = []
+        # Relevância: uma linha só entra se partilhar algum termo com a
+        # consulta. Sem isto, o recurso final (termo único ordenado por
+        # reacções) traz "issues" populares mas fora do nicho — melhor zero
+        # oportunidades do que nove irrelevantes.
+        wanted = set(research_backends._query_terms(normalized or "inventory stock"))
+        if not wanted:
+            wanted = {"inventory", "stock"}
+        # O tópico por omissão alimenta o ciclo autónomo (relevância é
+        # obrigatória); um tópico escolhido à mão pelo utilizador é exploratório
+        # e aceita qualquer linha com sinal — mas regista a taxa de relevância.
+        # Comparar strings de tópico era frágil (um "small business" a mais
+        # mudava a política). A regra é explícita: por omissão exige-se
+        # relevância; só a exploração manual a desliga.
+        if require_match is None:
+            require_match = True
+        matched = 0
+        total_lines = 0
+
+        def numeric(name: str, text: str) -> int:
+            """Lê ``sinal: stars=3 comments=1`` (contrato do renderer)."""
+            found = re.search(rf"{name}=(\d+)", text)
+            return int(found.group(1)) if found else 0
+
         for page in result.get("results", [])[: settings.research_max_results]:
             text = str(page.get("markdown", ""))
             if not text:
                 continue
-            title = page.get("title") or page.get("url", "")[:80]
-            # Uma listagem de API é um *contentor* de sinais, não um negócio:
-            # nesse caso o título vem do primeiro item da lista.
-            if title.lower().startswith("api "):
-                first_line = next(
-                    (line for line in text.splitlines() if line.strip()), ""
+            # Cada página de API traz VÁRIOS sinais (um por linha). Gerar uma
+            # oportunidade por página perdia quase tudo e escolhia o título
+            # errado; aqui cada linha com sinal é uma oportunidade autónoma.
+            for line in text.splitlines():
+                line = line.strip()
+                if not line.startswith("- ") or "sinal:" not in line:
+                    continue
+                total_lines += 1
+                # Só o título conta: o URL pode conter a palavra por acaso
+                # (ex.: `/inventory/issues/...`) e falsearia a relevância.
+                head = line.split(" — sinal:")[0].lower()
+                relevant = any(term in head for term in wanted)
+                if relevant:
+                    matched += 1
+                if require_match and not relevant:
+                    continue
+                stars = numeric("stars", line)
+                points = numeric("points", line)
+                comments = numeric("comments", line)
+                downloads = numeric("downloads", line)
+                if not any((stars, points, comments, downloads)):
+                    continue
+                title = line.lstrip("- ").split(" — sinal:")[0]
+                # Corta o sufixo numérico em português para o título ficar limpo.
+                title = re.split(
+                    r" — \d+ (?:reacções|pontos|downloads)", title
+                )[0].strip(" —")
+                title = title[:180]
+                if len(title) < 12:
+                    continue
+                signal = {
+                    "stars": stars, "points": points, "comments": comments,
+                    "downloads": downloads, "engine": page.get("source"),
+                    "chars": int(page.get("chars", 0)),
+                }
+                # Downloads npm são ordens de grandeza maiores do que
+                # estrelas: convertemos para uma escala comparável
+                # (~1 estrela por 250 downloads semanais) antes de pontuar.
+                comparable = max(stars, points, int(downloads / 250))
+                if comparable <= 0:
+                    continue
+                raw_demand = self._score_demand(
+                    primary=int(comparable),
+                    secondary=int(points or comments),
+                    engagement=int(comments),
+                    age_days=0.0,   # linha fresca: sem decaimento
                 )
-                title = first_line.lstrip("- ").split(" — ")[0][:180] or title
-            stars = _first_int(text, r"(\d[\d,\.]*)\s*(?:stars?|estrelas?)")
-            points = _first_int(text, r"(\d[\d,\.]*)\s*points?")
-            comments = _first_int(text, r"(\d[\d,\.]*)\s*comments?")
-            signal = {
-                "stars": stars, "points": points, "comments": comments,
-                "chars": int(page.get("chars", 0)), "engine": page.get("source"),
-            }
-            if not any((stars, points, comments)):
-                continue
-            # Uma única página não pode valer 100 (isso falsearia o ranking):
-            # normalizamos e limitamos a 92 para deixar espaço a sinais
-            # multi-fonte, que são os que desbloqueiam produção.
-            raw_demand = self._score_demand(
-                primary=int(max(stars, points)),
-                secondary=int(points),
-                engagement=int(comments),
-                age_days=0.0,   # página fresca: sem decaimento
-            )
-            demand = round(min(92.0, raw_demand / 1.8), 2)
-            niche = _slug_words(title) or "geral"
-            items.append(
-                ScoutOpportunity(
-                    id="dr_" + hashlib.sha1(
-                        (title + page.get("url", "")).encode("utf-8")
-                    ).hexdigest()[:12],
-                    source=str(page.get("source") or "deep_research"),
-                    title=title[:180],
-                    url=str(page.get("url", "")),
-                    signal=signal,
-                    niche=niche,
-                    demand_score=demand,
-                    squad_type=self._guess_squad(f"{title} {text[:400]}"),
-                    rationale=(
-                        f"Página real analisada ({page.get('source')}); "
-                        f"estrelas={stars} pontos={points} comentários={comments}. "
-                        f"Trecho: {text[:180].strip()}"
-                    ),
-                    raw_excerpt=text[:400],
+                demand = round(min(92.0, raw_demand / 1.8), 2)
+                items.append(
+                    ScoutOpportunity(
+                        id="dr_" + hashlib.sha1(
+                            (title + page.get("url", "")).encode("utf-8")
+                        ).hexdigest()[:12],
+                        source=str(page.get("source") or "deep_research"),
+                        title=title,
+                        url=str(page.get("url", "")),
+                        signal=signal,
+                        niche=_slug_words(title) or "geral",
+                        demand_score=demand,
+                        squad_type=self._guess_squad(f"{title} {text[:400]}"),
+                        rationale=(
+                            f"Sinal real de {page.get('source')}: "
+                            f"estrelas={stars} reacções={points} "
+                            f"comentários={comments} downloads/semana={downloads}. "
+                            f"Linha: {line[:200]}"
+                        ),
+                        raw_excerpt=line[:400],
+                    )
                 )
-            )
+        # Uma consulta pode gerar 15 linhas; apresentamos as melhores.
+        items.sort(key=lambda item: item.demand_score, reverse=True)
+        items = items[:12]
+
         return items, {
             "engine": result.get("engine"),
             "ok": result.get("ok"),
             "pages": len(result.get("results", [])),
             "blocked": result.get("blocked", 0),
             "reason": result.get("reason", ""),
+            "topic": topic,
+            "terms": sorted(wanted),
+            "signals": total_lines,
+            "relevant": matched,
+            "relevance_rate": round(matched / total_lines, 2) if total_lines else 0.0,
+            "policy": "relevância obrigatória" if require_match else "exploratório",
         }
 
     def propose(self, opportunity_id: str, scan: Dict[str, Any]) -> Optional[Dict[str, Any]]:

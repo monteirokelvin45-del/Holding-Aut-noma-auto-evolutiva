@@ -249,3 +249,176 @@ def test_rota_platform_research_valida_query():
 
     client = TestClient(app)
     assert client.post("/platform/research", json={"query": "ab"}).status_code == 422
+
+
+# --------------------------------------------------------------------------- #
+# 6. Pesquisa: fontes reais e precisão (sem HN, sem ruído)
+# --------------------------------------------------------------------------- #
+def test_query_terms_descartam_stopwords_e_termos_genericos():
+    terms = rb.research_backends._query_terms(
+        "gestão de inventário para mercearias pequenas"
+    )
+    assert "inventario" in terms
+    assert terms[0] == "inventario"  # o termo mais específico vem primeiro
+    # Termos que casam com tudo não podem entrar (foi a causa do ruído).
+    generic = rb.research_backends._query_terms(
+        "inventory management business software platform"
+    )
+    for word in ("management", "business", "software", "platform"):
+        assert word not in generic
+
+
+def test_candidate_urls_nao_dependem_do_hacker_news():
+    urls = rb.research_backends._candidate_urls("inventory stock", 3)
+    assert urls, "tem de haver sempre candidatos"
+    joined = " ".join(urls)
+    # O HN saiu da lista: falhava de forma sistemática em redes restritas.
+    assert "hn.algolia.com" not in joined
+    assert any("api.github.com" in url for url in urls)
+
+
+def test_render_api_le_github_e_npm_com_sinal_parseavel():
+    github = {
+        "total_count": 1,
+        "items": [{
+            "title": "Pedido: controlo de stock offline",
+            "comments": 4,
+            "state": "open",
+            "reactions": {"total_count": 12},
+            "html_url": "https://github.com/x/y/issues/1",
+        }],
+    }
+    rendered = rb.ResearchBackends._render_api(github)
+    assert "Pedido: controlo de stock offline" in rendered
+    assert "points=12" in rendered and "comments=4" in rendered
+
+    npm = {
+        "objects": [{
+            "package": {"name": "stock-lite", "description": "Controlo de stock"},
+            "downloads": {"weekly": 1200},
+            "score": {"final": 0.5},
+        }],
+    }
+    rendered_npm = rb.ResearchBackends._render_api(npm)
+    assert "npm: stock-lite" in rendered_npm
+    assert "downloads=1200" in rendered_npm
+
+
+def test_render_api_com_zero_resultados_nao_inventa_linhas():
+    assert rb.ResearchBackends._render_api({"total_count": 0, "items": []}) == ""
+    assert rb.ResearchBackends._render_api({"objects": []}) == ""
+
+
+# --------------------------------------------------------------------------- #
+# 7. Scout: relevância obrigatória no ciclo, exploratório à mão
+# --------------------------------------------------------------------------- #
+def test_scout_descarta_sinais_fora_do_nicho(monkeypatch):
+    """Uma issue ultra-votada mas fora do tema não pode virar oportunidade."""
+    from backend.squads import scout_hunter as sh
+
+    fake = {
+        "ok": True,
+        "engine": "native",
+        "blocked": 0,
+        "results": [{
+            "source": "native_api",
+            "url": "https://api.github.com/search/issues?q=x",
+            "chars": 300,
+            "markdown": (
+                "- Reboot destruiu o systemd — 3492 reacções/comentários — "
+                "https://github.com/x/y/issues/1 — sinal: stars=0 points=3492 "
+                "comments=440 downloads=0\n"
+                "- Gestão de stock para mercearias — 8 reacções/comentários — "
+                "https://github.com/x/y/issues/2 — sinal: stars=0 points=8 "
+                "comments=2 downloads=0"
+            ),
+        }],
+    }
+    import sys as _sys
+
+    module = _sys.modules["backend.squads.scout_hunter"]
+    monkeypatch.setattr(
+        module, "research_backends", type("R", (), {
+            "deep_research": staticmethod(lambda *a, **k: fake),
+            "_query_terms": staticmethod(
+                lambda q, keep=3: ["inventory", "stock", "retail"]
+            ),
+        })()
+    )
+    items, meta = module.scout_hunter._fetch_deep_research(
+        "inventory stock management retail"
+    )
+    titles = [item.title for item in items]
+    assert any("stock" in title.lower() for title in titles)
+    assert not any("systemd" in title.lower() for title in titles)
+    assert meta["policy"] == "relevância obrigatória"
+    assert meta["relevant"] == 1 and meta["signals"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# 8. Motion graphics: vídeo real sem GPU
+# --------------------------------------------------------------------------- #
+def test_motion_plan_reparte_o_tempo_do_guiao():
+    from backend.squads.motion_renderer import motion_renderer
+    from backend.squads.video_factory_squad import VideoScript
+
+    script = VideoScript(
+        title="T", hook="Gancho", body=["Um", "Dois", "Três"], cta="CTA",
+        hashtags=["#t"], description="d", language="pt",
+    )
+    scenes = motion_renderer.plan(script, 20.0)
+    assert len(scenes) == 5  # hook + 3 corpo + cta
+    assert scenes[0].kind == "title" and scenes[-1].kind == "cta"
+    total = sum(scene.duration for scene in scenes)
+    assert 19.0 <= total <= 21.0
+    assert all(1.5 <= scene.duration <= 9.0 for scene in scenes)
+
+
+def test_motion_capabilities_e_wrap_medido():
+    from backend.squads.motion_renderer import MotionRenderer, _font
+
+    caps = MotionRenderer().capabilities()
+    assert "available" in caps and "ffmpeg" in caps
+    if not caps["available"]:
+        pytest.skip("sem ffmpeg/Pillow neste ambiente")
+
+    font = _font(48)
+    lines = MotionRenderer._wrap(
+        "uma frase bastante longa para obrigar a quebra de linha", font, 400
+    )
+    assert len(lines) > 1
+    assert all(line.strip() for line in lines)
+
+
+def test_motion_renderiza_um_mp4_valido(tmp_path):
+    from backend.squads.motion_renderer import motion_renderer
+    from backend.squads.video_factory_squad import VideoScript
+
+    if not motion_renderer.capabilities()["available"]:
+        pytest.skip("sem ffmpeg/Pillow neste ambiente")
+
+    script = VideoScript(
+        title="Stock", hook="Perdes stock?", body=["Sem controlo, sim."],
+        cta="Fala comigo.", hashtags=["#s"], description="d", language="pt",
+    )
+    result = motion_renderer.render(
+        script=script, out_dir=tmp_path, target_duration=6.0,
+        width=360, height=640, fps=15,
+    )
+    assert result.ok, result.notes
+    from pathlib import Path as _Path
+
+    output = _Path(result.path)
+    assert output.is_file() and output.stat().st_size > 10_000
+    assert result.license == "own_work"
+    assert result.scenes and result.duration_seconds > 5.0
+
+
+def test_motion_nao_tem_texto_por_isso_squad_dispensa_legendas():
+    """Se o footage traz o texto queimado, o render não deve sobrepor SRT."""
+    import inspect
+
+    from backend.squads import video_factory_squad as vfs
+
+    source = inspect.getsource(vfs.VideoFactorySquad.render)
+    assert 'not footage.get("has_text")' in source

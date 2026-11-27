@@ -105,3 +105,75 @@ done
 
 Um pin que não exista no PyPI impede a instalação de *toda* a imagem Docker;
 por isso `backend/requirements.txt` é validado pin a pin nesta auditoria.
+
+---
+
+## 8. Correções de 27/nov/2026 (segunda passagem)
+
+Três problemas reais encontrados a correr o sistema, e o que mudou.
+
+### 8.1 Pesquisa: uma fonte morta e ruído de baixa precisão
+
+| Sintoma | Causa | Correção |
+|---|---|---|
+| 0 oportunidades no ciclo | `hn.algolia.com` falha por TLS em redes restritas e era a 1.ª fonte | HN removido; ordem agora é GitHub Issues → GitHub Repos → npm |
+| 1 página por consulta | só o GitHub Repos respondia | npm (`registry.npmjs.org/-/v1/search`) devolve resultados reais |
+| 0 resultados com acentos | a API é literal: `inventário` não indexa | `_query_terms` normaliza (NFKD) e remove *stopwords* |
+| 9 oportunidades irrelevantes | recurso com `sort=reactions` + termo único devolvia issues ultra-votadas de temas alheios | esse URL foi **removido** (0% de precisão) e a relevância passou a ser exigida |
+
+Sinais passaram a ser legíveis por máquina: cada linha termina em
+`sinal: stars=.. points=.. comments=.. downloads=..`. O Scout lê daí, em vez de
+adivinhar números em prosa. Os downloads npm são convertidos para escala
+comparável (~1 estrela ≈ 250 downloads/semana).
+
+Resultado medido: `inventory stock management retail` → 15 sinais, 12
+relevantes, feed 100% dentro do nicho (issues de inventário + pacotes npm).
+
+### 8.2 Vídeo sem GPU: motion graphics próprios
+
+O caminho anterior sem GPU era um gradiente abstracto — não é vídeo
+publicável. Novo módulo `backend/squads/motion_renderer.py`:
+
+* arte por plano com Pillow: gradiente diagonal, brilho em *screen*, vinheta,
+  paleta diferente por plano;
+* texto com quebra de linha **medida em píxeis** (máx. 4 linhas, fonte reduz
+  até caber), sombra dupla e barra de progresso;
+* `zoompan` lento + fades + `concat` sem recodificar;
+* licença `own_work`; sem GPU, sem downloads, sem fontes externas.
+
+Bugs apanhados no caminho (todos corrigidos e cobertos por teste):
+
+1. `color`/`geq` são *source filters*: dentro de `-vf` o ffmpeg rejeita
+   ("expected 1 input"). Passou a `-filter_complex` com rótulos.
+2. `Image.blend` com camada preta **escurecia** em vez de iluminar; a vinheta
+   estava invertida e apagava a arte. Agora `ImageChops.screen` + máscara
+   correcta.
+3. O texto era queimado pelo motion **e** legendado pelo SRT em simultâneo —
+   duas camadas ilegíveis. `footage.has_text=True` desliga o SRT.
+4. O `geq` desta build do ffmpeg produzia barras de cor em vez de gradiente;
+   o fundo passou a ser desenhado em Pillow.
+
+### 8.3 Áudio: honestidade em vez de silêncio disfarçado
+
+O `edge-tts` precisa de rede até `speech.platform.bing.com`. Offline, o vídeo
+saía com faixa silenciosa e o pacote dizia "pronto". Agora:
+
+* `publishable` = render **e** narração **e** compliance;
+* `publish_blockers` lista o que falta (`sem_narracao`, `render_indisponivel`,
+  `compliance_falhou`);
+* `next_step` do pacote passa a "BLOQUEADO: resolver … antes de publicar".
+
+Para narração offline real: `kokoro` (Apache-2.0, pesos locais) ou `piper`.
+Nenhum dos dois está instalado nesta imagem — está declarado, não simulado.
+
+### 8.4 Estado verificado do pipeline completo
+
+```
+smoke test aprovado (40 cliques, 22.5% conversão)
+  -> guião gerado -> footage motion_graphics (own_work)
+  -> render 1080x1920 30fps + áudio AAC, 19.2 s
+  -> juiz 88.0/100 (APROVADO)
+  -> compliance ok -> publishable: True
+```
+
+Ficheiro de prova: `vault_data/media/videos/<squad>/<data>/short.mp4`.
