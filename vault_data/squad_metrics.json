@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-27T16:13:39+00:00",
+  "updated_at": "2026-11-27T16:14:07+00:00",
   "kill_policy": {
     "min_traction_days": 7,
     "min_views_in_traction_window": 200,
