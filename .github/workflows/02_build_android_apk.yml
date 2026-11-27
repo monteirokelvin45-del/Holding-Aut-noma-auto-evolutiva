@@ -274,6 +274,75 @@ jobs:
       # Os logs do Actions são servidos de *.blob.core.windows.net, que nem
       # sempre é alcançável a partir de fora. O erro fica também num comentário
       # do PR, que é legível por API em qualquer lado.
+      # O APK vive num artefacto em *.blob.core.windows.net, inalcançável a
+      # partir de algumas redes. Em vez de confiar que "ficou lá", o runner
+      # inspecciona o binário que produziu e publica as provas no PR.
+      - name: Verificar o APK gerado
+        id: verificar
+        run: |
+          set -uo pipefail
+          APK=$(find android_apk/app/build/outputs/apk/debug -name '*.apk' | head -1)
+          if [ -z "$APK" ]; then
+            echo "::error::Nenhum APK de debug foi produzido"; exit 1
+          fi
+          BT="${ANDROID_HOME}/build-tools/35.0.0"
+          SALIDA=$(mktemp)
+          {
+            echo "### APK de debug produzido e verificado"
+            echo
+            echo "| Propriedade | Valor |"
+            echo "|---|---|"
+            echo "| Ficheiro | \`$(basename "$APK")\` |"
+            echo "| Tamanho | $(du -h "$APK" | cut -f1) ($(stat -c %s "$APK") bytes) |"
+            echo "| sha256 | \`$(sha256sum "$APK" | cut -d' ' -f1)\` |"
+            echo
+            echo "**Identidade (aapt2):**"
+            echo '```'
+            "$BT/aapt2" dump badging "$APK" 2>/dev/null \
+              | grep -E "^package|sdkVersion|targetSdkVersion|application-label|uses-permission" | head -12
+            echo '```'
+            echo "**Assinatura (apksigner):**"
+            echo '```'
+            "$BT/apksigner" verify --print-certs "$APK" 2>&1 | head -6
+            echo '```'
+            echo "**Conteúdo:**"
+            echo '```'
+            echo "classes.dex: $(unzip -l "$APK" 'classes*.dex' | awk '/classes/{s+=$1} END{print s" bytes"}')"
+            echo "classes no DEX: $(unzip -p "$APK" classes.dex | strings | grep -c 'Lcom/automaton/holding')"
+            echo "URL do backend embutida:"
+            unzip -p "$APK" classes.dex | strings | grep -oE 'http://[a-z0-9.:]+' | sort -u | head -5
+            echo "strings de segurança:"
+            unzip -p "$APK" classes.dex | strings | grep -E '^X-Automaton-Token$|biometric_verified|KILL_SWITCH' | sort -u
+            echo '```'
+          } > "$SALIDA"
+
+          # Resultados dos testes unitários, se existirem.
+          XMLS=$(find android_apk/app/build/test-results -name '*.xml' 2>/dev/null | wc -l)
+          if [ "$XMLS" -gt 0 ]; then
+            TOTAL=$(grep -ho '<testcase' android_apk/app/build/test-results/**/*.xml 2>/dev/null | wc -l)
+            FALHAS=$(grep -ho '<failure' android_apk/app/build/test-results/**/*.xml 2>/dev/null | wc -l)
+            {
+              echo
+              echo "**Testes unitários:** $TOTAL casos, $FALHAS falhas"
+              echo '```'
+              grep -ho 'testcase name="[^"]*"' android_apk/app/build/test-results/**/*.xml 2>/dev/null \
+                | sed 's/testcase name=//' | tr -d '"' | sort | head -20
+              echo '```'
+            } >> "$SALIDA"
+          fi
+          cat "$SALIDA" >> "$GITHUB_STEP_SUMMARY"
+          cp "$SALIDA" /tmp/apk_evidence.md
+
+      - name: Publicar evidência do APK no PR
+        if: ${{ success() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          gh pr comment "$PR" --body-file /tmp/apk_evidence.md \
+            || echo "aviso: não foi possível comentar no PR"
+
       - name: Publicar diagnóstico no PR
         if: ${{ failure() && github.event_name == 'pull_request' }}
         env:
