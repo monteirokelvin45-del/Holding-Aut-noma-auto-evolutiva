@@ -34,6 +34,8 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   build:
@@ -81,16 +83,21 @@ jobs:
           "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
             "platforms;android-35" "build-tools;35.0.0" > /dev/null
 
-      - name: Gerar Gradle Wrapper (se ausente)
-        working-directory: android_apk
+      # Não se gera o wrapper: o Gradle já está instalado e verificado no passo
+      # anterior. Gerar o wrapper era um passo extra que podia falhar por
+      # motivos próprios (resolução de plugins na fase de configuração) e
+      # obscurecia o erro real. Se o repositório trouxer ./gradlew, usa-se.
+      - name: Escolher comando Gradle
+        id: gradle
         run: |
           set -euo pipefail
-          if [ ! -f gradlew ]; then
-            echo "Sem wrapper no repositório: a gerá-lo com a distribuição instalada."
-            gradle wrapper --gradle-version 8.10.2 --distribution-type bin
+          if [ -x android_apk/gradlew ]; then
+            echo "cmd=./gradlew" >> "$GITHUB_OUTPUT"
+            echo "Wrapper do repositório encontrado."
+          else
+            echo "cmd=gradle" >> "$GITHUB_OUTPUT"
+            echo "Sem wrapper: usa a distribuição instalada ($(gradle --version | awk '/^Gradle/{print $2}'))."
           fi
-          chmod +x gradlew
-          ./gradlew --version
 
       - name: Preparar keystore de release
         id: keystore
@@ -152,8 +159,8 @@ jobs:
           AUTOMATON_API_TOKEN: ${{ secrets.AUTOMATON_API_TOKEN }}
         run: |
           set -euo pipefail
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}"
+          ${{ steps.gradle.outputs.cmd }} :app:assembleDebug --no-daemon --stacktrace \
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}" 2>&1 | tee -a build.log
 
       - name: Definir aptidão do release
         id: release_ok
@@ -209,8 +216,8 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          ./gradlew :app:assembleRelease --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}"
+          ${{ steps.gradle.outputs.cmd }} :app:assembleRelease --no-daemon --stacktrace \
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}" 2>&1 | tee -a build.log
 
       - name: Correr testes unitários
         working-directory: android_apk
@@ -219,7 +226,7 @@ jobs:
           # Antes este passo tinha "|| echo warning", o que transformava uma
           # falha real de testes num aviso verde. Sem testes definidos, o Gradle
           # devolve sucesso; se houver testes e falharem, o build falha.
-          ./gradlew :app:testDebugUnitTest --no-daemon
+          ${{ steps.gradle.outputs.cmd }} :app:testDebugUnitTest --no-daemon 2>&1 | tee -a build.log
 
       - name: Localizar e renomear APKs
         id: apks
@@ -263,6 +270,31 @@ jobs:
             dist/app-release.apk
             dist/app-debug.apk
           generate_release_notes: true
+
+      # Os logs do Actions são servidos de *.blob.core.windows.net, que nem
+      # sempre é alcançável a partir de fora. O erro fica também num comentário
+      # do PR, que é legível por API em qualquer lado.
+      - name: Publicar diagnóstico no PR
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          RELATORIO=$(mktemp)
+          {
+            echo "### Build do APK falhou"
+            echo
+            echo '```'
+            if [ -f android_apk/build.log ]; then
+              grep -v '^\s*$' android_apk/build.log | tail -60
+            else
+              echo "(sem build.log: a falha ocorreu antes de correr o Gradle)"
+            fi
+            echo '```'
+          } > "$RELATORIO"
+          gh pr comment "$PR" --body-file "$RELATORIO" \
+            || echo "aviso: não foi possível comentar no PR"
 
       - name: Resumo do build
         if: always()
