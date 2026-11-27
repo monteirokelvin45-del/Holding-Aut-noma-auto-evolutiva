@@ -290,7 +290,7 @@ jobs:
           TRACE=/tmp/verif_trace.log
           : > "$OUT"; : > "$TRACE"
 
-          echo "APK existe? $(test -f "$APK" && echo sim || echo NAO)" | tee -a "$TRACE"
+          echo "APK: $(ls -lh "$APK" 2>&1 | head -1)" | tee -a "$TRACE"
           if [ ! -f "$APK" ]; then
             echo "::error::Nenhum APK de debug em $APK"
             exit 1
@@ -319,12 +319,24 @@ jobs:
 
           echo "**Conteúdo do classes.dex:**" >> "$OUT"
           echo '```' >> "$OUT"
-          unzip -p "$APK" classes.dex 2>>"$TRACE" > /tmp/classes.dex || echo "unzip falhou" >> "$TRACE"
-          echo "classes da app: $(strings /tmp/classes.dex | grep -c 'Lcom/automaton/holding')" >> "$OUT"
-          echo "URL do backend embutida:" >> "$OUT"
-          strings /tmp/classes.dex | grep -oE 'https?://[a-zA-Z0-9._:-]+' | sort -u | head -6 >> "$OUT"
-          echo "strings de segurança:" >> "$OUT"
-          strings /tmp/classes.dex | grep -E 'X-Automaton-Token|biometric_verified|KILL_SWITCH' | sort -u | head -6 >> "$OUT"
+          # Um APK moderno tem vários DEX (classes.dex, classes2.dex, ...). Ler
+          # só o primeiro deu "classes da app: 0" e uma URL que não é nossa —
+          # prova de que o código da app estava noutro ficheiro.
+          rm -rf /tmp/dex && mkdir -p /tmp/dex
+          unzip -o -q "$APK" 'classes*.dex' -d /tmp/dex 2>>"$TRACE"
+          cat /tmp/dex/classes*.dex > /tmp/alldex.bin 2>>"$TRACE"
+          echo "ficheiros DEX: $(ls /tmp/dex | wc -l) ($(du -h /tmp/alldex.bin | cut -f1))" >> "$OUT"
+          echo "classes da app: $(strings /tmp/alldex.bin | grep -c 'Lcom/automaton/holding')" >> "$OUT"
+
+          # Prova decisiva: as strings que o BuildConfig injetou.
+          echo "BASE_URL e API_TOKEN em BuildConfig (constantes literais no DEX):" >> "$OUT"
+          strings /tmp/alldex.bin \
+            | grep -E '^(https?://10\.0\.2\.2:8000|https?://[a-z0-9.-]+\.[a-z]{2,})(/.*)?$' \
+            | grep -v 'android\|google\|schemas\|kotlin\|okhttp\|square\|json-schema' \
+            | sort -u | head -8 >> "$OUT"
+          echo "endpoints e nomes de campos:" >> "$OUT"
+          strings /tmp/alldex.bin | grep -E '^/(health|treasury|approvals|squads|agents|governance|validation|kill-switch|cycle/run|ws/live)' | sort -u | head -12 >> "$OUT"
+          strings /tmp/alldex.bin | grep -E 'X-Automaton-Token|biometric_verified|KILL_SWITCH|amount_usd' | sort -u | head -8 >> "$OUT"
           echo '```' >> "$OUT"
 
           TOTAL=$(grep -rho '<testcase' android_apk/app/build/test-results 2>/dev/null | wc -l)
