@@ -38,7 +38,12 @@ FASE="${2:-real}"
 COFRE_REAL=0
 [ "${3:-}" = "--cofre-real" ] && COFRE_REAL=1
 
-ACTIVIDADE="${ACTIVIDADE:-com.automaton.holding/.MainActivity}"
+# O build de DEBUG tem `applicationIdSuffix = ".debug"` no build.gradle.kts.
+# Usar `com.automaton.holding/.MainActivity` dá "Activity class does not
+# exist" — o emulador tem `com.automaton.holding.debug`. Foi exactamente o
+# que aconteceu na primeira execução deste script no CI.
+PACOTE="${PACOTE:-com.automaton.holding.debug}"
+ACTIVIDADE="${ACTIVIDADE:-$PACOTE/com.automaton.holding.MainActivity}"
 mkdir -p "$SAIDA"
 LOG="$SAIDA/botoes.log"
 : > "$LOG"
@@ -128,7 +133,20 @@ esperar() {  # $1 = texto, $2 = segundos
 
 # ---------------------------------------------------------------- preparação
 registar "=== botões do APK (fase: $FASE) ==="
-adb shell am force-stop com.automaton.holding >/dev/null 2>&1
+
+# Este script pode correr sozinho (sem o smoke antes). Se o APK ainda não
+# estiver instalado, instala-o — senão todos os passos falham por um motivo
+# que não tem nada a ver com os botões.
+if ! adb shell pm list packages 2>/dev/null | grep -q "^package:$PACOTE$"; then
+  APK="${APK:-/tmp/apk/app-debug.apk}"
+  registar "APK não instalado; a instalar $APK"
+  if ! adb install -r -t "$APK" 2>&1 | tee -a "$LOG" | grep -q "Success"; then
+    nok "não consegui instalar o APK em $APK"
+    exit 1
+  fi
+fi
+
+adb shell am force-stop "$PACOTE" >/dev/null 2>&1
 adb shell am start -W -n "$ACTIVIDADE" 2>&1 | tee -a "$LOG" | tail -2
 sleep 4
 
