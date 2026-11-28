@@ -54,12 +54,17 @@ saque não está resolvido.
 
 from __future__ import annotations
 
+import os
+
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from ..config.settings import settings
 from ..core.errors import ExternalServiceError, ValidationBlocked
+from ..core.logger import get_logger
+
+log = get_logger("finance.paypal")
 
 #: Moedas que a PayPal aceita para cobrança. A holding só trabalha com USD
 #: e EUR — o resto exigiria conversão e a conversão come margem.
@@ -105,6 +110,18 @@ class Cobranca:
         }
 
 
+@dataclass
+class PedidoPayPal:
+    """Estado e montante de um pedido, tal como a PayPal os devolve."""
+
+    estado: str = ""
+    amount_usd: float = 0.0
+
+    @property
+    def pago(self) -> bool:
+        return self.estado.upper() in ESTADOS_PAGOS
+
+
 class PayPalCobranca:
     """Recebe pagamentos: cria pedidos, lê estado, captura.
 
@@ -143,7 +160,24 @@ class PayPalCobranca:
         return True
 
     def cliente(self) -> Any:
-        """Cliente do SDK oficial, criado uma vez por processo."""
+        """Cliente do SDK oficial, criado uma vez por processo.
+
+        Três armadilhas da API 2.4.0, todas apanhadas a testar a sério:
+        (1) não aceita ``client_id=``; (2) ``from_environment(client_id=...)``
+        rebenta em ``clone_with``; (3) os controladores recebem
+        ``options={"body": ...}`` / ``options={"id": ...}``, não
+        ``body=``/``order_id=`` como argumentos nomeados.
+
+        A assinatura do SDK não é a que os exemplos sugerem: não aceita
+        ``client_id=``/``client_secret=`` (dá ``TypeError: unexpected keyword
+        argument``). Usa-se ``from_environment(**overrides)``, que lê
+        ``PAYPAL_CLIENT_ID``/``PAYPAL_CLIENT_SECRET`` do ambiente.
+
+        `PAYPAL_BASE_URL` permite apontar o SDK para outro servidor. Serve
+        para dois casos concretos: um sandbox local em teste (é assim que o
+        caminho completo é provado sem internet) e um proxy de saída em
+        produção. Sem a variável, o SDK usa o URL oficial do ambiente.
+        """
         if self._cliente is not None:
             return self._cliente
         try:
@@ -154,12 +188,77 @@ class PayPalCobranca:
             raise ExternalServiceError(
                 "paypal-server-sdk não instalado (pip install paypal-server-sdk)"
             ) from exc
-        self._cliente = PaypalServersdkClient(
-            client_id=settings.paypal_client_id,
-            client_secret=settings.paypal_client_secret,
-            environment="sandbox" if self.sandbox else "production",
-        )
+        # As credenciais não se passam como `client_id=`/`client_secret=`
+        # (TypeError), nem `from_environment(client_id=...)` (TypeError em
+        # clone_with). A forma que funciona com 2.4.0 é esta:
+        #   ClientCredentialsAuthCredentials(o_auth_client_id=..., o_auth_client_secret=...)
+        try:
+            from paypalserversdk.http.auth.o_auth_2 import (
+                ClientCredentialsAuthCredentials,
+            )
+            from paypalserversdk.paypal_serversdk_client import Environment
+        except ImportError as exc:  # pragma: no cover
+            raise ExternalServiceError(f"SDK PayPal incompleto: {exc}") from exc
+
+        base_url = (os.environ.get("PAYPAL_BASE_URL") or "").strip()
+        try:
+            self._cliente = PaypalServersdkClient(
+                client_credentials_auth_credentials=ClientCredentialsAuthCredentials(
+                    o_auth_client_id=settings.paypal_client_id,
+                    o_auth_client_secret=settings.paypal_client_secret,
+                ),
+                # `environment="sandbox"` (string) dá KeyError: 'sandbox' na
+                # altura de montar o URL — tem de ser o enum.
+                environment=Environment.from_value(
+                    "sandbox" if self.sandbox else "production",
+                    Environment.SANDBOX,
+                ),
+            )
+        except (TypeError, ValueError) as exc:  # pragma: no cover - varia com a versão
+            raise ExternalServiceError(
+                f"SDK PayPal com assinatura inesperada ({exc}). "
+                "Versão testada: paypal-server-sdk==2.4.0."
+            ) from exc
+        if base_url:
+            self._apontar_para(base_url)
         return self._cliente
+
+    def _apontar_para(self, base_url: str) -> None:
+        """Redirecciona o SDK para outro URL base (teste em sandbox local).
+
+        `API_URL` não existe como opção do SDK: o URL vive em
+        ``Configuration.environments``, que é um **atributo de classe** — não
+        de instância. Alterá-lo é um efeito global no processo, e é por isso
+        que só acontece quando ``PAYPAL_BASE_URL`` está definido. Em uso
+        normal, nada disto corre: o SDK fala com a PayPal a sério.
+        """
+        try:
+            from paypalserversdk import configuration as configuracao
+
+            mapa = configuracao.Configuration.environments
+            ambiente = configuracao.Configuration(
+                environment=(
+                    __import__(
+                        "paypalserversdk.paypal_serversdk_client",
+                        fromlist=["Environment"],
+                    ).Environment.SANDBOX
+                    if self.sandbox
+                    else __import__(
+                        "paypalserversdk.paypal_serversdk_client",
+                        fromlist=["Environment"],
+                    ).Environment.PRODUCTION
+                )
+            ).environment
+            for servidor in list(mapa.get(ambiente, {})):
+                mapa[ambiente][servidor] = base_url
+            log.warning(
+                "PayPal redireccionado por PAYPAL_BASE_URL: %s (ambiente %s). "
+                "Isto é para teste/sandbox local — não usar em produção.",
+                base_url,
+                "sandbox" if self.sandbox else "production",
+            )
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Não foi possível redireccionar o cliente PayPal: %s", exc)
 
     # -------------------------------------------------------------- cobrança
     def criar_cobranca(
@@ -240,7 +339,7 @@ class PayPalCobranca:
             ],
         )
         try:
-            resposta = self.cliente().orders.create_order(body=pedido)
+            resposta = self.cliente().orders.create_order(options={"body": pedido})
         except Exception as exc:  # noqa: BLE001 - o SDK levanta tipos variados
             raise ExternalServiceError(
                 f"PayPal recusou a criação do pedido: {type(exc).__name__}: {exc}"
@@ -270,16 +369,27 @@ class PayPalCobranca:
 
     def estado(self, order_id: str) -> str:
         """Lê o estado de um pedido. Devolve "" se não for possível."""
+        return getattr(self.pedido(order_id), "estado", "")
+
+    def pedido(self, order_id: str) -> PedidoPayPal:
+        """Lê o pedido completo: estado e montante já capturado.
+
+        O montante vive em ``purchase_units[].payments.captures[].amount``.
+        Quando não há capturas, devolve 0.0 — e 0.0 não entra no cofre.
+        """
         if not self.configurado or not order_id:
-            return ""
+            return PedidoPayPal(estado="", amount_usd=0.0)
         try:
-            resposta = self.cliente().orders.get_order(order_id)
-            pedido = getattr(resposta, "body", resposta)
-            return str(getattr(pedido, "status", "") or "")
+            resposta = self.cliente().orders.get_order(options={"id": order_id})
         except Exception as exc:  # noqa: BLE001
             raise ExternalServiceError(
                 f"PayPal não devolveu o estado de {order_id}: {exc}"
             ) from exc
+        corpo = getattr(resposta, "body", resposta)
+        return PedidoPayPal(
+            estado=str(getattr(corpo, "status", "") or ""),
+            amount_usd=self._montante_capturado(corpo),
+        )
 
     def capturar(self, order_id: str) -> Dict[str, Any]:
         """Captura um pedido aprovado — é aqui que o dinheiro entra.
@@ -297,8 +407,35 @@ class PayPalCobranca:
                 "message": "sem credenciais: captura não tentada",
             }
         try:
-            resposta = self.cliente().orders.capture_order(order_id)
+            resposta = self.cliente().orders.capture_order(
+                options={"id": order_id}
+            )
         except Exception as exc:  # noqa: BLE001
+            # Uma recusa nem sempre é um erro. `ORDER_ALREADY_CAPTURED`
+            # significa que o dinheiro **já entrou** — e é exactamente o que
+            # acontece quando um retry automático repete a chamada, que é o
+            # caso normal numa rede instável. Tratar isto como falha levaria
+            # a receita a nunca ser registada. Por isso pergunta-se o estado
+            # antes de desistir.
+            estado_apos = self.estado(order_id)
+            if estado_apos.upper() in ESTADOS_PAGOS:
+                log.warning(
+                    "Captura de %s recusada (%s) mas o pedido já está %s: "
+                    "a tratar como capturado.",
+                    order_id, type(exc).__name__, estado_apos,
+                )
+                try:
+                    lido = self.pedido(order_id)
+                except ExternalServiceError:
+                    lido = PedidoPayPal(estado=estado_apos, amount_usd=0.0)
+                return {
+                    "ok": True,
+                    "order_id": order_id,
+                    "status": estado_apos,
+                    "capturado": True,
+                    "amount_usd": lido.amount_usd,
+                    "message": "já capturado (retry idempotente)",
+                }
             raise ExternalServiceError(
                 f"PayPal recusou a captura de {order_id}: {exc}"
             ) from exc

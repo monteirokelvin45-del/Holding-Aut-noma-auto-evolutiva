@@ -225,6 +225,37 @@ class CFOTreasury:
         with self._lock, vault.transaction(LEDGER) as data:
             data.setdefault("revenue_events", [])
             data.setdefault("ledger_entries", [])
+
+            # Idempotência por referência externa: a mesma cobrança PayPal
+            # (ou o mesmo Payout ID) não pode entrar duas vezes no cofre.
+            # Acontece a sério — um retry de rede repete a chamada, e sem esta
+            # guarda o cofre passa a achar que recebeu o dobro. Devolve o
+            # evento existente em vez de falhar: quem repetiu já tem o
+            # resultado que queria.
+            referencias = (
+                {"", "none", "-", "null", "n/a"} if not external_ref else set()
+            )
+            if external_ref and external_ref not in referencias:
+                for anterior in data["revenue_events"]:
+                    if str(anterior.get("external_ref") or "") == external_ref:
+                        log.warning(
+                            "Receita já registada para ref=%s (evento %s): "
+                            "ignorado o duplicado de $%.2f.",
+                            external_ref,
+                            anterior.get("id"),
+                            gross,
+                        )
+                        return RevenueSplit(
+                            gross_usd=_money(anterior.get("gross_usd", gross)),
+                            tax_usd=_money(anterior.get("tax_usd", 0.0)),
+                            net_usd=_money(anterior.get("net_usd", 0.0)),
+                            owner_pocket_usd=0.0,
+                            savings_vault_usd=0.0,
+                            reinvestment_pool_usd=0.0,
+                            phase=int(anterior.get("phase_at_event", 1)),
+                            phase_changed=False,
+                            event_id=str(anterior.get("id", "")),
+                        )
             data.setdefault("phase_history", [])
             data.setdefault("current_split", {})
             data["current_split"]["tax_reserve_rate"] = settings.tax_reserve_rate
