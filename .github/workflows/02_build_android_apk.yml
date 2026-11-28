@@ -550,11 +550,21 @@ jobs:
 
       # Pesos do Kokoro (89 MB) reconstruídos do npm, com sha256 — o
       # dl.google.com e o HuggingFace estão bloqueados, o npm não.
-      - name: Obter os pesos do Kokoro
+      # Os pesos do Kokoro vêm por npm (o HuggingFace está bloqueado no
+      # runner) e o instalador confere o SHA-256. `fetch_models.sh` ficou como
+      # segunda tentativa: é a via oficial, quando a rede o permitir.
+      - name: Instalar o motor local (LLM GGUF + voz Kokoro)
         run: |
-          set -euo pipefail
-          bash scripts/fetch_models.sh || echo "::warning::sem pesos; a voz fica no espeak-ng"
-          ls -lh models/kokoro/ 2>/dev/null || true
+          set -uo pipefail
+          pip install --quiet llama-cpp-python misaki || \
+            echo "::warning::llama-cpp-python/misaki não instalaram; o ciclo segue sem motor local"
+          KOKORO_DIR=models/kokoro bash scripts/instalar_motor_local.sh || \
+            echo "::warning::motor local indisponível; o ciclo segue com o motor heurístico"
+          bash scripts/fetch_models.sh || true
+          ls -lh models/kokoro/ 2>/dev/null | head -3 || true
+          echo "LOCAL_GGUF_PATH=$HOME/modelos/Qwen3-0.6B-Q4_K_M.gguf" >> "$GITHUB_ENV"
+          echo "LOCAL_GGUF_THREADS=2" >> "$GITHUB_ENV"
+          echo "TTS_ENGINE=kokoro" >> "$GITHUB_ENV"
 
       # Diagnóstico de rede: o provider github_models ficou 'configurado' mas
       # falhou com "Name or service not known". Antes de acusar o código, é

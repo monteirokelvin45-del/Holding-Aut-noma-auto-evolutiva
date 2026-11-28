@@ -91,7 +91,48 @@ echo "   SHA-256 confere: $OBTIDO"
 echo "   $GGUF ($(du -h "$GGUF" | cut -f1))"
 
 echo
+echo "== 4/4 Kokoro-82M (vozes portuguesas)"
+KOKORO_DIR="${KOKORO_DIR:-models/kokoro}"
+KOKORO_ONNX="$KOKORO_DIR/kokoro-q8.onnx"
+KOKORO_SHA="fbae9257e1e05ffc727e951ef9b9c98418e6d79f1c9b6b13bd59f5c9028a1478"
+if [ -f "$KOKORO_ONNX" ] && [ "$(sha256sum "$KOKORO_ONNX" | cut -d' ' -f1)" = "$KOKORO_SHA" ]; then
+  echo "   modelo Kokoro já presente e verificado"
+else
+  mkdir -p "$KOKORO_DIR"
+  KT="$(mktemp -d)"
+  curl -sL --retry 3 --max-time 300 -o "$KT/q8.tgz" \
+    "$REGISTRO/kokoro-q8-shards/-/kokoro-q8-shards-1.0.0.tgz" || {
+      echo "ERRO: falha a descarregar kokoro-q8-shards" >&2; exit 1; }
+  tar xzf "$KT/q8.tgz" -C "$KT"
+  cat "$KT"/package/kokoro-q8.part*.bin > "$KOKORO_ONNX"
+  rm -rf "$KT"
+fi
+if [ "$(sha256sum "$KOKORO_ONNX" | cut -d' ' -f1)" != "$KOKORO_SHA" ]; then
+  echo "ERRO: SHA-256 do Kokoro não confere." >&2; exit 1
+fi
+echo "   Kokoro ONNX ($(du -h "$KOKORO_ONNX" | cut -f1)) verificado"
+
+if [ -d "$KOKORO_DIR/voices" ] && [ -f "$KOKORO_DIR/voices/pf_dora.bin" ]; then
+  echo "   vozes já presentes ($(ls "$KOKORO_DIR/voices" | wc -l) ficheiros)"
+else
+  VT="$(mktemp -d)"
+  curl -sL --retry 3 --max-time 300 -o "$VT/kj.tgz" \
+    "$REGISTRO/kokoro-js/-/kokoro-js-1.2.1.tgz" || {
+      echo "ERRO: falha a descarregar kokoro-js" >&2; exit 1; }
+  mkdir -p "$KOKORO_DIR/voices"
+  tar xzf "$VT/kj.tgz" -C "$VT" --wildcards '*/voices/*.bin' \
+    -O 2>/dev/null > /dev/null || true
+  tar xzf "$VT/kj.tgz" -C "$VT"
+  cp "$VT"/package/voices/*.bin "$KOKORO_DIR/voices/"
+  rm -rf "$VT"
+  echo "   vozes: $(ls "$KOKORO_DIR/voices" | wc -l) (inclui pf_dora, pm_alex, pm_santa)"
+fi
+
+echo
 echo "Pronto. Para usar:"
 echo "  export LOCAL_GGUF_PATH=$GGUF"
 echo "  PYTHONPATH=. $PY -c \"from backend.core.llm_router import llm_router, LLMRequest; \\"
-echo "    r = llm_router.complete(LLMRequest(prompt='Diz OK', max_tokens=32)); print(r.provider, r.is_llm)\""
+echo "    r = llm_router.complete(LLMRequest(prompt='Diz OK', max_tokens=32)); print(r.provider, r.is_llm)\"" 
+echo "  # voz portuguesa:"
+echo "  PYTHONPATH=. $PY -c \"from backend.squads.kokoro_tts import kokoro_local; \\"
+echo "    print(kokoro_local.sintetizar('Ola Mocambique', __import__('pathlib').Path('voz.wav')))\""
