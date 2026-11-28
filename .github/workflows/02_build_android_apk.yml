@@ -410,7 +410,20 @@ jobs:
             } > README.md
             git add -A
             git commit -q -m "apk-debug: ${SHA:0:12}"
-            git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact 2>&1 | tail -5
+            # Dois runs ao mesmo commit (push + pull_request, ou dois
+            # dispatches) fazem force-push ao MESMO ramo e um deles perde a
+            # corrida com "fetch first" / "cannot lock ref". Isso deixou o job
+            # vermelho várias vezes sem nada de errado no APK. Três tentativas
+            # com recuo resolvem a corrida; o ramo é um espelho descartável,
+            # não a fonte da verdade (o artefacto do run é).
+            for tentativa in 1 2 3; do
+              if git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact 2>&1 | tail -3; then
+                break
+              fi
+              echo "tentativa ${tentativa} de empurrar o ramo falhou; a repetir em $((tentativa * 5))s"
+              sleep $((tentativa * 5))
+              git fetch "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact >/dev/null 2>&1 || true
+            done
           )
           echo "APK publicado no ramo apk-artifact"
 
@@ -782,6 +795,9 @@ jobs:
   emulador:
     name: Correr no emulador
     needs: build
+    # Corre no dispatch manual. O run de pull_request ao mesmo commit é a
+    # mesma compilação: repetir o emulador duplicava 25 minutos e ainda
+    # fazia os dois jobs disputarem o ramo de evidências.
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.emulador }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
