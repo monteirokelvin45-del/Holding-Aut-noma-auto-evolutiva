@@ -299,6 +299,26 @@ class DemandValidator:
         return {"test": decision.get("test", snapshot), "decision": decision.get("decision"),
                 "metrics": decision.get("metrics", {})}
 
+    @staticmethod
+    def _passou_metade_da_janela(test: Any, deadline: Optional[datetime]) -> bool:
+        """True se já decorreu metade do prazo do teste.
+
+        A reprovação antecipada só é justa a meio da janela. Sem esta guarda
+        disparava mal os cliques chegavam ao dobro da meta — antes de qualquer
+        inscrição poder ser registada, porque num funil os cliques precedem as
+        conversões.
+        """
+        if deadline is None:
+            return True
+        try:
+            inicio = parse_iso(test.created_at)
+        except Exception:
+            return True
+        if inicio is None:
+            return True
+        meio = inicio + (deadline - inicio) / 2
+        return utcnow() >= meio
+
     def evaluate(
         self, test_id: str, *, snapshot: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
@@ -345,9 +365,17 @@ class DemandValidator:
             clicks >= test.min_clicks * 2
             and conversion < test.min_conversion_rate
             and signups <= 1
+            # O prazo tem de estar a meio. Sem isto, a reprovação antecipada
+            # disparava no instante em que os cliques chegavam — antes de
+            # qualquer inscrição poder ser registada. Medido: 80 cliques e
+            # depois 6 inscrições, e o teste já estava `failed`, por isso a
+            # conversão de 7,5% nunca foi avaliada. Num funil real os cliques
+            # vêm primeiro; o julgamento tem de esperar metade da janela.
+            and self._passou_metade_da_janela(test, deadline)
         ):
-            # Volume já claramente suficiente e ainda quase sem inscrições:
-            # reprovação antecipada (evita gastar a janela toda num teste morto).
+            # Volume claramente suficiente, metade da janela passada e ainda
+            # quase sem inscrições: reprovação antecipada (evita gastar a
+            # janela toda num teste morto).
             new_status = "failed"
             reason = (
                 f"{clicks} cliques com apenas {signups} inscrição(ões) "

@@ -460,6 +460,16 @@ class LLMRouter:
                 configured=bool(settings.gemini_api_key),
             ),
             ProviderSpec(
+                name="github_models",
+                rpm_limit=settings.github_models_rpm_limit,
+                rpd_limit=settings.github_models_rpd_limit,
+                tpd_limit=settings.github_models_tpd_limit,
+                model=settings.github_models_model,
+                configured=bool(
+                    settings.github_models_enabled and settings.github_models_token
+                ),
+            ),
+            ProviderSpec(
                 name="openrouter",
                 rpm_limit=settings.openrouter_rpm_limit,
                 rpd_limit=settings.openrouter_rpd_limit,
@@ -602,6 +612,77 @@ class LLMRouter:
             cost_usd=0.0, latency_ms=latency, is_llm=True,
         )
 
+    #: Endpoints do GitHub Models, por ordem de tentativa. A Microsoft migrou o
+    #: serviço: o original está em descontinuação e o sucessor é
+    #: models.github.ai. Tentam-se os dois antes de desistir do provider — um
+    #: 404 no primeiro não deve custar a única fonte de LLM que o Actions já tem.
+    GITHUB_MODELS_ENDPOINTS = (
+        "https://models.github.ai/inference/chat/completions",
+        "https://models.inference.ai.azure.com/chat/completions",
+    )
+
+    def _call_github_models(
+        self, request: LLMRequest, prompt: str, system: str
+    ) -> LLMResponse:
+        model = settings.github_models_model
+        messages: List[Dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": request.temperature,
+            "max_tokens": max(64, request.max_tokens),
+        }
+        if request.json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        headers = {
+            "Authorization": f"Bearer {settings.github_models_token}",
+            "Accept": "application/json",
+        }
+        started = time.monotonic()
+        raw: Optional[Dict[str, Any]] = None
+        ultimo_erro: Optional[Exception] = None
+        for url in self.GITHUB_MODELS_ENDPOINTS:
+            try:
+                raw = _http_post_json(url, payload, headers)
+                break
+            except Exception as exc:  # 404 de endpoint descontinuado, 401, 429…
+                ultimo_erro = exc
+                log.info("GitHub Models: %s falhou (%s); a tentar o seguinte", url, exc)
+        if raw is None:
+            raise ExternalServiceError(
+                f"GitHub Models indisponível em {len(self.GITHUB_MODELS_ENDPOINTS)} "
+                f"endpoints: {ultimo_erro}"
+            )
+        latency = int((time.monotonic() - started) * 1000)
+
+        try:
+            escolha = (raw.get("choices") or [])[0]
+            text = escolha["message"]["content"] or ""
+        except (KeyError, IndexError, TypeError) as exc:
+            raise ExternalServiceError(
+                f"Resposta GitHub Models inesperada: {str(raw)[:300]}"
+            ) from exc
+        if not text.strip():
+            raise ExternalServiceError("GitHub Models devolveu resposta vazia")
+
+        meta = raw.get("usage") or {}
+        usage = TokenUsage(
+            prompt_tokens=int(meta.get("prompt_tokens", estimate_tokens(prompt))),
+            completion_tokens=int(
+                meta.get("completion_tokens", estimate_tokens(text))
+            ),
+            total_tokens=0,
+        )
+        usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        return LLMResponse(
+            text=text, provider="github_models", model=model, usage=usage,
+            cost_usd=0.0, latency_ms=latency, is_llm=True,
+        )
+
     def _call_openrouter(self, request: LLMRequest, prompt: str, system: str) -> LLMResponse:
         messages: List[Dict[str, str]] = []
         if system:
@@ -732,6 +813,8 @@ class LLMRouter:
                     response = self._call_groq(request, prompt, system)
                 elif provider == "gemini":
                     response = self._call_gemini(request, prompt, system)
+                elif provider == "github_models":
+                    response = self._call_github_models(request, prompt, system)
                 elif provider == "openrouter":
                     response = self._call_openrouter(request, prompt, system)
                 elif provider == "ollama":

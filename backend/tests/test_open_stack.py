@@ -788,3 +788,144 @@ def test_withdraw_to_mpesa_delega_e_passa_pelo_gate_biometrico():
     assert resultado.channel == "mpesa"
     # Sem credenciais M-Pesa configuradas, tem de ser dry_run — nunca "enviado".
     assert resultado.status in {"dry_run", "failed", "blocked"}
+
+
+# --------------------------------------------------------------------------- #
+# 11. GitHub Models: o provider que não precisa de chave nova
+# --------------------------------------------------------------------------- #
+def test_github_models_entra_na_cadeia_e_falha_com_elegancia(monkeypatch):
+    """Sem rede, o provider falha mas a cadeia continua até ao local.
+
+    O que se verifica não é "a IA funciona" (não há rede aqui): é que o
+    provider está na ordem, que é tentado, e que a falha não derruba o ciclo.
+    """
+    from backend.core import llm_router as mod
+    from backend.core.llm_router import LLMRequest
+
+    llm_router = mod.llm_router
+    # A fixture autouse limpa as chaves; aqui repõe-se o token para que o
+    # provider seja elegível — é exactamente isso que este teste cobre.
+    object.__setattr__(mod.settings, "github_models_token", "token-de-teste")
+    monkeypatch.setattr(
+        type(llm_router), "GITHUB_MODELS_ENDPOINTS", ("http://127.0.0.1:9/nada",)
+    )
+    resposta = llm_router.complete(LLMRequest(prompt="Diz olá.", max_tokens=32))
+    # Caiu para o local, e disse porquê.
+    assert resposta.provider == "local"
+    assert resposta.is_llm is False
+    assert any("github_models" in passo for passo in resposta.fallback_chain)
+    assert "github_models" in (resposta.error or "")
+
+
+def test_github_models_usa_o_token_do_actions_sem_configuracao_extra():
+    """O objectivo: o cron ter LLM real sem ninguém injectar chaves."""
+    from backend.config.settings import settings
+
+    assert "github_models" in settings.llm_provider_order
+    assert settings.github_models_enabled is True
+
+
+# --------------------------------------------------------------------------- #
+# 12. Loja: pedido -> aprovação -> entrega
+# --------------------------------------------------------------------------- #
+def test_loja_cria_aprovacao_e_so_entrega_depois_de_aprovada(tmp_path, monkeypatch):
+    from backend.squads import storefront_publisher as sp
+
+    pub = sp.StorefrontPublisher(tmp_path / "store")
+    monkeypatch.setattr(pub, "pedidos_path", tmp_path / "orders.json")
+
+    entrega = tmp_path / "ebook.md"
+    entrega.write_text("# Conteúdo", encoding="utf-8")
+    produto = sp.Produto(
+        id="p1", titulo="Guia", resumo="r", descricao="d",
+        preco_usd=12.0, ficheiro_entrega=str(entrega),
+    )
+    pub.publicar([produto])
+
+    # Código inválido é recusado antes de criar lixo na fila.
+    from backend.core.errors import ValidationBlocked
+
+    try:
+        pub.registar_pedido(
+            produto_id="p1", codigo_transacao="xx",
+            comprador="Ana", contacto="84",
+        )
+    except ValidationBlocked:
+        pass
+    else:  # pragma: no cover
+        raise AssertionError("aceitou um código de transacção inválido")
+
+    pedido = pub.registar_pedido(
+        produto_id="p1", codigo_transacao="MP2406AB12CD",
+        comprador="Ana Silva", contacto="841234567",
+    )
+    assert pedido["approval_id"].startswith("apr_")
+    assert pedido["pedido"]["estado"] == "pendente"
+
+    # Duplicar o código é recusado: um código = uma compra.
+    try:
+        pub.registar_pedido(
+            produto_id="p1", codigo_transacao="MP2406AB12CD",
+            comprador="Outro", contacto="84",
+        )
+    except ValidationBlocked:
+        pass
+    else:  # pragma: no cover
+        raise AssertionError("aceitou o mesmo código de transacção duas vezes")
+
+    # Antes da aprovação não há página de entrega.
+    assert not (tmp_path / "store" / "entregas" / "MP2406AB12CD.html").exists()
+
+    aprovado = pub.aprovar_pedido("MP2406AB12CD")
+    assert aprovado["pedido"]["estado"] == "aprovado"
+    pagina = tmp_path / "store" / "entregas" / "MP2406AB12CD.html"
+    assert pagina.is_file(), "a entrega tem de existir depois da aprovação"
+    assert (tmp_path / "store" / "entregas" / "MP2406AB12CD.md").is_file()
+
+
+def test_loja_nao_inventa_entrega_quando_o_ficheiro_nao_existe(tmp_path, monkeypatch):
+    """Página de download a apontar para o vazio é pior do que não haver."""
+    from backend.squads import storefront_publisher as sp
+
+    pub = sp.StorefrontPublisher(tmp_path / "store")
+    monkeypatch.setattr(pub, "pedidos_path", tmp_path / "orders.json")
+    pub.publicar([sp.Produto(
+        id="p2", titulo="Sem ficheiro", resumo="r", descricao="d",
+        preco_usd=5.0, ficheiro_entrega="",
+    )])
+    pub.registar_pedido(
+        produto_id="p2", codigo_transacao="AB12345678",
+        comprador="Zé", contacto="84",
+    )
+    r = pub.aprovar_pedido("AB12345678")
+    assert r["ficheiro"] is None
+    texto = (tmp_path / "store" / "entregas" / "AB12345678.html").read_text(encoding="utf-8")
+    assert "ainda não está disponível" in texto
+
+
+# --------------------------------------------------------------------------- #
+# 13. A reprovação antecipada não pode disparar antes de haver funil
+# --------------------------------------------------------------------------- #
+def test_conversao_avaliada_na_ordem_real_do_funil():
+    """80 cliques e depois 6 inscrições (7,5%) tem de PASSAR.
+
+    Antes da correcção, os 80 cliques (>= 2x a meta de 25) reprovavam o teste
+    no instante em que chegavam, e a inscrição seguinte era ignorada. Num funil
+    real os cliques precedem as conversões — o julgamento não pode antecipar-se.
+    """
+    from backend.validation.demand_validator import demand_validator
+
+    teste = demand_validator.create_smoke_test(
+        idea="Teste de funil da suíte",
+        niche="pytest",
+        squad_type="infoproducts_affiliate",
+        hypothesis="se houver funil, converte",
+        cta="Quero",
+        price_anchor_usd=10.0,
+    )["test"]
+
+    demand_validator.record_event(teste["id"], event="click", count=80)
+    resultado = demand_validator.record_event(teste["id"], event="signup", count=6)
+
+    assert resultado["test"]["status"] == "passed", resultado["test"].get("decision_reason")
+    assert resultado["metrics"]["conversion_rate"] >= 0.04

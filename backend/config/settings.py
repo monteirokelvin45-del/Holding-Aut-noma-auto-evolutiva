@@ -135,6 +135,22 @@ class Settings:
     gemini_rpd_limit: int = 250
     gemini_tpd_limit: int = 250_000
 
+    # GitHub Models: catálogo de modelos servido pela Azure com um
+    # GITHUB_TOKEN normal. É a única fonte de LLM que já existe em qualquer
+    # execução do GitHub Actions — não precisa de chave nova. Limites do tier
+    # gratuito variam por modelo; os valores abaixo são conservadores.
+    #
+    # O endpoint é configurável porque a Microsoft migrou o serviço duas vezes:
+    #   models.inference.ai.azure.com   (original, em descontinuação)
+    #   models.github.ai/inference      (sucessor)
+    # Se um falhar, o outro é tentado antes de desistir do provider.
+    github_models_enabled: bool = True
+    github_models_token: str = ""
+    github_models_model: str = "gpt-4o-mini"
+    github_models_rpm_limit: int = 10
+    github_models_rpd_limit: int = 150
+    github_models_tpd_limit: int = 0
+
     openrouter_api_key: str = ""
     openrouter_model: str = "meta-llama/llama-3.3-70b-instruct:free"
     openrouter_rpm_limit: int = 20
@@ -146,7 +162,11 @@ class Settings:
     ollama_enabled: bool = False
 
     llm_provider_order: List[str] = field(
-        default_factory=lambda: ["groq", "gemini", "openrouter", "ollama", "local"]
+        default_factory=lambda: [
+            # Ordem = qualidade/cota. GitHub Models entra em segundo porque a
+            # cota gratuita é a mais previsível num runner.
+            "groq", "gemini", "github_models", "openrouter", "ollama", "local",
+        ]
     )
     #: Fracção do limite de um provedor a partir da qual se muda de rota, antes
     #: de bater no 429. 0.85 = 85% do RPM/RPD/TPD mais apertado.
@@ -274,6 +294,7 @@ class Settings:
         return {
             "groq": bool(self.groq_api_key),
             "gemini": bool(self.gemini_api_key),
+            "github_models": bool(self.github_models_token),
             "openrouter": bool(self.openrouter_api_key),
             "ollama": bool(self.ollama_enabled),
             "langfuse": bool(self.langfuse_enabled and self.langfuse_public_key),
@@ -356,6 +377,16 @@ def _build_settings() -> Settings:
         gemini_rpm_limit=env_int("GEMINI_RPM_LIMIT", 10, minimum=1),
         gemini_rpd_limit=env_int("GEMINI_RPD_LIMIT", 250, minimum=1),
         gemini_tpd_limit=env_int("GEMINI_TPD_LIMIT", 250_000, minimum=1),
+        # Qualquer uma das duas serve: GITHUB_MODELS_TOKEN (explícita) ou o
+        # GITHUB_TOKEN que o Actions já injeta. Sem chave nova, o cron passa a
+        # ter um LLM real.
+        github_models_token=env_str(
+            "GITHUB_MODELS_TOKEN", env_str("GITHUB_TOKEN", "")
+        ),
+        github_models_model=env_str("GITHUB_MODELS_MODEL", "gpt-4o-mini"),
+        github_models_enabled=env_bool("GITHUB_MODELS_ENABLED", True),
+        github_models_rpm_limit=env_int("GITHUB_MODELS_RPM_LIMIT", 10, minimum=1),
+        github_models_rpd_limit=env_int("GITHUB_MODELS_RPD_LIMIT", 150, minimum=1),
         openrouter_api_key=env_str("OPENROUTER_API_KEY"),
         openrouter_model=env_str(
             "OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free"
@@ -369,7 +400,8 @@ def _build_settings() -> Settings:
         ollama_model=env_str("OLLAMA_MODEL", "llama3.2:3b"),
         ollama_enabled=env_bool("OLLAMA_ENABLED", False),
         llm_provider_order=env_list(
-            "LLM_PROVIDER_ORDER", ["groq", "gemini", "openrouter", "ollama", "local"]
+            "LLM_PROVIDER_ORDER",
+            ["groq", "gemini", "github_models", "openrouter", "ollama", "local"],
         ),
         llm_failover_threshold=env_float("LLM_FAILOVER_THRESHOLD", 0.85),
         langfuse_enabled=env_bool("LANGFUSE_ENABLED", False),

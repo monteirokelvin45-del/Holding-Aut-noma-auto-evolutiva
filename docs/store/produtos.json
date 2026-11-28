@@ -1,0 +1,21 @@
+[
+  {
+    "id": "ebook-freelancing-mz",
+    "titulo": "Guia prático de freelancing em Moçambique",
+    "resumo": "Manual accionável para começar a faturar com serviços digitais, pensado para recursos limitados e canais locais.",
+    "descricao": "Cinco capítulos: diagnóstico em 10 minutos, o método em 3 passos, erros caros a evitar e um plano de 7 dias. Produzido pelo esquadrão de infoprodutos e revisto antes de publicação.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "vault_data/artifacts/sq_a1bce44d3f88/2026-11-28/ebook.md",
+    "link_externo": "",
+    "tags": [
+      "freelancing",
+      "moçambique",
+      "guia",
+      "iniciante"
+    ],
+    "sqad_id": "sq_a1bce44d3f88",
+    "criado_em": "2026-11-28T09:11:27+00:00",
+    "preco_local": 762.0
+  }
+]
