@@ -66,28 +66,51 @@ tirar_ecra() {  # $1 = nome
   if [ "$bytes" -gt 20000 ]; then ok "screenshot $1.png ($bytes bytes)"; else nok "screenshot $1.png vazio ($bytes bytes)"; fi
 }
 
-tirar_ecra "01_ao_vivo"
+# Título esperado no corpo de cada aba. Serve para CONFIRMAR que o toque mudou
+# de ecrã: no primeiro ensaio saíram 4 screenshots iguais e só o md5 o revelou.
+titulo_da_aba() {
+  case "$1" in
+    "Ao Vivo")    echo "TERMINAL DE OPERAÇÕES" ;;
+    # Textos lidos do código dos ecrãs (não inventados): cada aba tem um
+    # título fixo que existe mesmo que os dados estejam vazios.
+    "Aprovar")    echo "MESA DE APROVAÇÕES" ;;
+    "Tesouro")    echo "COFRES" ;;
+    "Diretoria")  echo "DIRETORIA" ;;
+    "Esquadrões") echo "ABATIDOS" ;;
+  esac
+}
 
-# Aba por aba, tocando no texto real da barra de navegação (não em coordenadas
-# fixas): se o layout mudar, os toques continuam a acertar.
+textos_do_ecra() {  # todos os textos visíveis, um por linha
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
+  python3 -c '
+import re
+try:
+    xml = open("/tmp/ui.xml", encoding="utf-8", errors="ignore").read()
+except FileNotFoundError:
+    raise SystemExit(0)
+for m in re.finditer(r"text=\"([^\"]+)\"", xml):
+    print(m.group(1))
+'
+}
+
 tocar_texto() {  # $1 = etiqueta da aba, $2 = nome do screenshot
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
   adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
   local coords
-  coords=$(python3 - "$1" <<'PY'
+  coords=$(python3 -c '
 import re, sys
 alvo = sys.argv[1]
 try:
     xml = open("/tmp/ui.xml", encoding="utf-8", errors="ignore").read()
 except FileNotFoundError:
     sys.exit(0)
-for m in re.finditer(r'text="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml):
+for m in re.finditer(r"text=\"([^\"]*)\"[^>]*bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\"", xml):
     if m.group(1).strip() == alvo:
         x1, y1, x2, y2 = map(int, m.groups()[1:])
-        print(f"{(x1+x2)//2} {(y1+y2)//2}")
+        print((x1 + x2) // 2, (y1 + y2) // 2)
         break
-PY
-)
+' "$1")
   if [ -z "$coords" ]; then
     nok "não encontrei a aba '$1' no ecrã"
     return
@@ -95,6 +118,16 @@ PY
   # shellcheck disable=SC2086
   adb shell input tap $coords
   sleep 3
+
+  local esperado ecra
+  esperado="$(titulo_da_aba "$1")"
+  ecra="$(textos_do_ecra)"
+  if echo "$ecra" | grep -qi "$esperado"; then
+    ok "aba '$1' aberta (título \"$esperado\" visível)"
+  else
+    nok "aba '$1' NÃO abriu — \"$esperado\" não está no ecrã"
+    { echo "--- textos visíveis ao tocar em '$1' ---"; echo "$ecra" | head -20; } >> "$SAIDA/adb.log"
+  fi
   tirar_ecra "$2"
 }
 
@@ -102,6 +135,7 @@ tocar_texto "Aprovar"     "02_aprovar"
 tocar_texto "Tesouro"     "03_tesouro"
 tocar_texto "Diretoria"   "04_diretoria"
 tocar_texto "Esquadrões"  "05_esquadroes"
+tocar_texto "Ao Vivo"     "06_ao_vivo_de_volta"
 
 # ------------------------------------------------ 4. o backend foi contactado
 registar "a copiar o logcat"

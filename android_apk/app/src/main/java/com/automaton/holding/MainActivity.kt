@@ -63,7 +63,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.automaton.holding.data.BiometricAuthManager
@@ -298,7 +300,20 @@ fun HoldingApp(
                                 Icon(item.icon, contentDescription = item.label)
                             }
                         },
-                        label = { Text(item.label) },
+                        // «Esquadrões» é a etiqueta mais longa e partia em
+                        // duas linhas na barra de 5 abas (visto num screenshot
+                        // do emulador: "Esquadrõe" / "s"), empurrando o ícone
+                        // para cima. Uma linha, corpo menor.
+                        label = {
+                            Text(
+                                item.label,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                fontSize = 10.sp,
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = HoldingsColors.Accent,
                             selectedTextColor = HoldingsColors.Accent,

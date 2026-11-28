@@ -542,8 +542,11 @@ jobs:
           python3 -m venv --help >/dev/null && echo venv-ok
           python3 -m venv /tmp/venv
           /tmp/venv/bin/python -m pip install --upgrade pip 2>&1 | tail -5
+          # websockets não é opcional: sem ele o uvicorn responde 404 ao
+          # /ws/live ("No supported WebSocket library detected"), a app fica
+          # com o stream em pausa e o utilizador vê um erro que parece de rede.
           /tmp/venv/bin/python -m pip install fastapi==0.115.6 uvicorn==0.34.0 \
-            pydantic==2.10.4 pyyaml httpx 2>&1 | tail -20
+            pydantic==2.10.4 pyyaml httpx websockets==12.0 2>&1 | tail -20
           /tmp/venv/bin/python -c "import fastapi, uvicorn, yaml, httpx; print('deps ok', fastapi.__version__)"
 
       - name: Subir o backend
