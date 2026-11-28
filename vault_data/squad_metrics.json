@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-28T09:11:20+00:00",
+  "updated_at": "2026-11-28T10:42:49+00:00",
   "kill_policy": {
     "min_traction_days": 7,
     "min_views_in_traction_window": 200,
@@ -42,9 +42,98 @@
           "ltv_usd": null,
           "conversion_rate": 0.0,
           "at": "2026-11-28T09:11:20+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.06,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T10:42:49+00:00"
         }
       ],
-      "updated_at": "2026-11-28T09:11:20+00:00",
+      "updated_at": "2026-11-28T10:42:49+00:00",
+      "last_verdict": "keep"
+    },
+    "sq_8f772dbd460e": {
+      "id": "sq_8f772dbd460e",
+      "name": "Guia de freelancing para jovens de Maputo — loja automatica",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing_mz",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T10:42:21+00:00",
+      "activated_at": "2026-11-28T10:42:21+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T10:42:49+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T10:42:49+00:00",
+      "last_verdict": "keep"
+    },
+    "sq_36197484aa16": {
+      "id": "sq_36197484aa16",
+      "name": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing_mz",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T10:42:35+00:00",
+      "activated_at": "2026-11-28T10:42:35+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T10:42:49+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T10:42:49+00:00",
       "last_verdict": "keep"
     }
   },
@@ -590,6 +679,152 @@
         "attempts": 1,
         "evaluated_at": "2026-11-28T09:11:20+00:00"
       }
+    },
+    {
+      "type": "ebook_package",
+      "squad_id": "sq_8f772dbd460e",
+      "title": "Guia de freelancing para jovens de Maputo — loja automatica",
+      "subtitle": "Manual accionável para freelancing_mz",
+      "price_usd": 12.0,
+      "description": "Guia prático sobre Guia de freelancing para jovens de Maputo — loja automatica para freelancing_mz.",
+      "tags": [
+        "freelancing_mz",
+        "guia",
+        "ebook"
+      ],
+      "platform": [
+        "gumroad",
+        "lemonsqueezy"
+      ],
+      "files": {
+        "markdown": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_8f772dbd460e/2026-11-28/ebook.md",
+        "html": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_8f772dbd460e/2026-11-28/ebook.html"
+      },
+      "gumroad_listing": {
+        "name": "Guia de freelancing para jovens de Maputo — loja automatica",
+        "price": "12.00",
+        "description": "Guia prático sobre Guia de freelancing para jovens de Maputo — loja automatica para freelancing_mz.\n\nEntra na lista VIP para receber os modelos editáveis em folha de cálculo e o checklist imprimível de 7 dias.",
+        "tags": [
+          "freelancing_mz",
+          "guia",
+          "ebook"
+        ],
+        "file": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_8f772dbd460e/2026-11-28/ebook.html"
+      },
+      "marketing": {
+        "twitter": "Guia de freelancing para jovens de Maputo — loja automatica — Manual accionável para freelancing_mz. Entra na lista VIP para receber os modelos editáveis em folha de cálculo e o checklist imprimível de 7 dias.",
+        "email_subject": "Guia de freelancing para jovens de Maputo — loja automatica"
+      },
+      "validated_demand": true,
+      "smoke_test_id": "smk_86c6c4c29d2a",
+      "created_at": "2026-11-28T10:42:28+00:00",
+      "judge": {
+        "score": 94.0,
+        "passed": true,
+        "content_type": "ebook",
+        "axes": {
+          "hook": 100.0,
+          "clarity": 98.0,
+          "technical": 88.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 25.0,
+          "clarity": 24.5,
+          "technical": 22.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Título no intervalo ótimo de SEO (20-70 chars).",
+          "Extensão adequada para ebook.",
+          "Frases legíveis (média 11.4 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T10:42:35+00:00"
+      }
+    },
+    {
+      "type": "ebook_package",
+      "squad_id": "sq_36197484aa16",
+      "title": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+      "subtitle": "Manual accionável para freelancing_mz",
+      "price_usd": 12.0,
+      "description": "Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.",
+      "tags": [
+        "freelancing_mz",
+        "guia",
+        "ebook"
+      ],
+      "platform": [
+        "gumroad",
+        "lemonsqueezy"
+      ],
+      "files": {
+        "markdown": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_36197484aa16/2026-11-28/ebook.md",
+        "html": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_36197484aa16/2026-11-28/ebook.html"
+      },
+      "gumroad_listing": {
+        "name": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+        "price": "12.00",
+        "description": "Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.\n\nEntra na lista VIP para receber os modelos editáveis em folha de cálculo e o checklist imprimível de 7 dias.",
+        "tags": [
+          "freelancing_mz",
+          "guia",
+          "ebook"
+        ],
+        "file": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_36197484aa16/2026-11-28/ebook.html"
+      },
+      "marketing": {
+        "twitter": "Guia de freelancing para jovens em Maputo — edicao loja automatica — Manual accionável para freelancing_mz. Entra na lista VIP para receber os modelos editáveis em folha de cálculo e o checklist imprimível de 7 dias.",
+        "email_subject": "Guia de freelancing para jovens em Maputo — edicao loja automatica"
+      },
+      "validated_demand": true,
+      "smoke_test_id": "smk_45ab5d8d8dc9",
+      "created_at": "2026-11-28T10:42:42+00:00",
+      "judge": {
+        "score": 94.0,
+        "passed": true,
+        "content_type": "ebook",
+        "axes": {
+          "hook": 100.0,
+          "clarity": 98.0,
+          "technical": 88.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 25.0,
+          "clarity": 24.5,
+          "technical": 22.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Título no intervalo ótimo de SEO (20-70 chars).",
+          "Extensão adequada para ebook.",
+          "Frases legíveis (média 11.4 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T10:42:49+00:00"
+      }
     }
   ],
   "agents": {
@@ -615,8 +850,21 @@
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T09:09:52+00:00",
-      "updated_at": "2026-11-28T09:11:20+00:00",
+      "updated_at": "2026-11-28T10:42:49+00:00",
       "reviews": [
+        {
+          "agent_id": "scout_hunter",
+          "success_rate": 1.0,
+          "cost_per_success_usd": 0.0,
+          "avg_score": 0.0,
+          "attempts": 1,
+          "decision": "healthy",
+          "reasons": [
+            "dentro dos parâmetros"
+          ],
+          "new_prompt": null,
+          "candidate_repositories": []
+        },
         {
           "agent_id": "scout_hunter",
           "success_rate": 1.0,
@@ -659,18 +907,20 @@
           "by": "bootstrap"
         }
       ],
-      "calls": 1,
+      "calls": 3,
       "tokens": 0,
       "cost_usd": 0.0,
-      "successes": 1,
+      "successes": 3,
       "failures": 0,
       "judge_scores": [
+        94.0,
+        94.0,
         94.0
       ],
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T09:11:20+00:00",
-      "updated_at": "2026-11-28T09:11:20+00:00",
+      "updated_at": "2026-11-28T10:42:49+00:00",
       "reviews": [
         {
           "agent_id": "infoproducts_affiliate",
@@ -678,6 +928,19 @@
           "cost_per_success_usd": 0.0,
           "avg_score": 94.0,
           "attempts": 1,
+          "decision": "healthy",
+          "reasons": [
+            "dentro dos parâmetros"
+          ],
+          "new_prompt": null,
+          "candidate_repositories": []
+        },
+        {
+          "agent_id": "infoproducts_affiliate",
+          "success_rate": 1.0,
+          "cost_per_success_usd": 0.0,
+          "avg_score": 94.0,
+          "attempts": 3,
           "decision": "healthy",
           "reasons": [
             "dentro dos parâmetros"
@@ -878,6 +1141,196 @@
       "conversion_rate": 0.0,
       "days_remaining": 3.0,
       "updated_at": "2026-11-28T09:11:01+00:00"
+    },
+    {
+      "id": "smk_e6c09e858d7e",
+      "idea": "Guia de freelancing para jovens em Maputo",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "running",
+      "created_at": "2026-11-28T10:41:45+00:00",
+      "deadline_at": "2026-12-01T10:41:45+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_e6c09e858d7e/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_e6c09e858d7e/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:41:38+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0
+    },
+    {
+      "id": "smk_69a085fb2451",
+      "idea": "Guia de freelancing para jovens em Maputo",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "running",
+      "created_at": "2026-11-28T10:41:59+00:00",
+      "deadline_at": "2026-12-01T10:41:59+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_69a085fb2451/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_69a085fb2451/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:41:52+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0
+    },
+    {
+      "id": "smk_45ab5d8d8dc9",
+      "idea": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T10:42:10+00:00",
+      "deadline_at": "2026-12-01T10:42:10+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 6,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "teste": 86
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo — edicao loja automatica. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo — edicao loja automatica. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo — edicao loja automatica. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_45ab5d8d8dc9/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_45ab5d8d8dc9/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:42:03+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T10:42:10+00:00",
+      "decision_reason": "Meta atingida: 80 cliques (meta 25) e conversão 7.5% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_36197484aa16",
+        "produced_at": "2026-11-28T10:42:49+00:00"
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0,
+      "updated_at": "2026-11-28T10:42:10+00:00"
+    },
+    {
+      "id": "smk_86c6c4c29d2a",
+      "idea": "Guia de freelancing para jovens de Maputo — loja automatica",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T10:42:21+00:00",
+      "deadline_at": "2026-12-01T10:42:21+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 6,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "teste": 86
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens de Maputo — loja automatica. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens de Maputo — loja automatica. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens de Maputo — loja automatica. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_86c6c4c29d2a/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_86c6c4c29d2a/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:42:15+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T10:42:21+00:00",
+      "decision_reason": "Meta atingida: 80 cliques (meta 25) e conversão 7.5% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_8f772dbd460e",
+        "produced_at": "2026-11-28T10:42:35+00:00"
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0,
+      "updated_at": "2026-11-28T10:42:21+00:00"
     }
   ],
   "cycles": [
@@ -1085,6 +1538,95 @@
       "approvals_created": [],
       "errors": [],
       "summary": "Ciclo cyc_20261128T091104 · 0 smoke test(s) novo(s) · 1 produção(ões) · 0 ordem(ns) de abate para aprovação · 1 aprovação(ões) pendente(s) ($12.00)"
+    },
+    {
+      "cycle_id": "cyc_20261128T104221",
+      "status": "completed",
+      "started_at": "2026-11-28T10:42:21+00:00",
+      "finished_at": "2026-11-28T10:42:49+00:00",
+      "duration_seconds": 27.88,
+      "steps": [
+        {
+          "step": "hygiene",
+          "status": "ok",
+          "detail": {
+            "approvals_expired": 0,
+            "smoke_tests_decided": 0
+          }
+        },
+        {
+          "step": "scout",
+          "status": "skipped",
+          "detail": "intervalo mínimo não atingido"
+        },
+        {
+          "step": "validation",
+          "status": "skipped",
+          "detail": {
+            "created": 0,
+            "tests": []
+          }
+        },
+        {
+          "step": "production",
+          "status": "ok",
+          "detail": {
+            "count": 2,
+            "items": [
+              {
+                "squad_id": "sq_8f772dbd460e",
+                "type": "infoproducts_affiliate",
+                "status": "completed",
+                "summary": "E-book 'Guia de freelancing para jovens de Maputo — loja automatica' (1566 palavras) produzido e aprovado pelo juiz (94.0/100). Ficheiros em /home/user/Holding-"
+              },
+              {
+                "squad_id": "sq_36197484aa16",
+                "type": "infoproducts_affiliate",
+                "status": "completed",
+                "summary": "E-book 'Guia de freelancing para jovens em Maputo — edicao loja auto' (1574 palavras) produzido e aprovado pelo juiz (94.0/100). Ficheiros em /home/user/Holding"
+              }
+            ]
+          }
+        },
+        {
+          "step": "accounting",
+          "status": "ok",
+          "detail": {
+            "evaluated": 3,
+            "kill_orders": 0,
+            "watched": []
+          }
+        },
+        {
+          "step": "hr",
+          "status": "ok",
+          "detail": {
+            "agents_reviewed": 7,
+            "actions_needed": []
+          }
+        },
+        {
+          "step": "legal",
+          "status": "ok",
+          "detail": {
+            "passed": true,
+            "critical": []
+          }
+        },
+        {
+          "step": "treasury",
+          "status": "ok",
+          "detail": {
+            "phase": 1,
+            "phase_changed": false,
+            "monthly_revenue_usd": 0.0,
+            "audit_balanced": true
+          }
+        }
+      ],
+      "approvals_created": [],
+      "errors": [],
+      "summary": "Ciclo cyc_20261128T104221 · 0 smoke test(s) novo(s) · 2 produção(ões) · 0 ordem(ns) de abate para aprovação · 2 aprovação(ões) pendente(s) ($12.00)"
     }
   ],
   "eval_history": [
@@ -1132,6 +1674,96 @@
         "price_usd": 12.0
       },
       "at": "2026-11-28T09:11:20+00:00"
+    },
+    {
+      "squad_id": "sq_8f772dbd460e",
+      "agent_id": "infoproducts_affiliate",
+      "content_type": "ebook",
+      "content_hash": "len9079",
+      "verdict": {
+        "score": 94.0,
+        "passed": true,
+        "content_type": "ebook",
+        "axes": {
+          "hook": 100.0,
+          "clarity": 98.0,
+          "technical": 88.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 25.0,
+          "clarity": 24.5,
+          "technical": 22.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Título no intervalo ótimo de SEO (20-70 chars).",
+          "Extensão adequada para ebook.",
+          "Frases legíveis (média 11.4 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T10:42:35+00:00"
+      },
+      "metadata": {
+        "title": "Guia de freelancing para jovens de Maputo — loja automatica",
+        "price_usd": 12.0
+      },
+      "at": "2026-11-28T10:42:35+00:00"
+    },
+    {
+      "squad_id": "sq_36197484aa16",
+      "agent_id": "infoproducts_affiliate",
+      "content_type": "ebook",
+      "content_hash": "len9135",
+      "verdict": {
+        "score": 94.0,
+        "passed": true,
+        "content_type": "ebook",
+        "axes": {
+          "hook": 100.0,
+          "clarity": 98.0,
+          "technical": 88.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 25.0,
+          "clarity": 24.5,
+          "technical": 22.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Título no intervalo ótimo de SEO (20-70 chars).",
+          "Extensão adequada para ebook.",
+          "Frases legíveis (média 11.4 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T10:42:49+00:00"
+      },
+      "metadata": {
+        "title": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+        "price_usd": 12.0
+      },
+      "at": "2026-11-28T10:42:49+00:00"
     }
   ]
 }

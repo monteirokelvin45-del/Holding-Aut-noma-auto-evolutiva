@@ -17,5 +17,41 @@
     "sqad_id": "sq_a1bce44d3f88",
     "criado_em": "2026-11-28T09:11:27+00:00",
     "preco_local": 762.0
+  },
+  {
+    "id": "sq_8f772dbd460e",
+    "titulo": "Guia de freelancing para jovens de Maputo — loja automatica",
+    "resumo": "Guia prático sobre Guia de freelancing para jovens de Maputo — loja automatica para freelancing_mz.",
+    "descricao": "Guia prático sobre Guia de freelancing para jovens de Maputo — loja automatica para freelancing_mz.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_8f772dbd460e/2026-11-28/ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing_mz",
+      "guia",
+      "ebook"
+    ],
+    "sqad_id": "sq_8f772dbd460e",
+    "criado_em": "2026-11-28T10:42:35+00:00",
+    "preco_local": 762.0
+  },
+  {
+    "id": "sq_36197484aa16",
+    "titulo": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+    "resumo": "Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.",
+    "descricao": "Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_36197484aa16/2026-11-28/ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing_mz",
+      "guia",
+      "ebook"
+    ],
+    "sqad_id": "sq_36197484aa16",
+    "criado_em": "2026-11-28T10:42:49+00:00",
+    "preco_local": 762.0
   }
 ]

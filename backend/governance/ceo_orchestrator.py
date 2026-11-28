@@ -25,6 +25,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from pathlib import Path
+
 from ..config.settings import settings
 from ..core.approvals import approval_gate
 from ..core.clock import days_since, utcnow_iso
@@ -41,6 +43,7 @@ from ..governance.legal_compliance import legal_department
 from ..squads.infoproducts_affiliate_squad import infoproducts_squad
 from ..squads.micro_saas_dev_squad import micro_saas_squad
 from ..squads.scout_hunter import scout_hunter
+from ..squads.storefront_publisher import Produto, storefront
 from ..squads.video_factory_squad import video_factory
 from ..validation.demand_validator import demand_validator
 from ..validation.eval_judge import eval_judge
@@ -472,15 +475,20 @@ class CEOOrchestrator:
             try:
                 result = self._dispatch_production(test)
                 if result is not None:
-                    produced.append(
-                        {
-                            "squad_id": result.squad_id,
-                            "squad_type": squad_type,
-                            "status": result.status,
-                            "summary": result.summary,
-                            "smoke_test_id": test["id"],
-                        }
-                    )
+                    item = {
+                        "squad_id": result.squad_id,
+                        "squad_type": squad_type,
+                        "status": result.status,
+                        "summary": result.summary,
+                        "smoke_test_id": test["id"],
+                    }
+                    # Encostar o produto à loja no mesmo ciclo. Sem isto, um
+                    # produto aprovado ficava só em vault_data/artifacts e
+                    # alguém tinha de chamar storefront.publicar() à mão.
+                    loja = self._publicar_na_loja(test, result)
+                    if loja:
+                        item["loja"] = loja
+                    produced.append(item)
                     self._mark_produced(test["id"], result.squad_id)
             except Exception as exc:
                 log.warning("Produção falhou para %s: %s", test["id"], exc)
@@ -494,6 +502,80 @@ class CEOOrchestrator:
                     }
                 )
         return produced
+
+    def _publicar_na_loja(
+        self, test: Dict[str, Any], result: Any
+    ) -> Optional[Dict[str, Any]]:
+        """Leva um produto acabado à loja estática, se for vendável.
+
+        Regras (por código, não por confiança no esquadrão):
+
+        * só entra na loja o que tem ficheiro de entrega legível;
+        * vídeo só entra se ``publishable`` — um vídeo sem áudio não é produto;
+        * o Juiz Eval tem de ter aprovado; e-book reprovado fica nos artifacts.
+
+        A loja é só a montra: o dinheiro continua a passar pelo portão de
+        aprovação humana, portanto publicar não move um cêntimo.
+        """
+        if str(getattr(result, "status", "")) != "completed":
+            return None
+        pacote: Dict[str, Any] = {}
+        for artefato in getattr(result, "artifacts", []) or []:
+            if artefato.get("type") in {
+                "ebook_package", "seo_article_package", "funnel_package",
+                "video_package", "saas_package", "product_package",
+            }:
+                pacote = artefato
+                break
+        if not pacote:
+            return None
+        if pacote.get("type") == "video_package" and not pacote.get("publishable"):
+            return None
+        juiz = pacote.get("judge") or {}
+        if juiz and juiz.get("passed") is False:
+            return None
+
+        ficheiros = pacote.get("files") or {}
+        entrega = str(
+            ficheiros.get("html") or ficheiros.get("markdown") or ""
+        )
+        if not entrega:
+            video = (pacote.get("render") or {}).get("video_path") or (
+                pacote.get("render") or {}
+            ).get("path")
+            entrega = str(video or "")
+        if not entrega or not Path(entrega).is_file():
+            return None
+
+        titulo = str(
+            pacote.get("title") or test.get("idea") or "Produto sem título"
+        )[:120]
+        preco = float(
+            pacote.get("price_usd") or test.get("price_anchor_usd") or 12.0
+        )
+        produto = Produto(
+            id=str(result.squad_id),
+            titulo=titulo,
+            resumo=str(pacote.get("description") or pacote.get("subtitle") or "")[:240],
+            descricao=str(pacote.get("description") or "")[:2000],
+            preco_usd=round(max(0.0, preco), 2),
+            ficheiro_entrega=entrega,
+            tags=[str(t)[:40] for t in (pacote.get("tags") or [])][:8],
+            sqad_id=str(result.squad_id),
+        )
+        try:
+            publicado = storefront.publicar([produto])
+        except Exception as exc:  # a loja nunca pode derrubar o ciclo
+            log.warning("Loja: falha a publicar %s: %s", produto.id, exc)
+            return {"publicado": False, "erro": str(exc)[:200]}
+        return {
+            "publicado": True,
+            "produto_id": produto.id,
+            "titulo": titulo,
+            "preco_usd": produto.preco_usd,
+            "preco_mzn": produto.preco_local(),
+            "url_publica": publicado.get("url_publica"),
+        }
 
     def _dispatch_production(self, test: Dict[str, Any]) -> Optional[Any]:
         squad_type = str(test.get("squad_type", "generic"))

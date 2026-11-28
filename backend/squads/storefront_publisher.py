@@ -166,13 +166,31 @@ class StorefrontPublisher:
         )
 
     # ------------------------------------------------------------- publicação
-    def publicar(self, produtos: List[Produto]) -> Dict[str, Any]:
-        """Escreve a loja inteira: index + uma página por produto."""
+    def publicar(
+        self, produtos: List[Produto], acumular: bool = True
+    ) -> Dict[str, Any]:
+        """Escreve a loja: index + uma página por produto.
+
+        ``acumular`` (por omissão) junta os produtos novos aos que já estão em
+        ``produtos.json``, substituindo apenas os de mesmo ``id``. Sem isto, o
+        ciclo automático apagava o catálogo a cada produto novo — a loja ficava
+        sempre com um único item, o do último ciclo, e o que já tinha sido
+        publicado desaparecia sem aviso.
+        """
         self.store_dir.mkdir(parents=True, exist_ok=True)
+        finais: Dict[str, Dict[str, Any]] = {}
+        if acumular:
+            for antigo in self._ler_produtos():
+                if antigo.get("id"):
+                    finais[str(antigo["id"])] = antigo
+        for produto in produtos:
+            finais[produto.id] = produto.to_dict()
+        catalogo = list(finais.values())
         (self.store_dir / "produtos.json").write_text(
-            json.dumps([p.to_dict() for p in produtos], ensure_ascii=False, indent=2),
+            json.dumps(catalogo, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        produtos = [self._produto_de_dict(d) for d in catalogo]
         paginas: List[str] = []
         for produto in produtos:
             caminho = self.store_dir / f"{_slug(produto.titulo)}-{produto.id}.html"
@@ -194,6 +212,13 @@ class StorefrontPublisher:
             "produtos": len(produtos),
             "url_publica": f"{settings.github_pages_base_url}/store/",
         }
+
+    @staticmethod
+    def _produto_de_dict(dados: Dict[str, Any]) -> Produto:
+        """Reconstrói um Produto lido do catálogo (ignora campos derivados)."""
+        campos = {f for f in Produto.__dataclass_fields__}  # type: ignore[attr-defined]
+        limpo = {k: v for k, v in dados.items() if k in campos}
+        return Produto(**limpo)  # type: ignore[arg-type]
 
     # -------------------------------------------------------------- pedidos
     def registar_pedido(

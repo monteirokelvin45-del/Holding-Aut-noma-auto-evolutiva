@@ -7,6 +7,7 @@ caminho do SDK oficial com um cliente falso.
 
 from __future__ import annotations
 
+import json
 import sys
 import types
 
@@ -959,3 +960,108 @@ def test_github_models_nao_aceita_o_ok_do_proxy(monkeypatch):
         object.__setattr__(cfg, "github_models_token", "")
 
     assert "proxy de egress" in str(erro.value)
+
+
+# --------------------------------------------------------------------------- #
+# 12. Produção aprovada entra sozinha na loja
+# --------------------------------------------------------------------------- #
+def test_publicar_acumula_em_vez_de_apagar_catalogo(tmp_path):
+    """Publicar um produto novo não pode apagar os anteriores.
+
+    Antes, `publicar()` reescrevia produtos.json com a lista recebida. O ciclo
+    automático publica um produto de cada vez, portanto a loja ficava sempre
+    com um único item — o último — e os anteriores desapareciam em silêncio.
+    """
+    from backend.squads.storefront_publisher import Produto, StorefrontPublisher
+
+    loja = StorefrontPublisher(base_dir=tmp_path)
+    loja.publicar([Produto(id="a", titulo="Primeiro", resumo="r", descricao="d",
+                           preco_usd=10.0)], acumular=False)
+    loja.publicar([Produto(id="b", titulo="Segundo", resumo="r", descricao="d",
+                           preco_usd=20.0)])
+
+    catalogo = json.loads((tmp_path / "produtos.json").read_text(encoding="utf-8"))
+    ids = sorted(p["id"] for p in catalogo)
+    assert ids == ["a", "b"]
+    # e as duas páginas existem
+    paginas = list(tmp_path.glob("*.html"))
+    assert any("primeiro" in p.name for p in paginas)
+    assert any("segundo" in p.name for p in paginas)
+
+
+def test_producao_aprovada_publica_na_loja(tmp_path, monkeypatch):
+    """A ponte produção -> loja leva um e-book aprovado ao catálogo."""
+    from backend.governance import ceo_orchestrator as orq
+    from backend.squads.storefront_publisher import StorefrontPublisher
+
+    entrega = tmp_path / "ebook.html"
+    entrega.write_text("<h1>Guia</h1>", encoding="utf-8")
+
+    class Resultado:
+        squad_id = "sq_teste_loja"
+        status = "completed"
+        summary = "e-book pronto"
+        artifacts = [{
+            "type": "ebook_package",
+            "title": "Guia de freelancing",
+            "description": "Como começar a freelancer em Moçambique",
+            "price_usd": 12.0,
+            "tags": ["freelancing", "mz"],
+            "files": {"html": str(entrega)},
+            "judge": {"passed": True, "score": 91},
+        }]
+
+    loja = StorefrontPublisher(base_dir=tmp_path / "store")
+    monkeypatch.setattr(orq, "storefront", loja)
+
+    info = orq.ceo._publicar_na_loja({"idea": "x", "price_anchor_usd": 9.0}, Resultado())
+
+    assert info and info["publicado"] is True
+    assert info["preco_usd"] == 12.0
+    assert info["preco_mzn"] == round(12.0 * orq.settings.usd_mzn_rate, 2)
+    catalogo = json.loads((tmp_path / "store" / "produtos.json").read_text(encoding="utf-8"))
+    assert [p["id"] for p in catalogo] == ["sq_teste_loja"]
+
+
+def test_loja_recusa_video_sem_audio_e_juiz_reprovado(tmp_path, monkeypatch):
+    """O que não é vendável não entra na montra."""
+    from backend.governance import ceo_orchestrator as orq
+    from backend.squads.storefront_publisher import StorefrontPublisher
+
+    video = tmp_path / "short.mp4"
+    video.write_bytes(b"x")
+    loja = StorefrontPublisher(base_dir=tmp_path / "store")
+    monkeypatch.setattr(orq, "storefront", loja)
+
+    class Base:
+        squad_id = "sq_x"
+        status = "completed"
+        summary = ""
+
+    # 1) vídeo sem narração: publishable=False
+    sem_audio = Base()
+    sem_audio.artifacts = [{
+        "type": "video_package", "publishable": False, "title": "Vídeo mudo",
+        "render": {"video_path": str(video)},
+    }]
+    assert orq.ceo._publicar_na_loja({}, sem_audio) is None
+
+    # 2) e-book reprovado pelo juiz
+    reprovado = Base()
+    reprovado.artifacts = [{
+        "type": "ebook_package", "title": "Reprovado",
+        "files": {"html": str(video)}, "judge": {"passed": False, "score": 40},
+    }]
+    assert orq.ceo._publicar_na_loja({}, reprovado) is None
+
+    # 3) ficheiro de entrega inexistente
+    fantasma = Base()
+    fantasma.artifacts = [{
+        "type": "ebook_package", "title": "Fantasma",
+        "files": {"html": str(tmp_path / "nao-existe.html")},
+        "judge": {"passed": True},
+    }]
+    assert orq.ceo._publicar_na_loja({}, fantasma) is None
+
+    # nada disto criou catálogo
+    assert not (tmp_path / "store" / "produtos.json").exists()
