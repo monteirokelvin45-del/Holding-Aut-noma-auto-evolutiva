@@ -152,7 +152,7 @@ fun GovernanceScreen(
                     modifier = Modifier.weight(1f),
                 )
                 StatBlock(
-                    label = "Impostos retidos",
+                    label = "Impostos",
                     value = "$${"%.2f".format(accounting?.taxReserveUsd ?: 0.0)}",
                     accent = HoldingsColors.Tax,
                     modifier = Modifier.weight(1f),
@@ -395,10 +395,13 @@ private fun StatBlock(
     accent: Color = HoldingsColors.TextPrimary,
 ) {
     Column(modifier = modifier) {
-        // Uma linha e elipse: "IMPOSTOS RETIDOS" (15 caracteres) não cabe nos
-        // ~1/3 da largura e, sem limite, quebrava e sobrepunha-se ao bloco
-        // seguinte — visto num screenshot da aba Diretoria no emulador
-        // ("IMPOSTOS RETIDOS" por cima de "FASE").
+        // Uma linha e elipse: rótulos longos em 1/3 da largura não cabem. Sem
+        // limite quebravam e sobrepunham-se ao bloco seguinte; com elipse,
+        // "IMPOSTOS RETIDOS" ficava "IMPOSTOS RETID…" a tocar em "FASE"
+        // (visto em duas execuções no emulador). A causa era o tamanho do
+        // rótulo, não a quebra: ficou "Impostos", e o valor em dólares
+        // identifica-o. O maxLines abaixo é a rede de segurança para os
+        // rótulos que vierem a crescer.
         Text(
             label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
