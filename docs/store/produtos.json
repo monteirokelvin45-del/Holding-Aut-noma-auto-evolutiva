@@ -73,5 +73,23 @@
     "sqad_id": "sq_294683cf15e2",
     "criado_em": "2026-11-28T13:00:22+00:00",
     "preco_local": 762.0
+  },
+  {
+    "id": "sq_59453be2138a",
+    "titulo": "Guia prático de freelancing para jovens de Maputo",
+    "resumo": "E-book de 5 capítulos + vídeo de 21s com voz. Gerado e narrado localmente.",
+    "descricao": "Guia prático para conseguir o primeiro cliente de freelancing em Maputo. Inclui e-book em HTML e vídeo vertical de 21 segundos com narração em português, gerados sem custo por um sistema automático.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "docs/store/media/guia-freelancing-ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing",
+      "maputo",
+      "renda"
+    ],
+    "sqad_id": "sq_59453be2138a",
+    "criado_em": "2026-11-28T13:19:40+00:00",
+    "preco_local": 762.0
   }
 ]

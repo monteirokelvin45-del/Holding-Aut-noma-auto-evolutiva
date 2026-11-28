@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-28T13:06:11+00:00",
+  "updated_at": "2026-11-28T13:19:23+00:00",
   "kill_policy": {
     "min_traction_days": 7,
     "min_views_in_traction_window": 200,
@@ -2324,6 +2324,316 @@
       "validated_demand": true,
       "created_at": "2026-11-28T13:06:11+00:00",
       "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
+    },
+    {
+      "type": "video_package",
+      "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/publication_package.json",
+      "publishable": true,
+      "publish_blockers": [],
+      "squad_id": "sq_59453be2138a",
+      "title": "Guia Prático de Freelancing para jovens de Maputo",
+      "description": "Guia Prático de Freelancing para jovens de Maputo. Clique aqui para mais informações. #FreelancingMaputo #Maputo #Startup",
+      "hashtags": [
+        "#FreelancingMaputo",
+        "#Maputo",
+        "#Startup"
+      ],
+      "platforms": [
+        "tiktok",
+        "youtube_shorts",
+        "instagram_reels"
+      ],
+      "narration": "Como começar seu profissionalismo na área de freelancing em Maputo? Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade. Acesse os recursos gratuitos e participe de eventos para crescer. Acesse nosso guia completo para uma startup no Maputo. Clique aqui para mais informações.",
+      "script": {
+        "title": "Guia Prático de Freelancing para jovens de Maputo",
+        "hook": "Como começar seu profissionalismo na área de freelancing em Maputo?",
+        "body": [
+          "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+          "Acesse os recursos gratuitos e participe de eventos para crescer."
+        ],
+        "cta": "Acesse nosso guia completo para uma startup no Maputo. Clique aqui para mais informações.",
+        "hashtags": [
+          "#FreelancingMaputo",
+          "#Maputo",
+          "#Startup"
+        ],
+        "description": "Guia Prático de Freelancing para jovens de Maputo. Clique aqui para mais informações. #FreelancingMaputo #Maputo #Startup",
+        "language": "pt",
+        "engine": "local_gguf",
+        "is_llm": true,
+        "word_count": 46
+      },
+      "render": {
+        "ok": true,
+        "video_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/short.mp4",
+        "audio_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/narracao.wav",
+        "duration_seconds": 21.55,
+        "resolution": "1080x1920",
+        "fps": 30,
+        "steps": {
+          "tts": {
+            "ok": true,
+            "engine": "kokoro:pf_dora:4.2s",
+            "ms": 15832
+          },
+          "subtitles": {
+            "ok": true,
+            "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/legendas.srt"
+          },
+          "render": {
+            "ok": true,
+            "ffmpeg": "imageio-ffmpeg",
+            "ms": 104719,
+            "frames": 646,
+            "pipeline": "offline_frame_by_frame"
+          }
+        },
+        "warnings": []
+      },
+      "footage": {
+        "source": "generated",
+        "kind": "motion_graphics",
+        "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/footage/motion/motion_base.mp4",
+        "license": "own_work",
+        "url": "",
+        "query": "freelancing_mz",
+        "engine": "pillow+ffmpeg",
+        "scenes": 4,
+        "has_text": true,
+        "note": "4 planos animados gerados localmente (Pillow + ffmpeg), sem GPU e sem material de terceiros."
+      },
+      "judge": {
+        "score": 91.27,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 92.8,
+          "clarity": 95.5,
+          "technical": 79.75,
+          "compliance": 95.5
+        },
+        "points": {
+          "hook": 23.2,
+          "clarity": 23.88,
+          "technical": 19.94,
+          "compliance": 23.88
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "Frases legíveis (média 9.2 palavras).",
+          "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+          "Acesse os recursos gratuitos e participe de eventos para crescer.",
+          "Acesse nosso guia completo para uma startup no Maputo."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Falta uma chamada à acção explícita.",
+          "Clique aqui para mais informações.",
+          "Participe de eventos para crescer."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:15:43+00:00"
+      },
+      "compliance": {
+        "subject": "media",
+        "kind": "copyright",
+        "passed": true,
+        "findings": [
+          {
+            "check": "video_source_source",
+            "passed": true,
+            "severity": "info",
+            "message": "video_source: fonte 'generated' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "generated",
+                "license": "own_work"
+              }
+            }
+          },
+          {
+            "check": "audio_source",
+            "passed": true,
+            "severity": "info",
+            "message": "audio: fonte 'kokoro' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "kokoro",
+                "license": "apache-2.0"
+              }
+            }
+          }
+        ],
+        "tool": "curated-media-policy",
+        "generated_at": "2026-11-28T13:15:24+00:00"
+      },
+      "smoke_test_id": "smk_a5881f8bbf3f",
+      "validated_demand": true,
+      "created_at": "2026-11-28T13:15:43+00:00",
+      "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
+    },
+    {
+      "type": "video_package",
+      "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/publication_package.json",
+      "publishable": true,
+      "publish_blockers": [],
+      "squad_id": "sq_59453be2138a",
+      "title": "Guia Prático de Freelancing para jovens de Maputo",
+      "description": "Guia Prático de Freelancing para jovens de Maputo. Clique aqui para mais informações. #FreelancingMaputo #Maputo #Startup",
+      "hashtags": [
+        "#FreelancingMaputo",
+        "#Maputo",
+        "#Startup"
+      ],
+      "platforms": [
+        "tiktok",
+        "youtube_shorts",
+        "instagram_reels"
+      ],
+      "narration": "Como começar seu profissionalismo na área de freelancing em Maputo? Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade. Acesse os recursos gratuitos e participe de eventos para crescer. Acesse nosso guia completo para uma startup no Maputo. Clique aqui para mais informações.",
+      "script": {
+        "title": "Guia Prático de Freelancing para jovens de Maputo",
+        "hook": "Como começar seu profissionalismo na área de freelancing em Maputo?",
+        "body": [
+          "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+          "Acesse os recursos gratuitos e participe de eventos para crescer."
+        ],
+        "cta": "Acesse nosso guia completo para uma startup no Maputo. Clique aqui para mais informações.",
+        "hashtags": [
+          "#FreelancingMaputo",
+          "#Maputo",
+          "#Startup"
+        ],
+        "description": "Guia Prático de Freelancing para jovens de Maputo. Clique aqui para mais informações. #FreelancingMaputo #Maputo #Startup",
+        "language": "pt",
+        "engine": "local_gguf",
+        "is_llm": true,
+        "word_count": 46
+      },
+      "render": {
+        "ok": true,
+        "video_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/short.mp4",
+        "audio_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/narracao.wav",
+        "duration_seconds": 21.55,
+        "resolution": "1080x1920",
+        "fps": 30,
+        "steps": {
+          "tts": {
+            "ok": true,
+            "engine": "kokoro:pf_dora:4.2s",
+            "ms": 16205
+          },
+          "subtitles": {
+            "ok": true,
+            "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/legendas.srt"
+          },
+          "render": {
+            "ok": true,
+            "ffmpeg": "imageio-ffmpeg",
+            "ms": 104372,
+            "frames": 646,
+            "pipeline": "offline_frame_by_frame"
+          }
+        },
+        "warnings": []
+      },
+      "footage": {
+        "source": "generated",
+        "kind": "motion_graphics",
+        "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/footage/motion/motion_base.mp4",
+        "license": "own_work",
+        "url": "",
+        "query": "freelancing_mz",
+        "engine": "pillow+ffmpeg",
+        "scenes": 4,
+        "has_text": true,
+        "note": "4 planos animados gerados localmente (Pillow + ffmpeg), sem GPU e sem material de terceiros."
+      },
+      "judge": {
+        "score": 91.27,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 92.8,
+          "clarity": 95.5,
+          "technical": 79.75,
+          "compliance": 95.5
+        },
+        "points": {
+          "hook": 23.2,
+          "clarity": 23.88,
+          "technical": 19.94,
+          "compliance": 23.88
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "Frases legíveis (média 9.2 palavras).",
+          "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+          "Acesse os recursos gratuitos e participe de eventos para crescer.",
+          "Acesse nosso guia completo para uma startup no Maputo."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Falta uma chamada à acção explícita.",
+          "Clique aqui para mais informações.",
+          "Participe de eventos para crescer."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:19:23+00:00"
+      },
+      "compliance": {
+        "subject": "media",
+        "kind": "copyright",
+        "passed": true,
+        "findings": [
+          {
+            "check": "video_source_source",
+            "passed": true,
+            "severity": "info",
+            "message": "video_source: fonte 'generated' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "generated",
+                "license": "own_work"
+              }
+            }
+          },
+          {
+            "check": "audio_source",
+            "passed": true,
+            "severity": "info",
+            "message": "audio: fonte 'kokoro' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "kokoro",
+                "license": "apache-2.0"
+              }
+            }
+          }
+        ],
+        "tool": "curated-media-policy",
+        "generated_at": "2026-11-28T13:19:04+00:00"
+      },
+      "smoke_test_id": "smk_a5881f8bbf3f",
+      "validated_demand": true,
+      "created_at": "2026-11-28T13:19:23+00:00",
+      "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
     }
   ],
   "agents": {
@@ -2516,19 +2826,21 @@
           "by": "bootstrap"
         }
       ],
-      "calls": 2,
+      "calls": 4,
       "tokens": 0,
       "cost_usd": 0.0,
-      "successes": 2,
+      "successes": 4,
       "failures": 0,
       "judge_scores": [
         88.0,
-        89.29
+        89.29,
+        91.27,
+        91.27
       ],
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T11:12:37+00:00",
-      "updated_at": "2026-11-28T13:06:11+00:00",
+      "updated_at": "2026-11-28T13:19:23+00:00",
       "reviews": [
         {
           "agent_id": "video_factory",
@@ -4075,6 +4387,110 @@
         "title": "Guia Prático de Freelancing para jovens de Maputo"
       },
       "at": "2026-11-28T13:06:11+00:00"
+    },
+    {
+      "squad_id": "sq_59453be2138a",
+      "agent_id": "video_factory",
+      "content_type": "video_short",
+      "content_hash": "len315",
+      "verdict": {
+        "score": 91.27,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 92.8,
+          "clarity": 95.5,
+          "technical": 79.75,
+          "compliance": 95.5
+        },
+        "points": {
+          "hook": 23.2,
+          "clarity": 23.88,
+          "technical": 19.94,
+          "compliance": 23.88
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "Frases legíveis (média 9.2 palavras).",
+          "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+          "Acesse os recursos gratuitos e participe de eventos para crescer.",
+          "Acesse nosso guia completo para uma startup no Maputo."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Falta uma chamada à acção explícita.",
+          "Clique aqui para mais informações.",
+          "Participe de eventos para crescer."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:15:43+00:00"
+      },
+      "metadata": {
+        "duration_seconds": 21.55,
+        "has_cta": true,
+        "title": "Guia Prático de Freelancing para jovens de Maputo"
+      },
+      "at": "2026-11-28T13:15:43+00:00"
+    },
+    {
+      "squad_id": "sq_59453be2138a",
+      "agent_id": "video_factory",
+      "content_type": "video_short",
+      "content_hash": "len315",
+      "verdict": {
+        "score": 91.27,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 92.8,
+          "clarity": 95.5,
+          "technical": 79.75,
+          "compliance": 95.5
+        },
+        "points": {
+          "hook": 23.2,
+          "clarity": 23.88,
+          "technical": 19.94,
+          "compliance": 23.88
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "Frases legíveis (média 9.2 palavras).",
+          "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+          "Acesse os recursos gratuitos e participe de eventos para crescer.",
+          "Acesse nosso guia completo para uma startup no Maputo."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Falta uma chamada à acção explícita.",
+          "Clique aqui para mais informações.",
+          "Participe de eventos para crescer."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:19:23+00:00"
+      },
+      "metadata": {
+        "duration_seconds": 21.55,
+        "has_cta": true,
+        "title": "Guia Prático de Freelancing para jovens de Maputo"
+      },
+      "at": "2026-11-28T13:19:23+00:00"
     }
   ]
 }

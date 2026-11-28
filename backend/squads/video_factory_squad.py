@@ -1050,8 +1050,19 @@ class VideoFactorySquad(BaseSquad):
         if offline and offline.get("ok"):
             # O resultado offline substitui o do renderer: tem áudio próprio,
             # legendas com tempos medidos e movimento real.
+            #
+            # O ficheiro TEM de passar a chamar-se short.mp4: todo o resto do
+            # pipeline (pacote, loja, entrega) procura esse nome. Sem esta
+            # cópia, o pacote dizia `duration_seconds: 21.55` e
+            # `video_path: short.mp4` mas o short.mp4 em disco era o do
+            # renderer antigo — 17,73 s, outro vídeo. O caminho do ficheiro é
+            # a interface; nomes diferentes partem-na em silêncio.
+            origem_offline = Path(offline["video"])
+            destino_final = out_dir / "short.mp4"
+            if origem_offline.resolve() != destino_final.resolve():
+                shutil.copyfile(origem_offline, destino_final)
             render.ok = True
-            render.path = offline["video"]
+            render.path = str(destino_final)
             render.audio_path = offline.get("audio") or render.audio_path
             render.duration_seconds = offline.get("duracao_s") or render.duration_seconds
             render.steps = {

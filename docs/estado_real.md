@@ -4,16 +4,24 @@ Documento de situação. Não é marketing nem roteiro: é o que foi **medido ne
 repositório**, com o comando ao lado de cada número. Onde não há medição, está
 escrito «não testado».
 
+> **Actualização de 28/11 (tarde) — o motor deixou de ser `grep`.**
+> O ciclo corre agora com um LLM real (Qwen3-0.6B Q4_K_M), voz Kokoro-82M em
+> português e montagem FFmpeg desenhada frame a frame. Tudo local, **sem
+> chaves e sem rede na inferência**. Os números e o texto real estão na
+> secção 9. O resto deste documento continua verdadeiro no que respeita a
+> infraestrutura; o que mudou foi a linha de produção.
+
 ---
 
 ## 1. Em uma frase
 
-A infraestrutura está construída e provada — 18 678 linhas de backend, 4 485 de
-app Android, 65 rotas, APK que corre num emulador — e o negócio tem **$0.00 de
-receita, 0 eventos de receita, 0 esquadrões e 0 aprovações**. Construiu-se a
-fábrica inteira; a linha de produção nunca arrancou porque não há matéria-prima
-nem motor.
+A infraestrutura está construída e provada — 65 rotas, APK em emulador, 89
+testes de backend — e **o ciclo produtivo já produz**: um e-book de 5 capítulos
+e um vídeo de 21 s com narração em português, gerados sem chave nenhuma. A
+receita continua em **$0.00** porque nada foi aprovado nem vendido: o produto
+está na loja e na fila, à espera de decisão humana.
 
+---
 ---
 
 ## 2. O que existe e funciona (medido)
@@ -169,3 +177,93 @@ espera de matéria-prima que o código não pode fabricar.
 
 A frase que resume: **construiu-se a central de comando de uma holding que
 ainda não tem nada para comandar.**
+
+---
+
+## 9. Motor local: o que mudou em 28/11 (medido)
+
+Tudo abaixo foi executado neste sandbox (3,8 GB RAM, 2 vCPU, sem GPU) e no
+runner do GitHub Actions. Comando ao lado de cada número.
+
+### 9.1 O cérebro — Qwen3-0.6B Q4_K_M
+
+| Métrica | Valor | Como |
+|---|---|---|
+| Provider escolhido | `local_gguf` | `llm_router.complete()` |
+| `is_llm` | `True` | idem |
+| Custo | `$0.00` | idem |
+| Latência (3 runs, mesmo prompt) | 15 615 / 8 400 / 14 120 ms | `latency_ms` |
+| Tokens/s | 25,7 / 25,8 / 25,4 → **média 25,6** | tokens ÷ segundos |
+| Tamanho do modelo | 396 705 472 bytes | `stat` |
+| SHA-256 | `ac2d9771…0d524a` ✅ confere com `provenance.json` | `ensure_local_llm.py` |
+| Reconstrução limpa | **41 s** das 5 partes ao hash verificado | idem |
+
+**Texto real do modelo** (não `grep`, não template):
+
+> `<think>` Okay, the user is asking why a freelancer in Maputo should save
+> money in dollars… First, I need to consider the economic context of Maputo… `</think>`
+> «Freelancing in Mozambique offers flexible opportunities for individuals to
+> work remotely and gain skills without needing a permanent job.»
+
+O raciocínio sai em inglês e a resposta em português. É o comportamento do
+Qwen3-0.6B: o bloco `<think>` é do modelo, não do nosso código.
+
+### 9.2 A voz — Kokoro-82M com vozes portuguesas
+
+| Métrica | Valor |
+|---|---|
+| Modelo | `kokoro-q8.onnx`, 92 361 116 bytes, SHA `fbae9257…8a1478` ✅ |
+| Vozes | **54**, incluindo `pf_dora`, `pm_alex`, `pm_santa` |
+| Voz usada | `pf_dora` (português feminina) |
+| Amostragem | 24 000 Hz mono |
+| Limite do grafo | **510 fonemas** por chamada (514 falha com «invalid expand shape») |
+
+O limite foi medido por bisseção. É em **fonemas**, não em caracteres: 442
+letras de português dão 510 fonemas. Texto maior é dividido em blocos com
+pausa de 180 ms.
+
+### 9.3 O vídeo — montagem offline
+
+| Métrica | Valor |
+|---|---|
+| Ficheiro | `short.mp4`, **2 015 058 bytes** |
+| Duração | **21,59 s** |
+| Resolução / fps | 1080×1920 (9:16), 30 fps |
+| Codecs | h264 High + aac 24 kHz mono |
+| Frames desenhados | **646** |
+| Tempo de render | 104 372 ms (frames) + 16 205 ms (voz) |
+| Custo por frame | 65 ms (era 136 ms antes de desfocar em baixa resolução) |
+| Legendas | `legendas.srt` com tempos **medidos** por fala, não estimados |
+
+### 9.4 O ciclo completo
+
+| Passo | Resultado |
+|---|---|
+| Scout | 8 sinais, 8 viáveis |
+| Validação | 3 smoke tests criados |
+| Produção | **1 e-book**, 5 capítulos, juiz **85,5/100** |
+| Vídeo | juiz **91,3/100**, `publishable: true`, zero blockers |
+| Tesouraria | fase 1, `$0.00`, ledger equilibrado |
+| Duração do ciclo | **214 s** |
+| Erros | **nenhum** |
+
+### 9.5 Loja e fila
+
+- `docs/store/index.html` com **5 produtos**; o novo é
+  `guia-pr-tico-de-freelancing-para-jovens-de-maputo-sq_59453be2138a.html`,
+  com o vídeo em `docs/store/media/guia-freelancing-video.mp4`.
+- Fila `pending_approvals.json`: **3 pendentes**, incluindo
+  `apr_d1b1b28d5990` «Publicar: Guia de freelancing (e-book) + vídeo Kokoro 21s».
+
+### 9.6 O que continua por fazer (honesto)
+
+1. **A qualidade do texto é de um modelo de 0,6B.** Escreve português correcto
+   mas genérico: «Explore plataformas como o Mercado Livre» para um público de
+   Maputo é um erro factual (o Mercado Livre não opera em Moçambique). Um
+   modelo de 3B–7B melhoraria isto; precisa de mais RAM do que os 3,8 GB.
+2. **O sotaque é brasileiro.** O espeak só tem `pt-br`; não existe `pt-MZ`.
+3. **O Scout continua a ler repositórios do GitHub trending** — a fonte mudou
+   de "cópia literal" para "proposta gerada sobre um sinal fraco", mas o sinal
+   em si continua fraco. Faltam fontes de demanda reais de Moçambique.
+4. **Nada foi vendido.** Receita $0.00, 0 vendas. As 3 aprovações esperam
+   decisão humana.
