@@ -640,6 +640,21 @@ jobs:
           print(f"SONDA -> provider={sonda.provider} is_llm={sonda.is_llm} "
                 f"cadeia={sonda.fallback_chain}")
 
+          # Segunda sonda: a que o Scout faz de facto. O Scout usa
+          # complete_json; a sonda de texto livre pode passar enquanto o JSON
+          # falha, e era essa a diferença entre 'LLM escolhido' e 'Scout a
+          # copiar títulos de repos'.
+          sonda_json, resposta_json = llm_router.complete_json(
+              LLMRequest(
+                  prompt=("Devolve JSON com a chave idea e uma frase concreta "
+                          "sobre freelancing em Moçambique."),
+                  task="strategy", json_mode=True, max_tokens=200,
+              ),
+              required_keys=["idea"],
+          )
+          print(f"SONDA_JSON -> provider={resposta_json.provider} "
+                f"is_llm={resposta_json.is_llm} dados={sonda_json}")
+
           relatorio = ceo.run_cycle(source="github_actions", force_scan=True, produce=True)
           Path("cycle_report.json").write_text(
               json.dumps(relatorio, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -661,6 +676,11 @@ jobs:
                   "is_llm": sonda.is_llm,
                   "cadeia": sonda.fallback_chain,
                   "erro": sonda.error,
+                  "texto_bruto": (sonda.text or "")[:800],
+                  "json_escolhido": resposta_json.provider,
+                  "json_is_llm": resposta_json.is_llm,
+                  "json_dados": sonda_json,
+                  "json_erro": resposta_json.error,
               }, ensure_ascii=False, indent=2), encoding="utf-8")
           print("SONDA_JSON " + json.dumps({
               "escolhido": sonda.provider, "is_llm": sonda.is_llm,
