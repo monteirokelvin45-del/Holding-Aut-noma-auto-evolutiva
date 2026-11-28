@@ -27,6 +27,11 @@ on:
         description: "URL do backend a fixar no APK (https://... ou http://10.0.2.2:8000 para o emulador)"
         required: false
         default: ""
+      ciclo:
+        description: "Correr um ciclo da holding (11 agentes) neste run"
+        type: boolean
+        required: false
+        default: false
       emulador:
         description: "Correr o APK num emulador Android e trazer screenshots"
         type: boolean
@@ -510,6 +515,123 @@ jobs:
   # Precisa de KVM, que o runner do GitHub tem e o sandbox de desenvolvimento
   # não (medido: /dev/kvm inexistente, 0 ocorrências de vmx/svm).
   # ===========================================================================
+  # ===========================================================================
+  # Ciclo da holding.
+  #
+  # Vive aqui, e não só no workflow 01, porque o GitHub Actions não registou o
+  # 01 (a API de workflows lista apenas este ficheiro): um workflow não
+  # registado não tem botão "Run workflow" nem cron. Até o 01 estar em `main`,
+  # este job é a única forma de correr o ciclo de 11 agentes a pedido.
+  # ===========================================================================
+  ciclo:
+    name: Ciclo da holding
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.ciclo }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Python 3.12: o runner traz 3.14 e pydantic 2.10 não tem wheels para 3.14.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências do ciclo
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/venv
+          /tmp/venv/bin/python -m pip install --upgrade pip
+          /tmp/venv/bin/python -m pip install --quiet fastapi==0.115.6 \
+            uvicorn==0.34.0 pydantic==2.10.4 httpx==0.28.1 PyYAML==6.0.2 \
+            websockets==12.0 imageio-ffmpeg Pillow numpy espeakng-loader soundfile \
+            kokoro-onnx
+          /tmp/venv/bin/python -c "import fastapi, yaml; print('deps ok')"
+
+      # Pesos do Kokoro (89 MB) reconstruídos do npm, com sha256 — o
+      # dl.google.com e o HuggingFace estão bloqueados, o npm não.
+      - name: Obter os pesos do Kokoro
+        run: |
+          set -euo pipefail
+          bash scripts/fetch_models.sh || echo "::warning::sem pesos; a voz fica no espeak-ng"
+          ls -lh models/kokoro/ 2>/dev/null || true
+
+      - name: Executar o ciclo
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          APP_ENV: production
+          VAULT_DIR: ./vault_data
+          DAILY_SPEND_CAP_USD: "0.00"
+          APPROVAL_THRESHOLD_USD: "5.00"
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LLM_PROVIDER_ORDER: "groq,gemini,github_models,openrouter,local"
+          SCOUT_USER_AGENT: "AutomatonHoldingBot/1.0 (+https://github.com/${{ github.repository }})"
+        run: |
+          set -uo pipefail
+          /tmp/venv/bin/python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          from backend.core.llm_router import llm_router
+          from backend.governance.ceo_orchestrator import ceo
+
+          st = llm_router.status()
+          print("ordem de providers:", st["order"])
+          for nome, p in st["providers"].items():
+              print(f"  {nome:15} configurado={p['configured']!s:5} {p['reason']}")
+
+          # Sonda real: quem respondeu, e foi LLM ou heurística?
+          from backend.core.llm_router import LLMRequest
+          sonda = llm_router.complete(
+              LLMRequest(prompt="Responde só: OK", max_tokens=16)
+          )
+          print(f"SONDA -> provider={sonda.provider} is_llm={sonda.is_llm} "
+                f"cadeia={sonda.fallback_chain}")
+
+          relatorio = ceo.run_cycle(source="github_actions", force_scan=True, produce=True)
+          Path("cycle_report.json").write_text(
+              json.dumps(relatorio, ensure_ascii=False, indent=2), encoding="utf-8")
+          print("estado:", relatorio.get("status"))
+          for passo in relatorio.get("steps", []):
+              print(f"  {passo['step']:12} {passo['status']:9} "
+                    f"{json.dumps(passo.get('detail', {}), ensure_ascii=False)[:200]}")
+
+          resumo = os.environ.get("GITHUB_STEP_SUMMARY")
+          if resumo:
+              with open(resumo, "a", encoding="utf-8") as f:
+                  f.write(f"## Ciclo {relatorio.get('cycle_id')}\n\n")
+                  f.write(f"**Motor:** {sonda.provider} "
+                          f"(is_llm={sonda.is_llm})\n\n")
+                  for passo in relatorio.get("steps", []):
+                      f.write(f"- `{passo['step']}` — {passo['status']}: "
+                              f"`{json.dumps(passo.get('detail', {}), ensure_ascii=False)[:250]}`\n")
+          PY
+
+      - name: Publicar resultados e estado num ramo
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          mkdir -p /tmp/res && cd /tmp/res
+          git init -q -b estado-ciclo
+          cp "$GITHUB_WORKSPACE/cycle_report.json" . 2>/dev/null || true
+          # estado do cofre (aprovações, testes de demanda, ledger)
+          mkdir -p vault_data
+          cp -r "$GITHUB_WORKSPACE/vault_data/." vault_data/ 2>/dev/null || true
+          rm -f vault_data/*.lock
+          # artefactos produzidos (e-book, vídeo)
+          mkdir -p artifacts
+          cp -r "$GITHUB_WORKSPACE/vault_data/artifacts/." artifacts/ 2>/dev/null || true
+          mkdir -p media
+          cp -r "$GITHUB_WORKSPACE/vault_data/media/." media/ 2>/dev/null || true
+          git add -A
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "ciclo ${{ github.run_id }}" || echo "nada a publicar"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" estado-ciclo 2>&1 | tail -3
+          echo "estado e artefactos no ramo estado-ciclo"
+
   emulador:
     name: Correr no emulador
     needs: build
