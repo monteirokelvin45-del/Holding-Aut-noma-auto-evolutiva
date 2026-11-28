@@ -253,3 +253,39 @@ class ApiContractTest {
         assertTrue(excecao.message!!.contains("502"))
     }
 }
+
+    // ------------------------------------------------ chaves da lista ------
+    /**
+     * Regressão do crash de 2026-11-28.
+     *
+     * No emulador, premir «Ciclo» fechava a app com
+     * `IllegalArgumentException: Key "0" was already used`. O `LazyColumn`
+     * dos eventos usa `key = { it.sequence }` e o aviso «Ligado ao backend»
+     * herdava o sequence do envelope (0), colidindo com um evento do
+     * backlog. Um `sequence` repetido não é um defeito cosmético: fecha a
+     * app no pior momento possível, quando o ciclo começa a produzir.
+     *
+     * Este teste não precisa de emulador: verifica a regra que o crash
+     * violava — as chaves da lista de eventos têm de ser únicas.
+     */
+    @Test
+    fun `eventos da live ops tem sempre chaves unicas`() {
+        val envelope = json.decodeFromString(
+            LiveEvent.serializer(), fixture("ws_live_snapshot")
+        )
+        val backlog = ApiService().parseSnapshotEvents(envelope)
+
+        // O aviso sintético de ligação, com o sequence negativo que o
+        // distingue do historico real.
+        val aviso = envelope.copy(type = "connected", sequence = -1L)
+        val lista = backlog + aviso
+
+        val chaves = lista.map { it.sequence }
+        assertEquals(
+            "chaves repetidas na lista de eventos: $chaves",
+            chaves.size,
+            chaves.distinct().size,
+        )
+        // E a lista continua ordenável sem ambiguidade.
+        assertTrue(backlog.all { it.sequence > 0L })
+    }

@@ -349,9 +349,21 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
                 _events.value = merged.takeLast(maxEvents)
                 lastSequence = _events.value.maxOfOrNull { it.sequence } ?: lastSequence
                 if (event.message.isNotBlank()) {
+                    // O `sequence` tem de ser ÚNICO. Este aviso sintético
+                    // herdava o `sequence` do envelope (frequentemente 0) e
+                    // podia colidir com um evento do backlog — e o
+                    // `LazyColumn` de eventos usa `key = { it.sequence }`.
+                    // Duas chaves iguais = IllegalArgumentException e a app
+                    // FECHA. Aconteceu mesmo no emulador (2026-11-28), ao
+                    // premir «Ciclo»: "Key 0 was already used".
+                    //
+                    // Um aviso de ligação não é um evento do bus: dar-lhe um
+                    // número negativo garante que nunca colide com o
+                    // historico real, que começa em 1.
                     addEvent(
                         event.copy(
                             type = "connected",
+                            sequence = -1L,
                             message = "Ligado ao backend · ${backlog.size} evento(s) em histórico"
                         )
                     )

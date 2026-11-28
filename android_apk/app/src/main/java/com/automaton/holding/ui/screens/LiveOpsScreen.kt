@@ -141,7 +141,10 @@ fun LiveOpsScreen(
                     .padding(10.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                items(events, key = { it.sequence }) { event ->
+                // `distinctBy` como rede de segurança: uma chave repetida não
+                // deve conseguir fechar a app, mesmo que outra parte do
+                // código volte a introduzir um evento duplicado.
+                items(events.distinctBy { it.sequence }, key = { it.sequence }) { event ->
                     EventRow(event, timeFormatter)
                 }
             }
