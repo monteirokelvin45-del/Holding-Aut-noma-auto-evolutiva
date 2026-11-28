@@ -612,14 +612,25 @@ class LLMRouter:
             cost_usd=0.0, latency_ms=latency, is_llm=True,
         )
 
-    #: Endpoints do GitHub Models, por ordem de tentativa. A Microsoft migrou o
-    #: serviço: o original está em descontinuação e o sucessor é
-    #: models.github.ai. Tentam-se os dois antes de desistir do provider — um
-    #: 404 no primeiro não deve custar a única fonte de LLM que o Actions já tem.
+    #: Endpoints do GitHub Models, por ordem de tentativa.
+    #:
+    #: Medido no runner do GitHub (sonda_rede.txt / run 46131623640):
+    #:   models.github.ai                      DNS ok, POST 200 (com e sem token)
+    #:   models.inference.ai.azure.com         **NÃO RESOLVE** (Name or service
+    #:                                         not known) — o endpoint original
+    #:                                         está desligado, não só descontinuado.
+    #:
+    #: O primeiro tem de ser o que funciona. Antes desta correcção o endpoint
+    #: morto vinha primeiro e cada chamada pagava o timeout dele antes de
+    #: tentar o bom — na prática o provider nunca era usado.
     GITHUB_MODELS_ENDPOINTS = (
         "https://models.github.ai/inference/chat/completions",
         "https://models.inference.ai.azure.com/chat/completions",
     )
+
+    #: Timeout curto para o GitHub Models. O router usa 30 s por omissão, mas
+    #: um endpoint morto não deve custar 30 s antes de se tentar o seguinte.
+    GITHUB_MODELS_TIMEOUT = 20
 
     def _call_github_models(
         self, request: LLMRequest, prompt: str, system: str
@@ -647,7 +658,11 @@ class LLMRouter:
         ultimo_erro: Optional[Exception] = None
         for url in self.GITHUB_MODELS_ENDPOINTS:
             try:
-                raw = _http_post_json(url, payload, headers)
+                # Timeout curto: um endpoint morto não pode custar 30 s antes
+                # de se tentar o seguinte (com retry de 3x, seriam 90 s).
+                raw = _http_post_json(
+                    url, payload, headers, timeout=self.GITHUB_MODELS_TIMEOUT
+                )
                 break
             except Exception as exc:  # 404 de endpoint descontinuado, 401, 429…
                 ultimo_erro = exc
