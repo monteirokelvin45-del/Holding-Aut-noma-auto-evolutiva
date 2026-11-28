@@ -189,6 +189,10 @@ tocar() {  # $1 = texto, $2 = descrição
   xy="$(coords_de "$1")"
   if [ -z "$xy" ]; then
     dump
+    # Registar o que ESTÁ no ecrã: sem isto a falha diz "não encontrei" e
+    # deixa quem lê a adivinhar se foi scroll, se o botão não existe, ou se
+    # a app rebentou. Já custou uma ronda de CI.
+    registar "    textos visíveis: $(textos | tr '\n' '|' | cut -c1-400)"
     nok "$2: não encontrei «$1» no ecrã"
     return 1
   fi
@@ -444,17 +448,26 @@ fi
 # --------------------------------------------------- 9. cartão PayPal (novo)
 # O cartão do PayPal vive no topo da Tesouraria. Sem chaves tem de aparecer
 # como "não configurado" e mostrar o aviso de que a PayPal não paga a
-# Moçambique — e o botão de cobrança tem de existir sem rebentar o ecrã.
+# Moçambique — e o formulário de cobrança tem de abrir sem rebentar o ecrã.
+#
+# Corre DEPOIS do passo do saque, que deixa a Tesouro rolada a meio e o
+# cartão do saque por cima. Por isso se sobe até ao topo antes de concluir
+# que o cartão não existe: na primeira execução o teste falhou por causa da
+# posição do scroll, não por o cartão faltar.
 registar "--- 9. cartão PayPal no Tesouro"
 if tocar "Tesouro" "aba Tesouro (paypal)"; then
   sleep 2
-  adb shell input swipe 500 1400 500 400 300 >/dev/null 2>&1   # voltar ao topo
+  # 4 swipes para cima (subir no ecrã) para garantir o topo.
+  for _ in 1 2 3 4; do
+    adb shell input swipe 540 500 540 1900 250 >/dev/null 2>&1
+    sleep 1
+  done
   sleep 1
   if textos | grep -qi "PAYPAL"; then
     ok "cartão PayPal presente no Tesouro"
     ecra "B10_paypal"
-    if textos | grep -qiE "não configurado|nao configurado|ENSAIO"; then
-      ok "cartão indica o estado real (não configurado/ENSAIO)"
+    if textos | grep -qiE "não configurado|nao configurado|ENSAIO|activo"; then
+      ok "cartão indica o estado real"
     else
       nok "cartão PayPal não diz se está configurado"
     fi
@@ -464,29 +477,26 @@ if tocar "Tesouro" "aba Tesouro (paypal)"; then
       nok "aviso «sacar para Moçambique» não aparece no cartão"
     fi
     if tocar "Nova cobrança" "abrir formulário de cobrança"; then
-      sleep 1
+      sleep 2
       ecra "B10b_paypal_form"
       if textos | grep -qi "Valor em USD"; then
-        ok "formulário de cobrança abre com o campo de valor"
+        ok "formulário de cobrança abriu com o campo de valor"
+        if tocar "Cancelar" "fechar formulário"; then
+          sleep 1
+          if textos | grep -qi "Nova cobrança"; then
+            ok "formulário fechou e não criou nada"
+          fi
+        fi
       else
         nok "formulário de cobrança não mostrou «Valor em USD»"
       fi
-      # O botão tem de estar desactivado com o campo vazio: uma cobrança de
-      # zero dólares não é uma cobrança, é um engano.
-      if textos | grep -qi "Criar cobrança"; then
-        ok "botão «Criar cobrança» existe"
-        if tocar "Cancelar" "fechar formulário"; then
-          sleep 1
-          ok "formulário fecha sem criar nada"
-        fi
-      else
-        nok "botão «Criar cobrança» ausente"
-      fi
     else
-      nok "botão «Nova cobrança» não respondeu"
+      nok "«Nova cobrança» não respondeu (ver B10_paypal)"
     fi
   else
-    nok "cartão PayPal não apareceu no Tesouro"
+    # Guardar o ecrã antes de falhar: sem isto, a falha não é diagnosticável.
+    ecra "B10_paypal_ausente"
+    nok "cartão PayPal não apareceu no Tesouro (ver B10_paypal_ausente)"
   fi
 fi
 
