@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Automaton Holding</string>
+    <string name="kill_switch">Kill Switch</string>
+    <string name="tab_live_ops">Ao Vivo</string>
+    <string name="tab_approvals">Aprovar</string>
+    <string name="tab_treasury">Tesouro</string>
+    <string name="tab_governance">Diretoria</string>
+    <string name="tab_squads">Esquadrões</string>
+    <string name="biometric_title">Confirmar operação</string>
+    <string name="biometric_subtitle">Aprovação do Presidente necessária</string>
+    <string name="biometric_cancel">Cancelar</string>
+</resources>

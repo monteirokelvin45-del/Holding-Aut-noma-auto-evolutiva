@@ -1,0 +1,1125 @@
+{
+  "report": {
+    "summary": {
+      "total": 15,
+      "running": 9,
+      "passed": 4,
+      "failed": 2,
+      "total_clicks": 490,
+      "total_signups": 25,
+      "overall_conversion": 0.051,
+      "production_unlocked": 4
+    },
+    "thresholds": {
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "window_days": [
+        3,
+        7
+      ]
+    },
+    "active": [
+      {
+        "id": "smk_5f50ac43f00f",
+        "idea": "Versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC",
+        "niche": "geral",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Se existe demanda visível em github_trending (100/100), uma oferta focada em geral com pré-venda converterá >= 4% em 3-7 dias.",
+        "cta": "Quero entrar na lista VIP",
+        "price_anchor_usd": 9.0,
+        "status": "running",
+        "created_at": "2026-11-28T09:09:59+00:00",
+        "deadline_at": "2026-12-01T09:09:59+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em geral: versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC. Quero entrar na lista VIP (link na bio).",
+          "P1 · Prova: O que já testámos sobre versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_5f50ac43f00f/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_5f50ac43f00f/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T09:09:52+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "template",
+          "campaign_source": "github_trending",
+          "is_llm_copy": false
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.76
+      },
+      {
+        "id": "smk_e6c09e858d7e",
+        "idea": "Guia de freelancing para jovens em Maputo",
+        "niche": "freelancing_mz",
+        "squad_type": "infoproducts_affiliate",
+        "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+        "cta": "Quero o guia",
+        "price_anchor_usd": 12.0,
+        "status": "running",
+        "created_at": "2026-11-28T10:41:45+00:00",
+        "deadline_at": "2026-12-01T10:41:45+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "organic": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo. Quero o guia (link na bio).",
+          "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo. Lista VIP com preço de fundador. Quero o guia."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_e6c09e858d7e/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_e6c09e858d7e/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T10:41:38+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "template",
+          "campaign_source": "organic",
+          "is_llm_copy": false
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.83
+      },
+      {
+        "id": "smk_69a085fb2451",
+        "idea": "Guia de freelancing para jovens em Maputo",
+        "niche": "freelancing_mz",
+        "squad_type": "infoproducts_affiliate",
+        "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+        "cta": "Quero o guia",
+        "price_anchor_usd": 12.0,
+        "status": "running",
+        "created_at": "2026-11-28T10:41:59+00:00",
+        "deadline_at": "2026-12-01T10:41:59+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "organic": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo. Quero o guia (link na bio).",
+          "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo. Lista VIP com preço de fundador. Quero o guia."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_69a085fb2451/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_69a085fb2451/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T10:41:52+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "template",
+          "campaign_source": "organic",
+          "is_llm_copy": false
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.83
+      },
+      {
+        "id": "smk_82192a388712",
+        "idea": "Proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory",
+        "niche": "geral",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Validar o sinal de mercado com 2434 fork em 7 dias",
+        "cta": "Análise do sinal de mercado e validação com os dados fornecidos",
+        "price_anchor_usd": 2434.0,
+        "status": "running",
+        "created_at": "2026-11-28T11:06:13+00:00",
+        "deadline_at": "2026-12-01T11:06:13+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em geral: proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory. Análise do sinal de mercado e validação com os dados fornecidos (link na bio).",
+          "P1 · Prova: O que já testámos sobre proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory. Lista VIP com preço de fundador. Análise do sinal de mercado e validação com os dados fornecidos."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_82192a388712/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_82192a388712/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T11:05:45+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "local_gguf",
+          "campaign_source": "github_trending",
+          "is_llm_copy": true
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.85
+      },
+      {
+        "id": "smk_d0b147c27885",
+        "idea": "Criar uma validação de demanda para o projeto de IA em Rust",
+        "niche": "inteligência artificial",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Validar a demanda do projeto de IA em Rust em 3-7 dias",
+        "cta": "Engajar micro_saas_dev na validação do projeto de IA em Rust",
+        "price_anchor_usd": 0.0,
+        "status": "running",
+        "created_at": "2026-11-28T11:07:10+00:00",
+        "deadline_at": "2026-12-01T11:07:10+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em inteligência artificial: criar uma validação de demanda para o projeto de IA em Rust. Engajar micro_saas_dev na validação do projeto de IA em Rust (link na bio).",
+          "P1 · Prova: O que já testámos sobre criar uma validação de demanda para o projeto de IA em Rust. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir criar uma validação de demanda para o projeto de IA em Rust. Lista VIP com preço de fundador. Engajar micro_saas_dev na validação do projeto de IA em Rust."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_d0b147c27885/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_d0b147c27885/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T11:06:13+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "local_gguf",
+          "campaign_source": "github_trending",
+          "is_llm_copy": true
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.85
+      },
+      {
+        "id": "smk_795e238522d4",
+        "idea": "Validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.",
+        "niche": "geral",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Teste a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias com custo $0.",
+        "cta": "Validar a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias.",
+        "price_anchor_usd": 0.01,
+        "status": "running",
+        "created_at": "2026-11-28T11:08:08+00:00",
+        "deadline_at": "2026-12-01T11:08:08+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em geral: validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.. Validar a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias. (link na bio).",
+          "P1 · Prova: O que já testámos sobre validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.. Lista VIP com preço de fundador. Validar a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias.."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_795e238522d4/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_795e238522d4/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T11:07:10+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "template",
+          "campaign_source": "github_trending",
+          "is_llm_copy": false
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.85
+      },
+      {
+        "id": "smk_78973ef4ac57",
+        "idea": "Smoke Test para GTA VI no PC",
+        "niche": "geral",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Validar a lançamento da GTA VI em 3-7 dias com custo $0.00",
+        "cta": "Lançar a Smoke Test de demanda",
+        "price_anchor_usd": 0.0,
+        "status": "running",
+        "created_at": "2026-11-28T12:58:03+00:00",
+        "deadline_at": "2026-12-01T12:58:03+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em geral: smoke Test para GTA VI no PC. Lançar a Smoke Test de demanda (link na bio).",
+          "P1 · Prova: O que já testámos sobre smoke Test para GTA VI no PC. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir smoke Test para GTA VI no PC. Lista VIP com preço de fundador. Lançar a Smoke Test de demanda."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_78973ef4ac57/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_78973ef4ac57/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T12:57:48+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "local_gguf",
+          "campaign_source": "github_trending",
+          "is_llm_copy": true
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.92
+      },
+      {
+        "id": "smk_a1acb70f951e",
+        "idea": "Implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.",
+        "niche": "inteligência artificial",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Validar a funcionalidade do aplicativo com modelos de inteligência artificial dentro 3-7 dias, com custo de $500.",
+        "cta": "Lancar uma suite de testes completos para avaliar a performance do aplicativo.",
+        "price_anchor_usd": 500.0,
+        "status": "running",
+        "created_at": "2026-11-28T12:58:22+00:00",
+        "deadline_at": "2026-12-01T12:58:22+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em inteligência artificial: implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. Lancar uma suite de testes completos para avaliar a performance do aplicativo. (link na bio).",
+          "P1 · Prova: O que já testámos sobre implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. Lista VIP com preço de fundador. Lancar uma suite de testes completos para avaliar a performance do aplicativo.."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_a1acb70f951e/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_a1acb70f951e/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T12:58:03+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "local_gguf",
+          "campaign_source": "github_trending",
+          "is_llm_copy": true
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.92
+      },
+      {
+        "id": "smk_3d6565313ff2",
+        "idea": "Validar a capacidade de software de escala e modelo abierto",
+        "niche": "geral",
+        "squad_type": "micro_saas_dev",
+        "hypothesis": "Implementar uma validação de smoke no projeto 'storytold/craft-anything' para avaliar sua capacidade de escala e licença comercial",
+        "cta": "Executar testes de smoke no projeto 'storytold/craft-anything'",
+        "price_anchor_usd": 0.0,
+        "status": "running",
+        "created_at": "2026-11-28T12:59:03+00:00",
+        "deadline_at": "2026-12-01T12:59:03+00:00",
+        "min_clicks": 25,
+        "min_conversion_rate": 0.04,
+        "clicks": 0,
+        "unique_clicks": 0,
+        "signups": 0,
+        "preorders": 0,
+        "revenue_usd": 0.0,
+        "sources": {
+          "github_trending": 0
+        },
+        "posts": [
+          "P0 · Gancho: Ninguém fala disto em geral: validar a capacidade de software de escala e modelo abierto. Executar testes de smoke no projeto 'storytold/craft-anything' (link na bio).",
+          "P1 · Prova: O que já testámos sobre validar a capacidade de software de escala e modelo abierto. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+          "P2 · Oferta: Estamos a construir validar a capacidade de software de escala e modelo abierto. Lista VIP com preço de fundador. Executar testes de smoke no projeto 'storytold/craft-anything'."
+        ],
+        "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_3d6565313ff2/index.html",
+        "public_url": "https://automaton-holding.github.io/smoke/smk_3d6565313ff2/",
+        "cemetery_check": {
+          "allowed": true,
+          "matches": [],
+          "threshold": 0.4,
+          "checked_at": "2026-11-28T12:58:22+00:00",
+          "corpus_size": 0
+        },
+        "decided_at": null,
+        "decision_reason": "",
+        "metadata": {
+          "copy_engine": "local_gguf",
+          "campaign_source": "github_trending",
+          "is_llm_copy": true
+        },
+        "conversion_rate": 0.0,
+        "days_remaining": 2.92
+      }
+    ],
+    "generated_at": "2026-11-28T14:48:31+00:00"
+  },
+  "tests": [
+    {
+      "id": "smk_3d6565313ff2",
+      "idea": "Validar a capacidade de software de escala e modelo abierto",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Implementar uma validação de smoke no projeto 'storytold/craft-anything' para avaliar sua capacidade de escala e licença comercial",
+      "cta": "Executar testes de smoke no projeto 'storytold/craft-anything'",
+      "price_anchor_usd": 0.0,
+      "status": "running",
+      "created_at": "2026-11-28T12:59:03+00:00",
+      "deadline_at": "2026-12-01T12:59:03+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: validar a capacidade de software de escala e modelo abierto. Executar testes de smoke no projeto 'storytold/craft-anything' (link na bio).",
+        "P1 · Prova: O que já testámos sobre validar a capacidade de software de escala e modelo abierto. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir validar a capacidade de software de escala e modelo abierto. Lista VIP com preço de fundador. Executar testes de smoke no projeto 'storytold/craft-anything'."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_3d6565313ff2/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_3d6565313ff2/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:58:22+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.92
+    },
+    {
+      "id": "smk_a1acb70f951e",
+      "idea": "Implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.",
+      "niche": "inteligência artificial",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Validar a funcionalidade do aplicativo com modelos de inteligência artificial dentro 3-7 dias, com custo de $500.",
+      "cta": "Lancar uma suite de testes completos para avaliar a performance do aplicativo.",
+      "price_anchor_usd": 500.0,
+      "status": "running",
+      "created_at": "2026-11-28T12:58:22+00:00",
+      "deadline_at": "2026-12-01T12:58:22+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em inteligência artificial: implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. Lancar uma suite de testes completos para avaliar a performance do aplicativo. (link na bio).",
+        "P1 · Prova: O que já testámos sobre implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. Lista VIP com preço de fundador. Lancar uma suite de testes completos para avaliar a performance do aplicativo.."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_a1acb70f951e/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_a1acb70f951e/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:58:03+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.92
+    },
+    {
+      "id": "smk_78973ef4ac57",
+      "idea": "Smoke Test para GTA VI no PC",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Validar a lançamento da GTA VI em 3-7 dias com custo $0.00",
+      "cta": "Lançar a Smoke Test de demanda",
+      "price_anchor_usd": 0.0,
+      "status": "running",
+      "created_at": "2026-11-28T12:58:03+00:00",
+      "deadline_at": "2026-12-01T12:58:03+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: smoke Test para GTA VI no PC. Lançar a Smoke Test de demanda (link na bio).",
+        "P1 · Prova: O que já testámos sobre smoke Test para GTA VI no PC. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir smoke Test para GTA VI no PC. Lista VIP com preço de fundador. Lançar a Smoke Test de demanda."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_78973ef4ac57/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_78973ef4ac57/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:57:48+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.92
+    },
+    {
+      "id": "smk_a5881f8bbf3f",
+      "idea": "Guia pratico de freelancing para jovens de Maputo",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "jovens de Maputo pagam por um guia pratico de freelancing",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T12:56:46+00:00",
+      "deadline_at": "2026-12-01T12:56:46+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 90,
+      "unique_clicks": 90,
+      "signups": 7,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "divulgacao": 97
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia pratico de freelancing para jovens de Maputo. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia pratico de freelancing para jovens de Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia pratico de freelancing para jovens de Maputo. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_a5881f8bbf3f/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_a5881f8bbf3f/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:56:46+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T12:56:46+00:00",
+      "decision_reason": "Meta atingida: 90 cliques (meta 25) e conversão 7.8% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_294683cf15e2",
+        "produced_at": "2026-11-28T13:00:22+00:00"
+      },
+      "conversion_rate": 0.0778,
+      "days_remaining": 2.92
+    },
+    {
+      "id": "smk_795e238522d4",
+      "idea": "Validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Teste a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias com custo $0.",
+      "cta": "Validar a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias.",
+      "price_anchor_usd": 0.01,
+      "status": "running",
+      "created_at": "2026-11-28T11:08:08+00:00",
+      "deadline_at": "2026-12-01T11:08:08+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.. Validar a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias. (link na bio).",
+        "P1 · Prova: O que já testámos sobre validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir validar a funcionalidade do SINAIS 'storytold/craft-anything' para garantir a aceitação do mercado.. Lista VIP com preço de fundador. Validar a funcionalidade do SINAIS 'storytold/craft-anything' em 3-7 dias.."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_795e238522d4/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_795e238522d4/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T11:07:10+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "github_trending",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.85
+    },
+    {
+      "id": "smk_d0b147c27885",
+      "idea": "Criar uma validação de demanda para o projeto de IA em Rust",
+      "niche": "inteligência artificial",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Validar a demanda do projeto de IA em Rust em 3-7 dias",
+      "cta": "Engajar micro_saas_dev na validação do projeto de IA em Rust",
+      "price_anchor_usd": 0.0,
+      "status": "running",
+      "created_at": "2026-11-28T11:07:10+00:00",
+      "deadline_at": "2026-12-01T11:07:10+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em inteligência artificial: criar uma validação de demanda para o projeto de IA em Rust. Engajar micro_saas_dev na validação do projeto de IA em Rust (link na bio).",
+        "P1 · Prova: O que já testámos sobre criar uma validação de demanda para o projeto de IA em Rust. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir criar uma validação de demanda para o projeto de IA em Rust. Lista VIP com preço de fundador. Engajar micro_saas_dev na validação do projeto de IA em Rust."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_d0b147c27885/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_d0b147c27885/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T11:06:13+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.85
+    },
+    {
+      "id": "smk_82192a388712",
+      "idea": "Proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Validar o sinal de mercado com 2434 fork em 7 dias",
+      "cta": "Análise do sinal de mercado e validação com os dados fornecidos",
+      "price_anchor_usd": 2434.0,
+      "status": "running",
+      "created_at": "2026-11-28T11:06:13+00:00",
+      "deadline_at": "2026-12-01T11:06:13+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory. Análise do sinal de mercado e validação com os dados fornecidos (link na bio).",
+        "P1 · Prova: O que já testámos sobre proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir proposta de Smoke Test para análise do sinal de mercado da vição de Marvisak/VIctory. Lista VIP com preço de fundador. Análise do sinal de mercado e validação com os dados fornecidos."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_82192a388712/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_82192a388712/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T11:05:45+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.85
+    },
+    {
+      "id": "smk_86c6c4c29d2a",
+      "idea": "Guia de freelancing para jovens de Maputo — loja automatica",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T10:42:21+00:00",
+      "deadline_at": "2026-12-01T10:42:21+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 6,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "teste": 86
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens de Maputo — loja automatica. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens de Maputo — loja automatica. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens de Maputo — loja automatica. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_86c6c4c29d2a/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_86c6c4c29d2a/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:42:15+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T10:42:21+00:00",
+      "decision_reason": "Meta atingida: 80 cliques (meta 25) e conversão 7.5% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_8f772dbd460e",
+        "produced_at": "2026-11-28T10:42:35+00:00"
+      },
+      "conversion_rate": 0.075,
+      "days_remaining": 2.83
+    },
+    {
+      "id": "smk_45ab5d8d8dc9",
+      "idea": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T10:42:10+00:00",
+      "deadline_at": "2026-12-01T10:42:10+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 6,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "teste": 86
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo — edicao loja automatica. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo — edicao loja automatica. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo — edicao loja automatica. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_45ab5d8d8dc9/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_45ab5d8d8dc9/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:42:03+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T10:42:10+00:00",
+      "decision_reason": "Meta atingida: 80 cliques (meta 25) e conversão 7.5% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_36197484aa16",
+        "produced_at": "2026-11-28T10:42:49+00:00"
+      },
+      "conversion_rate": 0.075,
+      "days_remaining": 2.83
+    },
+    {
+      "id": "smk_69a085fb2451",
+      "idea": "Guia de freelancing para jovens em Maputo",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "running",
+      "created_at": "2026-11-28T10:41:59+00:00",
+      "deadline_at": "2026-12-01T10:41:59+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_69a085fb2451/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_69a085fb2451/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:41:52+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.83
+    },
+    {
+      "id": "smk_e6c09e858d7e",
+      "idea": "Guia de freelancing para jovens em Maputo",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "profissionais de Maputo pagam por um guia pratico",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "running",
+      "created_at": "2026-11-28T10:41:45+00:00",
+      "deadline_at": "2026-12-01T10:41:45+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia de freelancing para jovens em Maputo. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia de freelancing para jovens em Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia de freelancing para jovens em Maputo. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_e6c09e858d7e/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_e6c09e858d7e/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T10:41:38+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.83
+    },
+    {
+      "id": "smk_d5bd7dafc80a",
+      "idea": "Guia prático de freelancing em Moçambique",
+      "niche": "freelancing",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "Se há demanda em github_trending, uma oferta focada converterá >=4%",
+      "cta": "Quero entrar na lista VIP",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T09:11:01+00:00",
+      "deadline_at": "2026-12-01T09:11:01+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 6,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "direct": 86
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing: guia prático de freelancing em Moçambique. Quero entrar na lista VIP (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia prático de freelancing em Moçambique. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia prático de freelancing em Moçambique. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_d5bd7dafc80a/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_d5bd7dafc80a/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T09:10:54+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T09:11:01+00:00",
+      "decision_reason": "Meta atingida: 80 cliques (meta 25) e conversão 7.5% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_a1bce44d3f88",
+        "produced_at": "2026-11-28T09:11:20+00:00"
+      },
+      "conversion_rate": 0.075,
+      "days_remaining": 2.77
+    },
+    {
+      "id": "smk_5afc812f8614",
+      "idea": "Versão paga/prática de: storytold/craft-anything: Craft Anything: understand how any software works, and craft your own.",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Se existe demanda visível em github_trending (26/100), uma oferta focada em geral com pré-venda converterá >= 4% em 3-7 dias.",
+      "cta": "Quero entrar na lista VIP",
+      "price_anchor_usd": 9.0,
+      "status": "failed",
+      "created_at": "2026-11-28T09:10:14+00:00",
+      "deadline_at": "2026-12-01T09:10:14+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0,
+        "direct": 80
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: versão paga/prática de: storytold/craft-anything: Craft Anything: understand how any software works, and craft your own.. Quero entrar na lista VIP (link na bio).",
+        "P1 · Prova: O que já testámos sobre versão paga/prática de: storytold/craft-anything: Craft Anything: understand how any software works, and craft your own.. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir versão paga/prática de: storytold/craft-anything: Craft Anything: understand how any software works, and craft your own.. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_5afc812f8614/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_5afc812f8614/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T09:10:07+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T09:10:30+00:00",
+      "decision_reason": "80 cliques com apenas 0 inscrição(ões) (0.0% < 4.0%): a oferta não ressoa — reformular antes de produzir.",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "github_trending",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.77
+    },
+    {
+      "id": "smk_ffb6b832c3c1",
+      "idea": "Versão paga/prática de: erkamyaman/rust-anything: Rewrite your app in Rust, piece by piece, checked against the original at every step. Works with TypeScript, JavaScript,",
+      "niche": "inteligência artificial",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Se existe demanda visível em github_trending (85/100), uma oferta focada em inteligência artificial com pré-venda converterá >= 4% em 3-7 dias.",
+      "cta": "Quero entrar na lista VIP",
+      "price_anchor_usd": 9.0,
+      "status": "failed",
+      "created_at": "2026-11-28T09:10:07+00:00",
+      "deadline_at": "2026-12-01T09:10:07+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 80,
+      "unique_clicks": 80,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0,
+        "direct": 80
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em inteligência artificial: versão paga/prática de: erkamyaman/rust-anything: Rewrite your app in Rust, piece by piece, checked against the original at every step. Work. Quero entrar na lista VIP (link na bio).",
+        "P1 · Prova: O que já testámos sobre versão paga/prática de: erkamyaman/rust-anything: Rewrite your app in Rust, piece by piece, checked against the original at every step. Work. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir versão paga/prática de: erkamyaman/rust-anything: Rewrite your app in Rust, piece by piece, checked against the original at every step. Work. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_ffb6b832c3c1/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_ffb6b832c3c1/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T09:09:59+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T09:10:39+00:00",
+      "decision_reason": "80 cliques com apenas 0 inscrição(ões) (0.0% < 4.0%): a oferta não ressoa — reformular antes de produzir.",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "github_trending",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.77
+    },
+    {
+      "id": "smk_5f50ac43f00f",
+      "idea": "Versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Se existe demanda visível em github_trending (100/100), uma oferta focada em geral com pré-venda converterá >= 4% em 3-7 dias.",
+      "cta": "Quero entrar na lista VIP",
+      "price_anchor_usd": 9.0,
+      "status": "running",
+      "created_at": "2026-11-28T09:09:59+00:00",
+      "deadline_at": "2026-12-01T09:09:59+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC. Quero entrar na lista VIP (link na bio).",
+        "P1 · Prova: O que já testámos sobre versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir versão paga/prática de: Marvisak/VIctory: An attempt at running GTA VI on PC. Lista VIP com preço de fundador. Quero entrar na lista VIP."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_5f50ac43f00f/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_5f50ac43f00f/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T09:09:52+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "github_trending",
+        "is_llm_copy": false
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 2.76
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      usesCleartextTraffic=true NÃO significa "HTTP em claro em qualquer lado":
+      quem decide o que é permitido é o @xml/network_security_config, que
+      proíbe cleartext por omissão e só o autoriza para loopback, 10.0.2.2
+      (emulador) e a rede local (.local).
+
+      Sem esta combinação, o ecrã de ligação do APK não servia de nada: o
+      utilizador escrevia o IP do computador, o Android recusava a ligação e a
+      app dizia "erro de rede". O endereço passou a ser configurável no
+      telefone, por isso a política tem de acompanhar.
+    -->
+
+    <!-- Rede (REST + WebSocket) e biometria -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AutomatonHolding"
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:ignore="UnusedAttribute"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="35">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AutomatonHolding">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -1,0 +1,95 @@
+[
+  {
+    "id": "ebook-freelancing-mz",
+    "titulo": "Guia prático de freelancing em Moçambique",
+    "resumo": "Manual accionável para começar a faturar com serviços digitais, pensado para recursos limitados e canais locais.",
+    "descricao": "Cinco capítulos: diagnóstico em 10 minutos, o método em 3 passos, erros caros a evitar e um plano de 7 dias. Produzido pelo esquadrão de infoprodutos e revisto antes de publicação.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "vault_data/artifacts/sq_a1bce44d3f88/2026-11-28/ebook.md",
+    "link_externo": "",
+    "tags": [
+      "freelancing",
+      "moçambique",
+      "guia",
+      "iniciante"
+    ],
+    "sqad_id": "sq_a1bce44d3f88",
+    "criado_em": "2026-11-28T09:11:27+00:00",
+    "preco_local": 762.0
+  },
+  {
+    "id": "sq_8f772dbd460e",
+    "titulo": "Guia de freelancing para jovens de Maputo — loja automatica",
+    "resumo": "Guia prático sobre Guia de freelancing para jovens de Maputo — loja automatica para freelancing_mz.",
+    "descricao": "Guia prático sobre Guia de freelancing para jovens de Maputo — loja automatica para freelancing_mz.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_8f772dbd460e/2026-11-28/ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing_mz",
+      "guia",
+      "ebook"
+    ],
+    "sqad_id": "sq_8f772dbd460e",
+    "criado_em": "2026-11-28T10:42:35+00:00",
+    "preco_local": 762.0
+  },
+  {
+    "id": "sq_36197484aa16",
+    "titulo": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+    "resumo": "Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.",
+    "descricao": "Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_36197484aa16/2026-11-28/ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing_mz",
+      "guia",
+      "ebook"
+    ],
+    "sqad_id": "sq_36197484aa16",
+    "criado_em": "2026-11-28T10:42:49+00:00",
+    "preco_local": 762.0
+  },
+  {
+    "id": "sq_294683cf15e2",
+    "titulo": "Guia Pratico de Freelancing para jovens de Maputo",
+    "resumo": "Este guia oferece um plano básico para jovens de Maputo que desejem se tornar profissionais em freelancing. Com base nos princípios de economia sustentável e empreendedorismo, o conteúdo inclui dicas para criar uma carreira independente e c",
+    "descricao": "Este guia oferece um plano básico para jovens de Maputo que desejem se tornar profissionais em freelancing. Com base nos princípios de economia sustentável e empreendedorismo, o conteúdo inclui dicas para criar uma carreira independente e como se tornar uma força positiva na área.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_294683cf15e2/2026-11-28/ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing_mz",
+      "maputo",
+      "freelancing-mercados-africa",
+      "freelancing-mosambique",
+      "empreendedorismo-afro"
+    ],
+    "sqad_id": "sq_294683cf15e2",
+    "criado_em": "2026-11-28T13:00:22+00:00",
+    "preco_local": 762.0
+  },
+  {
+    "id": "sq_59453be2138a",
+    "titulo": "Guia prático de freelancing para jovens de Maputo",
+    "resumo": "E-book de 5 capítulos + vídeo de 21s com voz. Gerado e narrado localmente.",
+    "descricao": "Guia prático para conseguir o primeiro cliente de freelancing em Maputo. Inclui e-book em HTML e vídeo vertical de 21 segundos com narração em português, gerados sem custo por um sistema automático.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "docs/store/media/guia-freelancing-ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing",
+      "maputo",
+      "renda"
+    ],
+    "sqad_id": "sq_59453be2138a",
+    "criado_em": "2026-11-28T13:19:40+00:00",
+    "preco_local": 762.0
+  }
+]

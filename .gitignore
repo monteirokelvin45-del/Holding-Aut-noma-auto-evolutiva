@@ -1,0 +1,97 @@
+# ==== Python ====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ==== Segredos ====
+.env
+.env.local
+*.pem
+*.p12
+*.keystore
+!android_apk/gradle/wrapper/gradle-wrapper.jar
+
+# ==== Dados voláteis (o cofre é versionado são apenas os 4 ficheiros de estado) ====
+vault_data/*.lock
+vault_data/*.tmp
+vault_data/media/
+vault_data/cache/
+vault_data/artifacts/
+vault_data/logs/
+vault_data/smoke_tests/
+vault_data/ledger.archive.json
+# Estado efémero de execução (contadores de quota, caches de runtime)
+vault_data/runtime/
+
+# ==== Testes / ferramentas ====
+.pytest_cache/
+.report.json
+
+# ==== Android / Gradle ====
+# O wrapper (gradle/wrapper/*) é versionado para builds reprodutíveis; só os
+# binários gerados/local.properties ficam de fora.
+android_apk/.gradle/
+android_apk/build/
+android_apk/app/build/
+android_apk/local.properties
+android_apk/.idea/
+android_apk/*.iml
+*.apk
+*.aab
+*.jks
+captures/
+
+# ==== Pesos de modelos (107 MB, reconstruíveis) ====
+# Não são versionados: são *reconstruíveis* por scripts/fetch_models.sh, que
+# verifica o sha256 do modelo antes de o dar como instalado. Estão fora do Git
+# pela mesma razão que o .venv — tamanho, não incerteza.
+models/*/*.onnx
+models/*/*.npz
+!models/*/.gitkeep
+
+# APK compilado: 18 MB, reconstruível no CI (workflow 02) e disponível no
+# ramo `apk-artifact`. A cópia local existe para ser entregue, não versionada.
+dist/*.apk
+dist/SHA256SUMS.txt
+
+# Android platform-tools (adb/fastboot): 22 MB, reconstruíveis por
+# scripts/fetch_adb.sh com verificação sha256.
+tools/adb
+tools/fastboot
+tools/etc1tool
+tools/hprof-conv
+tools/make_f2fs
+tools/make_f2fs_casefold
+tools/mke2fs
+tools/sqlite3
+tools/lib64/
+tools/index.js
+tools/package.json
+
+# ==== Node / frontend auxiliar ====
+node_modules/
+# dist/ é ignorado por inteiro (build de Node). O APK entregue ao utilizador
+# vive em dist/app-debug.apk mas o que se versiona é dist/INSTALAR.md, que é
+# forçado com `git add -f`.
+dist/
+.next/
+out/
+
+# ==== Sistema ====
+.DS_Store
+Thumbs.db
+*.log
+
+# ==== Pesos de modelos locais (207 MB) ====
+# Não vão para o repositório: são reinstaláveis e verificáveis por
+# scripts/instalar_motor_local.sh, que confere o SHA-256 de cada um.
+models/kokoro/*.onnx
+models/kokoro/voices/
+models/*.gguf

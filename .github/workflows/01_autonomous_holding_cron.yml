@@ -1,0 +1,339 @@
+# =============================================================================
+# Ciclo autónomo da holding — executa a cada 6 horas.
+#
+# Corre o ciclo do CEO diretamente no runner (não precisa de servidor):
+#   1. valida os portões (kill switch, cemitério, smoke tests)
+#   2. procura oportunidades, cria smoke tests
+#   3. produz apenas para demanda já aprovada
+#   4. audita métricas, aplica a regra de abate, reescreve prompts
+#   5. consolida o relatório e publica o artefacto
+#
+# O estado (vault_data) persiste via commit no ramo `state/vault` — nunca no
+# ramo principal — para manter o histórico auditável e evitar conflitos.
+# =============================================================================
+name: 01 · Autonomous Holding Cycle
+
+on:
+  schedule:
+    # A cada 6 horas (00:00, 06:00, 12:00, 18:00 UTC).
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      force_scan:
+        description: "Forçar varredura de mercado"
+        type: boolean
+        default: true
+      produce:
+        description: "Permitir produção para demanda validada"
+        type: boolean
+        default: true
+
+concurrency:
+  group: autonomous-holding-cycle
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  cycle:
+    name: Ciclo do CEO
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Restaurar estado do cofre (ramo state/vault)
+        run: |
+          set -euo pipefail
+          git config user.name  "automaton-bot"
+          git config user.email "bot@automaton-holding.local"
+          if git ls-remote --exit-code --heads origin state/vault > /dev/null 2>&1; then
+            echo "Ramo de estado encontrado: a restaurar vault_data."
+            git fetch origin state/vault --depth 1
+            # Extrai apenas o snapshot de estado (vault_state/*.json).
+            rm -rf /tmp/vault_state && mkdir -p /tmp/vault_state
+            git archive origin/state/vault vault_state | tar -x -C /tmp/vault_state
+            if compgen -G "/tmp/vault_state/vault_state/*.json" > /dev/null; then
+              cp -f /tmp/vault_state/vault_state/*.json vault_data/
+              echo "Estado restaurado:"
+              ls -1 vault_data/*.json
+            else
+              echo "::warning::Ramo de estado sem ficheiros JSON."
+            fi
+          else
+            echo "Sem ramo de estado: arranque com o cofre inicial versionado."
+          fi
+
+      - name: Instalar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências essenciais
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          # Apenas o subconjunto necessário ao ciclo: mantém o job rápido e
+          # evita dependências pesadas (torch) no runner.
+          pip install fastapi==0.115.6 uvicorn==0.34.0 pydantic==2.10.4 \
+                      httpx==0.28.1 PyYAML==6.0.2 pytest==8.3.4 pytest-asyncio==0.25.0 \
+                      edge-tts==7.0.0 imageio-ffmpeg==0.5.1
+          # CrewAI (MIT) é opcional: com ele o ciclo usa orquestração
+          # multi-agente; sem ele corre no caminho nativo. Nunca falha o job.
+          pip install crewai==0.86.0 || \
+            echo "::notice::CrewAI não instalado — caminho nativo activo."
+
+      - name: Verificar chaves e limites de custo
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # GitHub Models: sem chave nova, o token do próprio Actions serve.
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
+          DAILY_SPEND_CAP_USD: "0.00"
+        run: |
+          set -euo pipefail
+          echo "Tecto diário de gasto: \$${DAILY_SPEND_CAP_USD}"
+          python - <<'PY'
+          import os
+          keys = {
+              "groq": bool(os.environ.get("GROQ_API_KEY")),
+              "gemini": bool(os.environ.get("GEMINI_API_KEY")),
+              "openrouter": bool(os.environ.get("OPENROUTER_API_KEY")),
+          }
+          print("Providers configurados:", keys)
+          if not any(keys.values()):
+              print("::warning::Sem chaves LLM — o ciclo usará o motor "
+                    "heurístico local (resultados marcados como não-LLM).")
+          PY
+
+      - name: Diagnosticar integração com IA (chamada real, custo $0.00)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # GitHub Models: sem chave nova, o token do próprio Actions serve.
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
+          LLM_PROVIDER_ORDER: "groq,gemini,local_gguf,ollama,github_models,openrouter,local"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from backend.core.crew_bridge import agent_registry, crew_bridge
+          from backend.core.llm_smoke import run_probe
+
+          catalog = agent_registry.validate()
+          print("Agentes declarados:", catalog["agents"], "| tarefas:", catalog["tasks"])
+          print("Erros de configuração:", catalog["errors"])
+          print("Ponte:", crew_bridge.availability())
+
+          probe = run_probe()
+          print("DIAGNÓSTICO IA:", probe["conclusion"])
+          for item in probe["results"]:
+              print(f"  - {item['provider']}: {item['status']} "
+                    f"({item.get('latency_ms', '-')} ms)")
+
+          output = os.environ.get("GITHUB_STEP_SUMMARY")
+          if output:
+              with open(output, "a", encoding="utf-8") as handle:
+                  handle.write("### Integração com IA\n\n")
+                  handle.write(f"{probe['conclusion']}\n\n")
+                  handle.write("| Provedor | Estado | Modelo |\n|---|---|---|\n")
+                  for item in probe["results"]:
+                      handle.write(
+                          f"| {item['provider']} | {item['status']} | "
+                          f"{item.get('model', '-')} |\n")
+          if not probe["reachable"] and not probe["configured"]:
+              print("::warning::Sem chaves de LLM: o ciclo usa o motor local "
+                    "heurístico (is_llm=false). Adiciona GROQ_API_KEY.")
+          elif probe["configured"] and not probe["reachable"]:
+              print("::warning::Chaves presentes mas nenhum provedor respondeu.")
+          PY
+
+      - name: Diagnosticar stack aberta (vídeo IA, pesquisa, M-Pesa SDK)
+        env:
+          GENAI_VIDEO_ENABLED: "false"
+          RESEARCH_MAX_RESULTS: "3"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import importlib.util
+          from backend.squads.ai_video_backends import genai_backends
+          from backend.squads.motion_renderer import motion_renderer
+          from backend.squads.research_backends import research_backends
+
+          gen = genai_backends.status()
+          print("Vídeo IA — ordem:", gen["order"])
+          print("Vídeo IA (GPU) — prontos:",
+                gen["ready"] or "nenhum")
+          for name, meta in gen["backends"].items():
+              print(f"  - {name}: {meta['license']} | ready={meta['ready']}")
+
+          motion = motion_renderer.capabilities()
+          print("Motion graphics (sem GPU):", motion["available"],
+                "|", motion.get("engine"))
+
+          res = research_backends.availability()
+          print("Pesquisa — motor activo:", res["active"])
+
+          sdk = importlib.util.find_spec("paymentsds")
+          print("M-Pesa SDK instalado:", bool(sdk))
+
+          output = __import__("os").environ.get("GITHUB_STEP_SUMMARY")
+          if output:
+              with open(output, "a", encoding="utf-8") as handle:
+                  handle.write("\n### Stack de IA aberta\n\n")
+                  handle.write(f"* backends de vídeo prontos: "
+                               f"{gen['ready'] or 'nenhum (stock)'}\n")
+                  handle.write(f"* motion graphics sem GPU: "
+                               f"{'sim' if motion['available'] else 'não'}\n")
+                  handle.write(f"* pesquisa: `{res['active']}`\n")
+                  handle.write(f"* SDK M-Pesa: "
+                               f"{'instalado' if sdk else 'fluxo HTTP directo'}\n")
+          if not gen["ready"] and not motion["available"]:
+              print("::warning::Sem GPU e sem motion graphics: o footage virá "
+                    "do banco de imagens.")
+          elif not gen["ready"]:
+              print("::notice::Sem GPU: o vídeo é feito com motion graphics "
+                    "próprios (Pillow+ffmpeg), não com stock.")
+          PY
+
+      - name: Executar o ciclo da holding
+        env:
+          APP_ENV: production
+          LOG_JSON: "true"
+          VAULT_DIR: ./vault_data
+          DAILY_SPEND_CAP_USD: "0.00"
+          PER_AGENT_DAILY_CAP_USD: "0.00"
+          APPROVAL_THRESHOLD_USD: "5.00"
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # GitHub Models: sem chave nova, o token do próprio Actions serve.
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
+          OLLAMA_ENABLED: "false"
+          LLM_PROVIDER_ORDER: "groq,gemini,local_gguf,ollama,github_models,openrouter,local"
+          GITHUB_TOKEN: ${{ secrets.HOLDING_GITHUB_TOKEN }}
+          SCOUT_USER_AGENT: "AutomatonHoldingBot/1.0 (+https://github.com/${{ github.repository }})"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ALLOWED_CHAT_IDS: ${{ secrets.TELEGRAM_ALLOWED_CHAT_IDS }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          MPESA_API_KEY: ${{ secrets.MPESA_API_KEY }}
+          MPESA_PUBLIC_KEY: ${{ secrets.MPESA_PUBLIC_KEY }}
+          MPESA_SERVICE_PROVIDER_CODE: ${{ secrets.MPESA_SERVICE_PROVIDER_CODE }}
+          MPESA_SANDBOX: "true"
+          FORCE_SCAN: ${{ github.event.inputs.force_scan || 'true' }}
+          PRODUCE: ${{ github.event.inputs.produce || 'true' }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+
+          from backend.governance.ceo_orchestrator import ceo
+          from backend.core.security_guard import kill_switch
+
+          force = os.environ.get("FORCE_SCAN", "true").lower() == "true"
+          produce = os.environ.get("PRODUCE", "true").lower() == "true"
+
+          if kill_switch.engaged:
+              state = kill_switch.status()
+              print(f"::error::Kill switch activo ({state['reason']}). "
+                    "Ciclo bloqueado até o Presidente libertar o sistema.")
+              sys.exit(1)
+
+          report = ceo.run_cycle(source="github_actions",
+                                 force_scan=force, produce=produce)
+          Path("cycle_report.json").write_text(
+              json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+          print(report.get("summary", "ciclo concluído"))
+
+          output = os.environ.get("GITHUB_STEP_SUMMARY")
+          if output:
+              with open(output, "a", encoding="utf-8") as handle:
+                  handle.write(f"## Ciclo {report.get('cycle_id')}\n\n")
+                  handle.write(f"**{report.get('summary')}**\n\n")
+                  for step in report.get("steps", []):
+                      handle.write(
+                          f"- `{step['step']}` — {step['status']}: "
+                          f"`{json.dumps(step.get('detail', {}), ensure_ascii=False)[:300]}`\n")
+          if report.get("status") in {"failed"}:
+              sys.exit(1)
+          PY
+
+      - name: Testes de integridade do backend
+        run: |
+          set -euo pipefail
+          pip install pytest-asyncio
+          python -m pytest backend/tests -q --maxfail=1 || {
+            echo "::warning::Testes falharam — verificar o relatório do ciclo.";
+            exit 1;
+          }
+
+      - name: Publicar artefactos do ciclo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycle-report-${{ github.run_id }}
+          path: |
+            cycle_report.json
+            vault_data/*.json
+            vault_data/artifacts/**
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Persistir estado no ramo state/vault
+        if: always()
+        run: |
+          set -euo pipefail
+          git config user.name  "automaton-bot"
+          git config user.email "bot@automaton-holding.local"
+          mkdir -p /tmp/state_out
+          cp -f vault_data/*.json /tmp/state_out/ 2>/dev/null || true
+          # O ramo de estado começa órfão para não arrastar o histórico da app.
+          git switch --orphan state-vault-tmp 2>/dev/null || git checkout --orphan state-vault-tmp
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          mkdir -p vault_state
+          cp -f /tmp/state_out/*.json vault_state/ 2>/dev/null || true
+          if ! compgen -G "vault_state/*.json" > /dev/null; then
+            echo "Sem ficheiros de estado para persistir."
+            exit 0
+          fi
+          git add vault_state/*.json
+          git commit -m "state: ciclo $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "Sem alterações de estado."
+          git push origin HEAD:state/vault --force
+
+  notify:
+    name: Notificar falhas
+    needs: cycle
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar o Presidente no Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ALLOWED_CHAT_IDS: ${{ secrets.TELEGRAM_ALLOWED_CHAT_IDS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
+            echo "Sem token Telegram: notificação ignorada."
+            exit 0
+          fi
+          IFS=',' read -ra CHATS <<< "${TELEGRAM_ALLOWED_CHAT_IDS}"
+          for chat in "${CHATS[@]}"; do
+            chat_trimmed="$(echo "$chat" | xargs)"
+            [ -z "$chat_trimmed" ] && continue
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" \
+              -d "{\"chat_id\":\"${chat_trimmed}\",\"text\":\"❌ Ciclo autónomo falhou. Ver: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+              > /dev/null
+          done

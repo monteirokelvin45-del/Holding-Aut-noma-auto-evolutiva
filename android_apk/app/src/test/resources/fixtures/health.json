@@ -1,0 +1,126 @@
+{
+  "status": "ok",
+  "service": "automaton-holding-api",
+  "version": "1.0.0",
+  "env": "test",
+  "started_at": "2026-11-28T14:48:31+00:00",
+  "now": "2026-11-28T14:48:31+00:00",
+  "kill_switch": {
+    "engaged": false,
+    "reason": "operacional",
+    "engaged_by": "president_apk",
+    "engaged_at": "2026-11-28T13:36:16+00:00",
+    "released_at": "2026-11-28T13:36:16+00:00",
+    "version": 7
+  },
+  "vault": {
+    "root": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data",
+    "files": {
+      "ledger.json": {
+        "exists": true,
+        "bytes": 835,
+        "valid_json": true
+      },
+      "post_mortem_memory.json": {
+        "exists": true,
+        "bytes": 147,
+        "valid_json": true
+      },
+      "squad_metrics.json": {
+        "exists": true,
+        "bytes": 182005,
+        "valid_json": true
+      },
+      "pending_approvals.json": {
+        "exists": true,
+        "bytes": 10147,
+        "valid_json": true
+      }
+    }
+  },
+  "integrations": {
+    "groq": false,
+    "gemini": false,
+    "github_models": true,
+    "openrouter": false,
+    "ollama": false,
+    "langfuse": false,
+    "telegram": false,
+    "pexels": false,
+    "pixabay": false,
+    "genai_video": false,
+    "gumroad": false,
+    "lemonsqueezy": false,
+    "mpesa": false,
+    "emola": false,
+    "paypal": false,
+    "wise": false,
+    "github": true
+  },
+  "budget": {
+    "daily_cap_usd": 0.0,
+    "per_agent_cap_usd": 0.0,
+    "approval_threshold_usd": 5.0
+  },
+  "llm": {
+    "groq": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "gemini": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "github_models": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "openrouter": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
+    "ollama": {
+      "configured": false,
+      "available": false,
+      "reason": "ollama_desligado",
+      "requests_today": 0
+    },
+    "llm7": {
+      "configured": false,
+      "available": false,
+      "reason": "desligado_por_omissao",
+      "requests_today": 0
+    },
+    "pollinations": {
+      "configured": false,
+      "available": false,
+      "reason": "desligado_por_omissao",
+      "requests_today": 0
+    },
+    "local_gguf": {
+      "configured": true,
+      "available": true,
+      "reason": "pronto",
+      "requests_today": 32
+    },
+    "local": {
+      "configured": true,
+      "available": true,
+      "reason": "sempre_disponivel",
+      "requests_today": 3
+    }
+  },
+  "websocket_clients": 0,
+  "telegram": {
+    "enabled": false,
+    "allowed_chats": 0
+  }
+}

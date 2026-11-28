@@ -1,0 +1,1020 @@
+# =============================================================================
+# Build do APK Android (Kotlin + Jetpack Compose).
+#
+# Produz:
+#   * app-debug.apk    (sempre, para testes)
+#   * app-release.apk  (assinado, se os segredos de keystore existirem)
+#
+# Segredos necessários para release:
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD,
+#   AUTOMATON_BASE_URL, AUTOMATON_API_TOKEN
+# =============================================================================
+name: 02 · Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android_apk/**"
+      - ".github/workflows/02_build_android_apk.yml"
+  pull_request:
+    paths:
+      - "android_apk/**"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL do backend a fixar no APK (https://... ou http://10.0.2.2:8000 para o emulador)"
+        required: false
+        default: ""
+      ciclo:
+        description: "Correr um ciclo da holding (11 agentes) neste run"
+        type: boolean
+        required: false
+        default: false
+      emulador:
+        description: "Correr o APK num emulador Android e trazer screenshots"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write      # publicar o APK num ramo (ver passo final)
+  pull-requests: write
+  issues: write
+
+jobs:
+  build:
+    name: Compilar APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # setup-gradle trata de cache; quando recebe gradle-version também
+      # instala — mas só em cache miss, o que tornava o passo seguinte
+      # dependente de um detalhe invisível. O Gradle passa a ser descarregado
+      # explicitamente de services.gradle.org (rede aberta no runner), de
+      # forma determinística e verificável com --version.
+      - name: Instalar Gradle 8.10.2
+        run: |
+          set -euo pipefail
+          VERSION=8.10.2
+          URL="https://services.gradle.org/distributions/gradle-${VERSION}-bin.zip"
+          echo "A descarregar $URL"
+          curl -fsSL --retry 3 --retry-delay 2 "$URL" -o /tmp/gradle.zip
+          ls -lh /tmp/gradle.zip
+          sudo mkdir -p /opt/gradle && sudo unzip -q /tmp/gradle.zip -d /opt/gradle
+          echo "/opt/gradle/gradle-${VERSION}/bin" >> "$GITHUB_PATH"
+          export PATH="/opt/gradle/gradle-${VERSION}/bin:$PATH"
+          gradle --version
+
+      - name: Configurar cache do Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Aceitar licenças do Android SDK
+        run: |
+          set -euo pipefail
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-35" "build-tools;35.0.0" > /dev/null
+
+      # Não se gera o wrapper: o Gradle já está instalado e verificado no passo
+      # anterior. Gerar o wrapper era um passo extra que podia falhar por
+      # motivos próprios (resolução de plugins na fase de configuração) e
+      # obscurecia o erro real. Se o repositório trouxer ./gradlew, usa-se.
+      - name: Escolher comando Gradle
+        id: gradle
+        run: |
+          set -euo pipefail
+          if [ -x android_apk/gradlew ]; then
+            echo "cmd=./gradlew" >> "$GITHUB_OUTPUT"
+            echo "Wrapper do repositório encontrado."
+          else
+            echo "cmd=gradle" >> "$GITHUB_OUTPUT"
+            echo "Sem wrapper: usa a distribuição instalada ($(gradle --version | awk '/^Gradle/{print $2}'))."
+          fi
+
+      - name: Preparar keystore de release
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        working-directory: android_apk
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Keystore de release disponível."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sem keystore: apenas o APK de debug será assinado."
+          fi
+
+      - name: Resolver URL do backend
+        id: backend
+        env:
+          SECRET_URL: ${{ secrets.AUTOMATON_BASE_URL }}
+          INPUT_URL: ${{ github.event.inputs.base_url }}
+        run: |
+          set -euo pipefail
+          # Prioridade: input manual > segredo do repositório.
+          # Não há valor por omissão: um APK a apontar para um domínio que não
+          # existe falha em runtime com "erro de rede" e ninguém descobre porquê.
+          BASE_URL="${INPUT_URL:-${SECRET_URL:-}}"
+          if [ -z "$BASE_URL" ]; then
+            # Sem URL configurada, o debug fica com o alias do emulador
+            # (10.0.2.2:8000) que o build.gradle.kts já usa por omissão.
+            # O release NÃO é tentado: um APK de produção a apontar para o
+            # emulador seria inútil e passaria despercebido.
+            echo "url=" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sem AUTOMATON_BASE_URL. Debug aponta para 10.0.2.2:8000; release vai ser saltado."
+          else
+            echo "url=$BASE_URL" >> "$GITHUB_OUTPUT"
+            echo "APK vai apontar para: $BASE_URL"
+          fi
+
+      - name: Definir URL usada no build
+        id: buildurl
+        env:
+          CONFIGURED: ${{ steps.backend.outputs.url }}
+        run: |
+          set -euo pipefail
+          # Sem segredo configurado, o debug aponta para o emulador. O
+          # build.gradle.kts já tem esse valor por omissão, mas aqui a variável
+          # fica explícita para não se passar uma string vazia ao -P.
+          if [ -n "$CONFIGURED" ]; then
+            echo "url=$CONFIGURED" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=http://10.0.2.2:8000" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build debug
+        working-directory: android_apk
+        env:
+          AUTOMATON_API_TOKEN: ${{ secrets.AUTOMATON_API_TOKEN }}
+          TOKEN_EMULADOR: ${{ github.event_name == 'workflow_dispatch' && inputs.emulador && 'token-do-emulador' || '' }}
+        run: |
+          set -euo pipefail
+          # Quando o build se destina ao emulador do CI, o token e conhecido:
+          # e o mesmo que o passo «Subir o backend» exporta. Sem isto o APK
+          # fica sem token, responde 401 a tudo o que escreve e o ecra
+          # parece funcional — foi o que aconteceu ate 2026-11-28.
+          TOKEN="${AUTOMATON_API_TOKEN:-${TOKEN_EMULADOR:-}}"
+          if [ -n "$TOKEN" ]; then
+            echo "APK vai levar token (${#TOKEN} caracteres)"
+          else
+            echo "::warning::APK sem token: leituras funcionam, escritas respondem 401."
+          fi
+          ${{ steps.gradle.outputs.cmd }} :app:assembleDebug --no-daemon --stacktrace \
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}" \
+            -Pautomaton.token="$TOKEN" 2>&1 | tee -a build.log
+
+      - name: Definir aptidão do release
+        id: release_ok
+        env:
+          KEYSTORE_OK: ${{ steps.keystore.outputs.available }}
+          CONFIGURED: ${{ steps.backend.outputs.url }}
+        run: |
+          set -euo pipefail
+          # Um release só faz sentido se tiver keystore E URL real do backend.
+          if [ "$KEYSTORE_OK" = "true" ] && [ -n "$CONFIGURED" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            [ "$KEYSTORE_OK" = "true" ] \
+              && echo "::warning::Com keystore mas sem AUTOMATON_BASE_URL: release saltado." \
+              || true
+          fi
+
+      # A injecção tem de correr ANTES da configuração do Gradle: append ao
+      # build.gradle.kts depois de o Gradle já ter lido o ficheiro não tem
+      # efeito nenhum.
+      - name: Injetar configuração de assinatura
+        if: ${{ steps.release_ok.outputs.ok == 'true' }}
+        working-directory: android_apk
+        run: |
+          set -euo pipefail
+          cat >> app/build.gradle.kts <<'KTS'
+
+          // Assinatura injectada pelo CI (não commitar credenciais).
+          android {
+              signingConfigs {
+                  create("release") {
+                      storeFile = file("../release.keystore")
+                      storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                      keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                      keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                  }
+              }
+              buildTypes {
+                  getByName("release") {
+                      signingConfig = signingConfigs.getByName("release")
+                  }
+              }
+          }
+          KTS
+
+      - name: Build release (assinado)
+        if: ${{ steps.release_ok.outputs.ok == 'true' }}
+        working-directory: android_apk
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ${{ steps.gradle.outputs.cmd }} :app:assembleRelease --no-daemon --stacktrace \
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}" 2>&1 | tee -a build.log
+
+      - name: Correr testes unitários
+        working-directory: android_apk
+        run: |
+          set -euo pipefail
+          # Antes este passo tinha "|| echo warning", o que transformava uma
+          # falha real de testes num aviso verde. Sem testes definidos, o Gradle
+          # devolve sucesso; se houver testes e falharem, o build falha.
+          ${{ steps.gradle.outputs.cmd }} :app:testDebugUnitTest --no-daemon 2>&1 | tee -a build.log
+
+      - name: Localizar e renomear APKs
+        id: apks
+        run: |
+          set -euo pipefail
+          DEBUG_APK=$(find android_apk/app/build/outputs/apk/debug -name "*.apk" | head -1 || true)
+          RELEASE_APK=$(find android_apk/app/build/outputs/apk/release -name "*.apk" | head -1 || true)
+          mkdir -p dist
+          if [ -n "$DEBUG_APK" ]; then
+            cp "$DEBUG_APK" dist/app-debug.apk
+            echo "debug=dist/app-debug.apk" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$RELEASE_APK" ]; then
+            cp "$RELEASE_APK" dist/app-release.apk
+            echo "release=dist/app-release.apk" >> "$GITHUB_OUTPUT"
+          fi
+          ls -lh dist || true
+
+      - name: Publicar APK de debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: automaton-holding-debug-apk
+          path: dist/app-debug.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publicar APK de release
+        if: ${{ steps.release_ok.outputs.ok == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: automaton-holding-release-apk
+          path: dist/app-release.apk
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Anexar APK à release (em tags)
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && steps.release_ok.outputs.ok == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/app-release.apk
+            dist/app-debug.apk
+          generate_release_notes: true
+
+      # Os logs do Actions são servidos de *.blob.core.windows.net, que nem
+      # sempre é alcançável a partir de fora. O erro fica também num comentário
+      # do PR, que é legível por API em qualquer lado.
+      # O APK vive num artefacto em *.blob.core.windows.net, inalcançável a
+      # partir de algumas redes. Em vez de confiar que "ficou lá", o runner
+      # inspecciona o binário que produziu e publica as provas no PR.
+      - name: Verificar o APK gerado
+        id: verificar
+        run: |
+          # Reescrito sem blocos `{ ... }`, sem arrays e sem pipefail: o
+          # construto anterior morria a meio sem mensagem. Só appends simples,
+          # para o que falhar ser sempre visível. Nenhum comando pode abortar
+          # o passo (a evidência vale mais do que o ✅).
+          APK=android_apk/app/build/outputs/apk/debug/app-debug.apk
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          OUT=/tmp/apk_evidence.md
+          TRACE=/tmp/verif_trace.log
+          : > "$OUT"; : > "$TRACE"
+
+          echo "APK: $(ls -lh "$APK" 2>&1 | head -1)" | tee -a "$TRACE"
+          if [ ! -f "$APK" ]; then
+            echo "::error::Nenhum APK de debug em $APK"
+            exit 1
+          fi
+
+          echo "### APK de debug produzido" >> "$OUT"
+          echo "" >> "$OUT"
+          echo "| Propriedade | Valor |" >> "$OUT"
+          echo "|---|---|" >> "$OUT"
+          echo "| Ficheiro | \`app-debug.apk\` |" >> "$OUT"
+          echo "| Tamanho | $(du -h "$APK" | cut -f1) ($(stat -c %s "$APK") bytes) |" >> "$OUT"
+          echo "| sha256 | \`$(sha256sum "$APK" | cut -d' ' -f1)\` |" >> "$OUT"
+          echo "" >> "$OUT"
+
+          echo "**Identidade (aapt2):**" >> "$OUT"
+          echo '```' >> "$OUT"
+          "$BT/aapt2" dump badging "$APK" 2>>"$TRACE" \
+            | grep -E "^package:|sdkVersion|targetSdkVersion|application-label:|uses-permission" \
+            | head -14 >> "$OUT" 2>>"$TRACE"
+          echo '```' >> "$OUT"
+
+          echo "**Assinatura (apksigner):**" >> "$OUT"
+          echo '```' >> "$OUT"
+          "$BT/apksigner" verify --print-certs "$APK" 2>>"$TRACE" | head -5 >> "$OUT" 2>>"$TRACE"
+          echo '```' >> "$OUT"
+
+          echo "**Conteúdo do classes.dex:**" >> "$OUT"
+          echo '```' >> "$OUT"
+          # Um APK moderno tem vários DEX (classes.dex, classes2.dex, ...). Ler
+          # só o primeiro deu "classes da app: 0" e uma URL que não é nossa —
+          # prova de que o código da app estava noutro ficheiro.
+          rm -rf /tmp/dex && mkdir -p /tmp/dex
+          unzip -o -q "$APK" 'classes*.dex' -d /tmp/dex 2>>"$TRACE"
+          cat /tmp/dex/classes*.dex > /tmp/alldex.bin 2>>"$TRACE"
+          echo "ficheiros DEX: $(ls /tmp/dex | wc -l) ($(du -h /tmp/alldex.bin | cut -f1))" >> "$OUT"
+          echo "classes da app: $(strings /tmp/alldex.bin | grep -c 'Lcom/automaton/holding')" >> "$OUT"
+
+          # Prova decisiva: as strings que o BuildConfig injetou.
+          echo "BASE_URL e API_TOKEN em BuildConfig (constantes literais no DEX):" >> "$OUT"
+          strings /tmp/alldex.bin \
+            | grep -E '^(https?://10\.0\.2\.2:8000|https?://[a-z0-9.-]+\.[a-z]{2,})(/.*)?$' \
+            | grep -v 'android\|google\|schemas\|kotlin\|okhttp\|square\|json-schema' \
+            | sort -u | head -8 >> "$OUT"
+          echo "endpoints e nomes de campos:" >> "$OUT"
+          strings /tmp/alldex.bin | grep -E '^/(health|treasury|approvals|squads|agents|governance|validation|kill-switch|cycle/run|ws/live)' | sort -u | head -12 >> "$OUT"
+          strings /tmp/alldex.bin | grep -E 'X-Automaton-Token|biometric_verified|KILL_SWITCH|amount_usd' | sort -u | head -8 >> "$OUT"
+          echo '```' >> "$OUT"
+
+          TOTAL=$(grep -rho '<testcase' android_apk/app/build/test-results 2>/dev/null | wc -l)
+          FALHAS=$(grep -rho '<failure' android_apk/app/build/test-results 2>/dev/null | wc -l)
+          echo "" >> "$OUT"
+          echo "**Testes unitários:** ${TOTAL} casos, ${FALHAS} falhas" >> "$OUT"
+          if [ "$TOTAL" -gt 0 ]; then
+            echo '```' >> "$OUT"
+            grep -rho 'testcase name="[^"]*"' android_apk/app/build/test-results 2>/dev/null \
+              | sed 's/.*name="//; s/"$//' | sort >> "$OUT"
+            echo '```' >> "$OUT"
+          fi
+
+          cat "$OUT" >> "$GITHUB_STEP_SUMMARY"
+          echo "=== evidência ==="
+          cat "$OUT"
+
+      # O artefacto do Actions vive em *.blob.core.windows.net, que algumas
+      # redes (incluindo a do ambiente de desenvolvimento) não alcançam. Um
+      # ramo do repositório é servido por github.com, que é universalmente
+      # acessível. O ramo é reescrito a cada build (force-push de um commit
+      # órfão), por isso não acumula histórico.
+      - name: Depositar o APK num ramo do repositório
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          APK=android_apk/app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK" || { echo "::error::APK ausente"; exit 1; }
+          PUB=/tmp/apk_publicado
+          rm -rf "$PUB"; mkdir -p "$PUB"
+          cp "$APK" "$PUB/app-debug.apk"
+          ( cd "$PUB"
+            set -x
+            git init -q -b apk-artifact
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            sha256sum app-debug.apk > SHA256SUMS
+            {
+              echo "APK de debug gerado automaticamente pelo workflow 02."
+              echo
+              echo "Commit de origem: ${SHA}"
+              echo "Run: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+              echo
+              echo "Este ramo é reescrito (force-push) a cada build; não versionar nada aqui."
+            } > README.md
+            git add -A
+            git commit -q -m "apk-debug: ${SHA:0:12}"
+            # Dois runs ao mesmo commit (push + pull_request, ou dois
+            # dispatches) fazem force-push ao MESMO ramo e um deles perde a
+            # corrida com "fetch first" / "cannot lock ref". Isso deixou o job
+            # vermelho várias vezes sem nada de errado no APK. Três tentativas
+            # com recuo resolvem a corrida; o ramo é um espelho descartável,
+            # não a fonte da verdade (o artefacto do run é).
+            for tentativa in 1 2 3; do
+              if git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact 2>&1 | tail -3; then
+                break
+              fi
+              echo "tentativa ${tentativa} de empurrar o ramo falhou; a repetir em $((tentativa * 5))s"
+              sleep $((tentativa * 5))
+              git fetch "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact >/dev/null 2>&1 || true
+            done
+          )
+          echo "APK publicado no ramo apk-artifact"
+
+      # Um "exit code 1" no passo do ramo custou um run inteiro sem pista.
+      # O build.log já existe; vai para o ramo apk-log quando algo falha.
+      - name: Publicar build.log quando falha
+        if: failure()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          [ -f android_apk/build.log ] || { echo "sem build.log"; exit 0; }
+          mkdir -p /tmp/lg && cd /tmp/lg
+          git init -q -b apk-log
+          cp "$GITHUB_WORKSPACE/android_apk/build.log" .
+          printf 'run: %s\ncommit: %s\nevento: %s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_EVENT_NAME" > META.txt
+          git add -A
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "log do run $GITHUB_RUN_ID"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-log 2>&1 | tail -3
+
+      - name: Publicar evidência do APK no PR
+        if: ${{ success() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          gh pr comment "$PR" --body-file /tmp/apk_evidence.md \
+            || echo "aviso: não foi possível comentar no PR"
+
+      - name: Publicar diagnóstico no PR
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          RELATORIO=$(mktemp)
+          {
+            echo "### Build do APK falhou"
+            echo
+            echo '```'
+            if [ -f /tmp/verif_trace.log ]; then
+              echo "### Trace do passo \"Verificar o APK\""
+              echo '```'
+              tail -40 /tmp/verif_trace.log
+              echo '```'
+              echo
+            fi
+            if [ -f android_apk/build.log ]; then
+              # O rasto do Gradle são 60 linhas de "at org.gradle..." e não
+              # ajudam nada. Primeiro as mensagens de erro a sério.
+              grep -E '^(e:|w: .*(error)|FAILURE:|\* What went wrong|> )|error:|Could not (resolve|find|GET)' \
+                android_apk/build.log | head -40 || true
+              echo "--- últimas linhas ---"
+              grep -v '^\s*$' android_apk/build.log | grep -v 'at org.gradle' | tail -25
+            else
+              echo "(sem build.log: a falha ocorreu antes de correr o Gradle)"
+            fi
+            echo '```'
+          } > "$RELATORIO"
+          gh pr comment "$PR" --body-file "$RELATORIO" \
+            || echo "aviso: não foi possível comentar no PR"
+
+      # Os logs do Actions não são alcançáveis pela rede do sandbox
+      # (results-receiver... → EOF). Sem isto, uma falha de compilação só se
+      # via como "exit code 1". O build.log vai para o ramo apk-artifact em
+      # caso de falha, que é o canal que já funciona.
+      - name: Publicar o build.log quando falha
+        if: failure()
+        run: |
+          set -uo pipefail
+          LOG=android_apk/build.log
+          [ -f "$LOG" ] || { echo "sem build.log"; exit 0; }
+          mkdir -p /tmp/logrepo && cd /tmp/logrepo
+          git init -q -b apk-log
+          cp "$GITHUB_WORKSPACE/$LOG" build.log
+          {
+            echo "run: ${{ github.run_id }}"
+            echo "commit: ${{ github.sha }}"
+            echo "evento: ${{ github.event_name }}"
+          } > META.txt
+          git add build.log META.txt
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "build.log do run ${{ github.run_id }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" apk-log
+          echo "build.log publicado no ramo apk-log"
+
+      - name: Resumo do build
+        if: always()
+        run: |
+          {
+            echo "## APK Automaton Holding"
+            echo ""
+            echo "| Variante | Ficheiro |"
+            echo "|----------|----------|"
+            echo "| Debug | \`dist/app-debug.apk\` |"
+            if [ "${{ steps.release_ok.outputs.ok }}" = "true" ]; then
+              echo "| Release (assinado) | \`dist/app-release.apk\` |"
+            else
+              echo "| Release | não assinado (sem keystore) |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # Execução real do APK num emulador Android.
+  #
+  # Porque vive aqui e não num workflow próprio: o GitHub Actions não registou
+  # o workflow novo (03) para dispatch em ramos sem PR — o `gh workflow run`
+  # devolvia 404 e a API de workflows listava só este. Em vez de ficar à espera
+  # de que o registo aparecesse, o job junta-se ao workflow que comprovadamente
+  # corre.
+  #
+  # Precisa de KVM, que o runner do GitHub tem e o sandbox de desenvolvimento
+  # não (medido: /dev/kvm inexistente, 0 ocorrências de vmx/svm).
+  # ===========================================================================
+  # ===========================================================================
+  # Ciclo da holding.
+  #
+  # Vive aqui, e não só no workflow 01, porque o GitHub Actions não registou o
+  # 01 (a API de workflows lista apenas este ficheiro): um workflow não
+  # registado não tem botão "Run workflow" nem cron. Até o 01 estar em `main`,
+  # este job é a única forma de correr o ciclo de 11 agentes a pedido.
+  # ===========================================================================
+  ciclo:
+    name: Ciclo da holding
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.ciclo }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Python 3.12: o runner traz 3.14 e pydantic 2.10 não tem wheels para 3.14.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências do ciclo
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/venv
+          /tmp/venv/bin/python -m pip install --upgrade pip
+          /tmp/venv/bin/python -m pip install --quiet fastapi==0.115.6 \
+            uvicorn==0.34.0 pydantic==2.10.4 httpx==0.28.1 PyYAML==6.0.2 \
+            websockets==12.0 imageio-ffmpeg Pillow numpy espeakng-loader soundfile \
+            kokoro-onnx
+          /tmp/venv/bin/python -c "import fastapi, yaml; print('deps ok')"
+
+      # Pesos do Kokoro (89 MB) reconstruídos do npm, com sha256 — o
+      # dl.google.com e o HuggingFace estão bloqueados, o npm não.
+      # Os pesos do Kokoro vêm por npm (o HuggingFace está bloqueado no
+      # runner) e o instalador confere o SHA-256. `fetch_models.sh` ficou como
+      # segunda tentativa: é a via oficial, quando a rede o permitir.
+      - name: Instalar o motor local (LLM GGUF + voz Kokoro)
+        run: |
+          set -uo pipefail
+          # O ciclo corre num venv (/tmp/venv). O `pip` cru do runner é outro
+          # Python — instalava os pacotes onde o ciclo não os via. Tem de ser
+          # o mesmo interpretador.
+          export VENV=/tmp/venv
+          "$VENV/bin/python" -m pip install --quiet llama-cpp-python misaki \
+            onnxruntime soundfile phonemizer espeakng-loader || \
+            echo "::warning::instalação parcial do motor local"
+          KOKORO_DIR=models/kokoro bash scripts/instalar_motor_local.sh || \
+            echo "::warning::motor local indisponível; o ciclo segue com o motor heurístico"
+          # O fetch_models.sh usa caminhos e nomes diferentes dos que o código
+          # lê (kokoro-v1.0.q8.onnx + voices-v1.0.npz vs kokoro-q8.onnx +
+          # voices/*.bin) e sobrepunha-se ao que o instalador acabou de fazer.
+          # Fica só como último recurso, se o instalador não deixou nada.
+          [ -f models/kokoro/kokoro-q8.onnx ] || bash scripts/fetch_models.sh || true
+          ls -lh models/kokoro/ 2>/dev/null | head -3 || true
+          echo "LOCAL_GGUF_PATH=$HOME/modelos/Qwen3-0.6B-Q4_K_M.gguf" >> "$GITHUB_ENV"
+          echo "LOCAL_GGUF_THREADS=2" >> "$GITHUB_ENV"
+          echo "TTS_ENGINE=kokoro" >> "$GITHUB_ENV"
+          # Os logs do Actions não são alcançáveis de fora (o blob de
+          # resultados recusa a ligação), por isso o diagnóstico vai para um
+          # ficheiro que é publicado no ramo estado-ciclo.
+          PYTHONPATH=. "$VENV/bin/python" scripts/diagnostico_motor.py \
+            > motor_local.txt 2>&1 || true
+          cat motor_local.txt
+
+      # Diagnóstico de rede: o provider github_models ficou 'configurado' mas
+      # falhou com "Name or service not known". Antes de acusar o código, é
+      # preciso saber se o runner resolve e alcança estes hosts.
+      - name: Sondar os endpoints de LLM
+        run: |
+          set -uo pipefail
+          {
+            echo "== DNS"
+            for h in models.github.ai models.inference.ai.azure.com \
+                     generativelanguage.googleapis.com api.groq.com; do
+              printf '%-40s ' "$h"
+              getent hosts "$h" | head -1 || echo "NAO RESOLVE"
+            done
+
+            echo
+            echo "== 1. CABECALHOS COMPLETOS (com token)"
+            curl -s -D - -o /tmp/b1 -m 25 -X POST \
+              https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Diz OK"}]}'
+            echo "corpo: $(head -c 300 /tmp/b1)"
+
+            echo
+            echo "== 2. PROMPT DIFERENTE (deve mudar o corpo se for um LLM)"
+            curl -s -m 25 -X POST https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Escreve um haiku sobre chuva em Maputo. Só o haiku."}]}'
+            echo
+
+            echo "== 3. MODELO INEXISTENTE (um LLM real devolve 400/404)"
+            printf 'HTTP '
+            curl -s -o /tmp/b3 -w '%{http_code}' -m 25 -X POST \
+              https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"model":"modelo-que-nao-existe-xyz","messages":[{"role":"user","content":"hi"}]}'
+            echo " corpo: $(head -c 200 /tmp/b3)"
+
+            echo "== 4. CAMINHO INVALIDO (um servidor real devolve 404)"
+            printf 'HTTP '
+            curl -s -o /tmp/b4 -w '%{http_code}' -m 25 -X POST \
+              https://models.github.ai/caminho/que/nao/existe \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' -d '{"x":1}'
+            echo " corpo: $(head -c 200 /tmp/b4)"
+
+            echo "== 5. JSON INVALIDO (um servidor real devolve 400)"
+            printf 'HTTP '
+            curl -s -o /tmp/b5 -w '%{http_code}' -m 25 -X POST \
+              https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' -d 'isto-nao-e-json'
+            echo " corpo: $(head -c 200 /tmp/b5)"
+
+            echo
+            echo "== 6. groq / gemini sem chave (401 = API viva e a validar)"
+            for u in https://api.groq.com/openai/v1/chat/completions \
+                     https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent; do
+              printf '%-75s ' "$u"
+              curl -s -o /tmp/g -w '%{http_code}\n' -m 20 -X POST "$u" \
+                -H 'Content-Type: application/json' -d '{}' || echo FALHOU
+              head -c 200 /tmp/g | tr -d '\n'; echo
+            done
+          } 2>&1 | tee sonda_rede.txt
+        env:
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Executar o ciclo
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          APP_ENV: production
+          VAULT_DIR: ./vault_data
+          DAILY_SPEND_CAP_USD: "0.00"
+          APPROVAL_THRESHOLD_USD: "5.00"
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LLM_PROVIDER_ORDER: "groq,gemini,local_gguf,ollama,github_models,openrouter,local"
+          SCOUT_USER_AGENT: "AutomatonHoldingBot/1.0 (+https://github.com/${{ github.repository }})"
+        run: |
+          set -uo pipefail
+          /tmp/venv/bin/python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          from backend.core.llm_router import llm_router
+          from backend.governance.ceo_orchestrator import ceo
+
+          st = llm_router.status()
+          print("ordem de providers:", st["order"])
+          for nome, p in st["providers"].items():
+              print(f"  {nome:15} configurado={p['configured']!s:5} {p['reason']}")
+
+          # Sonda real: quem respondeu, e foi LLM ou heurística?
+          from backend.core.llm_router import LLMRequest
+          sonda = llm_router.complete(
+              LLMRequest(prompt="Responde só: OK", max_tokens=16)
+          )
+          print(f"SONDA -> provider={sonda.provider} is_llm={sonda.is_llm} "
+                f"cadeia={sonda.fallback_chain}")
+
+          # Segunda sonda: a que o Scout faz de facto. O Scout usa
+          # complete_json; a sonda de texto livre pode passar enquanto o JSON
+          # falha, e era essa a diferença entre 'LLM escolhido' e 'Scout a
+          # copiar títulos de repos'.
+          sonda_json, resposta_json = llm_router.complete_json(
+              LLMRequest(
+                  prompt=("Devolve JSON com a chave idea e uma frase concreta "
+                          "sobre freelancing em Moçambique."),
+                  task="strategy", json_mode=True, max_tokens=200,
+              ),
+              required_keys=["idea"],
+          )
+          print(f"SONDA_JSON -> provider={resposta_json.provider} "
+                f"is_llm={resposta_json.is_llm} dados={sonda_json}")
+
+          relatorio = ceo.run_cycle(source="github_actions", force_scan=True, produce=True)
+          Path("cycle_report.json").write_text(
+              json.dumps(relatorio, ensure_ascii=False, indent=2), encoding="utf-8")
+          print("estado:", relatorio.get("status"))
+          for passo in relatorio.get("steps", []):
+              print(f"  {passo['step']:12} {passo['status']:9} "
+                    f"{json.dumps(passo.get('detail', {}), ensure_ascii=False)[:200]}")
+
+          # Guardar a sonda em ficheiro: os logs do Actions não são alcançáveis
+          # de fora, e a pergunta que importa é "quem respondeu, LLM ou
+          # heurística?". Sem isto, a resposta perde-se.
+          Path("sonda_llm.json").write_text(
+              json.dumps({
+                  "ordem": st["order"],
+                  "providers": {k: {"configurado": v["configured"],
+                                    "motivo": v["reason"]}
+                                for k, v in st["providers"].items()},
+                  "escolhido": sonda.provider,
+                  "is_llm": sonda.is_llm,
+                  "cadeia": sonda.fallback_chain,
+                  "erro": sonda.error,
+                  "texto_bruto": (sonda.text or "")[:800],
+                  "json_escolhido": resposta_json.provider,
+                  "json_is_llm": resposta_json.is_llm,
+                  "json_dados": sonda_json,
+                  "json_erro": resposta_json.error,
+              }, ensure_ascii=False, indent=2), encoding="utf-8")
+          print("SONDA_JSON " + json.dumps({
+              "escolhido": sonda.provider, "is_llm": sonda.is_llm,
+              "cadeia": sonda.fallback_chain}, ensure_ascii=False))
+
+          resumo = os.environ.get("GITHUB_STEP_SUMMARY")
+          if resumo:
+              with open(resumo, "a", encoding="utf-8") as f:
+                  f.write(f"## Ciclo {relatorio.get('cycle_id')}\n\n")
+                  f.write(f"**Motor:** {sonda.provider} "
+                          f"(is_llm={sonda.is_llm})\n\n")
+                  for passo in relatorio.get("steps", []):
+                      f.write(f"- `{passo['step']}` — {passo['status']}: "
+                              f"`{json.dumps(passo.get('detail', {}), ensure_ascii=False)[:250]}`\n")
+          PY
+
+      - name: Publicar resultados e estado num ramo
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          mkdir -p /tmp/res && cd /tmp/res
+          git init -q -b estado-ciclo
+          cp "$GITHUB_WORKSPACE/cycle_report.json" . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/sonda_llm.json" . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/sonda_rede.txt" . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/motor_local.txt" . 2>/dev/null || true
+          # estado do cofre (aprovações, testes de demanda, ledger)
+          mkdir -p vault_data
+          cp -r "$GITHUB_WORKSPACE/vault_data/." vault_data/ 2>/dev/null || true
+          rm -f vault_data/*.lock
+          # artefactos produzidos (e-book, vídeo)
+          mkdir -p artifacts
+          cp -r "$GITHUB_WORKSPACE/vault_data/artifacts/." artifacts/ 2>/dev/null || true
+          mkdir -p media
+          cp -r "$GITHUB_WORKSPACE/vault_data/media/." media/ 2>/dev/null || true
+          git add -A
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "ciclo ${{ github.run_id }}" || echo "nada a publicar"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" estado-ciclo 2>&1 | tail -3
+          echo "estado e artefactos no ramo estado-ciclo"
+
+  emulador:
+    name: Correr no emulador
+    needs: build
+    # Corre no dispatch manual. O run de pull_request ao mesmo commit é a
+    # mesma compilação: repetir o emulador duplicava 25 minutos e ainda
+    # fazia os dois jobs disputarem o ramo de evidências.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.emulador }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # O runner traz Python 3.14; pydantic 2.10.4 não tem wheels para 3.14 e
+      # a construção a partir do código falha (diagnóstico: "Python 3.14.4" e
+      # lista de pacotes vazia). 3.12 é a família em que o backend é testado.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Ubuntu 24.04 recusa `pip install` no Python do sistema
+      # (PEP 668: "externally-managed-environment"). Um venv resolve e isola as
+      # versões das do runner.
+      # Os logs do Actions não são alcançáveis daqui (results-receiver → EOF), e
+      # um passo que só diz "exit code 1" custa uma iteração cega por
+      # tentativa. Por isso: nada de --quiet, e as mensagens vão para um ramo
+      # quando falha.
+      - name: Instalar dependências do backend
+        id: deps
+        run: |
+          set -x
+          python3 --version
+          python3 -m venv --help >/dev/null && echo venv-ok
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/python -m pip install --upgrade pip 2>&1 | tail -5
+          # websockets não é opcional: sem ele o uvicorn responde 404 ao
+          # /ws/live ("No supported WebSocket library detected"), a app fica
+          # com o stream em pausa e o utilizador vê um erro que parece de rede.
+          /tmp/venv/bin/python -m pip install fastapi==0.115.6 uvicorn==0.34.0 \
+            pydantic==2.10.4 pyyaml httpx websockets==12.0 2>&1 | tail -20
+          /tmp/venv/bin/python -c "import fastapi, uvicorn, yaml, httpx; print('deps ok', fastapi.__version__)"
+
+      # O cofre é DESCARTÁVEL de propósito.
+      #
+      # O teste de botões pressiona «Aprovar» e «Pedir saque». Se corresse
+      # contra o cofre real, o CI estaria a gastar a única decisão humana do
+      # ciclo — e um verde no Actions passaria a significar «aprovações
+      # aprovadas por um robot». `VAULT_DIR` isola tudo em /tmp; o cofre do
+      # repositório não é tocado. Cria-se uma aprovação para que o botão
+      # «Aprovar» tenha em que carregar.
+      - name: Preparar cofre descartável
+        id: cofre
+        run: |
+          set -euo pipefail
+          export VAULT_DIR=/tmp/cofre-ci
+          export PYTHONPATH="$GITHUB_WORKSPACE"
+          mkdir -p "$VAULT_DIR"
+          # O heredoc NÃO pode ir indentado: o YAML retira a indentação do
+          # bloco mas o `<<'PY'` fica alinhado com os comandos, e o Python
+          # recebia espaços à frente de cada linha → IndentationError. Um
+          # ficheiro separado evita o problema de vez.
+          cat > /tmp/semear_cofre.py <<'PY'
+          import os
+          import sys
+
+          sys.path.insert(0, os.environ["PYTHONPATH"])
+          from backend.core.approvals import approval_gate
+
+          r = approval_gate.request(
+              title="Decisao de teste (cofre descartavel do CI)",
+              kind="custom",
+              amount_usd=12.0,
+              reason="Criada pelo emulador para provar que o botao Aprovar abre.",
+              requested_by="emulador-ci",
+          )
+          print("aprovacao de teste:", r.get("id") if isinstance(r, dict) else r)
+          PY
+          sed -i 's/^          //' /tmp/semear_cofre.py
+          /tmp/venv/bin/python /tmp/semear_cofre.py
+          ls "$VAULT_DIR"
+
+      - name: Subir o backend
+        id: backend
+        run: |
+          set -euo pipefail
+          # O MESMO token tem de chegar ao backend E ao APK.
+          #
+          # Medido no run 46161398568: o backend nao recebeu UM UNICO POST em
+          # toda a sessao do emulador, embora o teste de botoes premisse
+          # Aprovar, PARAR TUDO e Pedir saque. O APK do CI e compilado com
+          # buildConfigField API_TOKEN vindo do segredo AUTOMATON_API_TOKEN,
+          # que nao existe no repositorio -> token vazio -> 401 em toda a
+          # escrita, engolido por um Result. O ecra parece funcionar e
+          # nenhuma accao acontece.
+          #
+          # Aqui o token e passado ao build com -Pautomaton.token, para que
+          # o APK de debug fale com este backend.
+          export API_ACCESS_TOKEN=token-do-emulador
+          export PYTHONPATH="$GITHUB_WORKSPACE"
+          export VAULT_DIR=/tmp/cofre-ci
+          nohup /tmp/venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 \
+            > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 40); do
+            curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && { echo "backend pronto (${i}s)"; break; }
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health | head -c 200; echo
+
+      # O APK vem do ARTEFACTO DESTE RUN, não do ramo `apk-artifact`.
+      #
+      # O ramo é partilhado e reescrito a cada build. Com dois runs ao mesmo
+      # commit (push + pull_request, ou dois dispatches seguidos), o job do
+      # emulador podia receber o APK do OUTRO run. A verificação de SHA que
+      # aqui esteve apanhou exactamente isso — mas falhar é pior do que não
+      # depender: o artefacto do `needs: build` é, por construção, o binário
+      # compilado para este commit.
+      - name: Obter o APK deste build
+        uses: actions/download-artifact@v4
+        with:
+          name: automaton-holding-debug-apk
+          path: /tmp/apk
+
+      - name: Verificar o APK recebido
+        run: |
+          set -euo pipefail
+          ls -lh /tmp/apk
+          # O upload usa dist/app-debug.apk; o download pode achatar ou não.
+          APK=$(find /tmp/apk -name '*.apk' | head -1)
+          test -n "$APK" || { echo "::error::nenhum APK no artefacto"; exit 1; }
+          # Se o artefacto já se chama app-debug.apk, `cp` para o mesmo
+          # caminho rebenta ("É o mesmo ficheiro") e o passo falha sem que
+          # nada esteja errado com o APK. Foi o que aconteceu no run
+          # 46163471941: download OK, verificação falhada por um cp.
+          if [ "$APK" != "/tmp/apk/app-debug.apk" ]; then
+            cp "$APK" /tmp/apk/app-debug.apk
+          fi
+          sha256sum /tmp/apk/app-debug.apk
+          # Um APK com menos de 5 MB não é este APK.
+          BYTES=$(stat -c%s /tmp/apk/app-debug.apk)
+          [ "$BYTES" -gt 5000000 ] || { echo "::error::APK suspeito ($BYTES bytes)"; exit 1; }
+
+      # O runner do GitHub já tem /dev/kvm e o emulador precisa dele. Não se
+      # instala nada por apt: o android-emulator-runner trata do AVD, e um
+      # `apt-get install qemu-kvm cpu-checker` falhou aqui (exit 1 sem pista).
+      # Só se verifica e, se faltar, diz-se claramente que a prova não é
+      # possível — em vez de falhar num passo de preparação enganador.
+      - name: Verificar KVM
+        run: |
+          set -uo pipefail
+          ls -l /dev/kvm || echo "::warning::/dev/kvm ausente"
+          sudo chmod 666 /dev/kvm 2>/dev/null || echo "::warning::sem sudo para o kvm"
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "KVM utilizável"
+          else
+            echo "::error::sem KVM: o emulador não arranca neste runner"
+            exit 1
+          fi
+
+      - name: Executar a app no emulador
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: >-
+            -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+            -camera-back none -camera-front none
+          # Toda a lógica vive em scripts/ci_emulator_all.sh, não aqui.
+          # Deste lado do YAML chegou a haver um bloco com `if`s que o
+          # runner rejeitava com exit 2 antes de correr uma linha, e os
+          # logs do job não são acessíveis por API — três runs às cegas.
+          # Um script no repositório testa-se com `bash -n`.
+          script: |
+            bash scripts/ci_emulator_all.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador" "$GITHUB_WORKSPACE/saida_botoes" descartavel
+
+      - name: Guardar diagnóstico do job
+        if: failure()
+        run: |
+          {
+            echo "venv existe: $([ -x /tmp/venv/bin/python ] && echo sim || echo nao)"
+            /tmp/venv/bin/python --version 2>&1 || true
+            /tmp/venv/bin/python -m pip list 2>&1 | head -20 || true
+            echo "--- backend.log ---"
+            tail -40 /tmp/backend.log 2>/dev/null || echo "(sem backend.log)"
+            echo "--- saída do emulador ---"
+            ls -la saida_emulador 2>/dev/null || echo "(sem saida_emulador)"
+            ls -la "$GITHUB_WORKSPACE/saida_emulador" 2>/dev/null || echo "(nada em workspace/saida_emulador)"
+            tail -60 saida_emulador/adb.log 2>/dev/null || true
+          } > /tmp/diag.txt 2>&1
+          cat /tmp/diag.txt | tail -40
+
+      - name: Publicar as provas num ramo
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          mkdir -p saida_emulador
+          cp /tmp/diag.txt saida_emulador/DIAGNOSTICO.txt 2>/dev/null || true
+          cp /tmp/apk/app-debug.apk saida_emulador/ 2>/dev/null || true
+          mkdir -p /tmp/ev && cd /tmp/ev
+          git init -q -b emulador-evidencias
+          cp -r "$GITHUB_WORKSPACE/saida_emulador/." .
+          cp -r "$GITHUB_WORKSPACE/saida_botoes/." . 2>/dev/null || true
+          {
+            echo "# Prova de execução no emulador"
+            echo
+            echo "run: ${{ github.run_id }} · commit: ${{ github.sha }}"
+            echo "APK sha256: $(sha256sum app-debug.apk 2>/dev/null | cut -d' ' -f1 || echo '—')"
+            echo
+            [ -f RELATORIO.md ] && cat RELATORIO.md
+          } > README.md
+          ls -la
+          git add -A
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "evidências do run ${{ github.run_id }}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" emulador-evidencias
+          echo "provas no ramo emulador-evidencias"
+
+      - name: Resumo
+        if: always()
+        run: |
+          if [ -f saida_emulador/RELATORIO.md ]; then
+            cat saida_emulador/RELATORIO.md >> "$GITHUB_STEP_SUMMARY"
+          fi

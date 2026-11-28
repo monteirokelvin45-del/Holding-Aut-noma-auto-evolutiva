@@ -1,0 +1,160 @@
+// Configuração do módulo :app — Kotlin 2.0 + Jetpack Compose (Material 3).
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+// ---------------------------------------------------------------------------
+// Valores injectados em tempo de build (BuildConfig).
+//
+// Declarados ao nível do script, e não dentro de defaultConfig: o bloco
+// buildTypes.release também os usa, e uma `val` declarada dentro de
+// defaultConfig não é visível lá — foi exactamente esse o erro de compilação
+// do primeiro build no CI ("Unresolved reference: urlExplicita").
+// ---------------------------------------------------------------------------
+//   -Pautomaton.baseUrl=...  ou  AUTOMATON_BASE_URL no ambiente.
+//
+// Sem valor explícito, o build de **debug** aponta para
+// http://10.0.2.2:8000 — o alias documentado do emulador Android para a
+// máquina anfitriã, ou seja, o endereço do backend local. O release exige a
+// URL explícita (ver buildTypes), porque um APK de produção a apontar para o
+// emulador seria inútil.
+// O valor por omissão anterior, https://automaton-holding.fly.dev, não
+// corresponde a serviço nenhum: instalava-se o APK e falhava tudo com "erro
+// de rede", sem forma de perceber que o endereço vinha do build.
+val urlExplicita: String? = (project.findProperty("automaton.baseUrl") as String?)
+    ?: System.getenv("AUTOMATON_BASE_URL")
+val baseUrlPadrao: String = urlExplicita ?: "http://10.0.2.2:8000"
+
+// Token do APK (header X-Automaton-Token). Nunca commitar valores reais:
+// passar via -Pautomaton.token=... ou AUTOMATON_API_TOKEN no ambiente.
+val apiToken: String = (project.findProperty("automaton.token") as String?)
+    ?: System.getenv("AUTOMATON_API_TOKEN")
+    ?: ""
+
+android {
+    namespace = "com.automaton.holding"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.automaton.holding"
+        minSdk = 26            // BiometricPrompt + WebSocket nativo
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0.0"
+
+        // Ver o bloco no topo do ficheiro.
+        buildConfigField("String", "BASE_URL", "\"$baseUrlPadrao\"")
+
+        buildConfigField("String", "API_TOKEN", "\"$apiToken\"")
+    }
+
+    buildTypes {
+        release {
+            // Um release a apontar para o emulador (ou sem URL) não serve.
+            //
+            // IMPORTANTE: este bloco é avaliado na fase de configuração, que
+            // corre para *qualquer* tarefa — inclusive assembleDebug. Lançar
+            // aqui sem mais partia os builds de debug quando a URL não estava
+            // definida. Só falha se alguém pedir efectivamente um release.
+            if (urlExplicita.isNullOrBlank()) {
+                val pedeRelease = gradle.startParameter.taskNames.any {
+                    it.contains("release", ignoreCase = true)
+                }
+                if (pedeRelease) {
+                    throw GradleException(
+                        "Build de release sem URL do backend: passe " +
+                            "-Pautomaton.baseUrl=https://... ou defina AUTOMATON_BASE_URL."
+                    )
+                }
+            } else {
+                buildConfigField("String", "BASE_URL", "\"$urlExplicita\"")
+            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // Assinatura: configurada por variáveis de ambiente no CI.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+        }
+        debug {
+            isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*"
+            )
+        }
+    }
+
+    testOptions {
+        // Os testes de contrato correm na JVM; android.util.Log não existe lá.
+        unitTests.isReturnDefaultValues = true
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+}
+
+dependencies {
+    val composeBom = platform("androidx.compose:compose-bom:2024.11.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    // FragmentActivity: necessária para o BiometricPrompt (aprovações).
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
+
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Biometria (aprovação de gastos e saques).
+    // NOTA: a linha "1.2.0-alpha05" não corresponde a nenhum artefacto
+    // publicado — as versões reais da 1.2.x são 1.2.0-alpha01..alpha06.
+    // 1.1.0 é a estável mais recente e tem tudo o que usamos
+    // (BIOMETRIC_STRONG/WEAK, setAllowedAuthenticators).
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    // Rede: OkHttp (REST + WebSocket) e kotlinx.serialization
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+}

@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "order_id": "",
+  "status": "dry_run",
+  "approval_url": "",
+  "amount_usd": 19.9,
+  "currency": "USD",
+  "dry_run": true,
+  "pago": false,
+  "message": "sem credenciais PayPal: nenhum pedido criado, nenhum dinheiro movido."
+}

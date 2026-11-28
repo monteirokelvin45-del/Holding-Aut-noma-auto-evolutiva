@@ -1,0 +1,112 @@
+{
+  "snapshot": {
+    "phase": 1,
+    "phase_meta": {
+      "name": "Lancamento",
+      "min_usd": 0.0,
+      "max_usd": 1500.0,
+      "split": {
+        "owner_pocket": 0.1,
+        "savings_vault": 0.2,
+        "reinvestment_pool": 0.7
+      },
+      "description": "Capital zero: quase tudo reinvestido para escalar."
+    },
+    "computed_phase": 1,
+    "split": {
+      "owner_pocket": 0.1,
+      "savings_vault": 0.2,
+      "reinvestment_pool": 0.7
+    },
+    "balances_usd": {
+      "tax_reserve_usd": 0.0,
+      "owner_pocket_usd": 0.0,
+      "savings_vault_usd": 0.0,
+      "reinvestment_pool_usd": 0.0
+    },
+    "balances_mzn": {
+      "tax_reserve_usd": 0.0,
+      "owner_pocket_usd": 0.0,
+      "savings_vault_usd": 0.0,
+      "reinvestment_pool_usd": 0.0
+    },
+    "total_assets_usd": 0.0,
+    "gross_revenue_usd": 0.0,
+    "net_revenue_usd": 0.0,
+    "spent_from_reinvestment_usd": 0.0,
+    "paid_out_usd": 0.0,
+    "monthly_revenue_usd": 0.0,
+    "phase_thresholds_usd": {
+      "phase_2": 1500.0,
+      "phase_3": 15000.0
+    },
+    "fx": {
+      "usd_mzn": 63.5,
+      "source": "static_config"
+    },
+    "distributable_owner_usd": 0.0,
+    "tax_reserve_rate": 0.05,
+    "generated_at": "2026-11-28T14:48:31+00:00"
+  },
+  "channels": {
+    "channels": {
+      "mpesa": {
+        "label": "M-Pesa (Vodacom Moçambique)",
+        "available": false,
+        "missing_config": [
+          "MPESA_API_KEY",
+          "MPESA_PUBLIC_KEY",
+          "MPESA_SERVICE_PROVIDER_CODE"
+        ],
+        "mode": "dry_run"
+      },
+      "emola": {
+        "label": "e-Mola (Movitel)",
+        "available": false,
+        "missing_config": [
+          "EMOLA_API_KEY",
+          "EMOLA_MERCHANT_CODE"
+        ],
+        "mode": "dry_run"
+      },
+      "paypal": {
+        "label": "PayPal",
+        "available": false,
+        "missing_config": [
+          "PAYPAL_CLIENT_ID",
+          "PAYPAL_CLIENT_SECRET"
+        ],
+        "mode": "dry_run"
+      },
+      "wise": {
+        "label": "Wise",
+        "available": false,
+        "missing_config": [
+          "WISE_API_TOKEN",
+          "WISE_PROFILE_ID"
+        ],
+        "mode": "dry_run"
+      }
+    },
+    "fx": {
+      "usd_mzn": 63.5,
+      "source": "static_config",
+      "updated_at": "2026-11-27T17:38:24+00:00"
+    },
+    "owner_pocket_usd": 0.0,
+    "generated_at": "2026-11-28T14:48:31+00:00"
+  },
+  "payouts": [],
+  "audit": {
+    "gross_usd": 0.0,
+    "tax_reserve_usd": 0.0,
+    "vaults_usd": 0.0,
+    "net_inflow_usd": 0.0,
+    "outflow_usd": 0.0,
+    "in_flight_payouts_usd": 0.0,
+    "expected_vaults_usd": 0.0,
+    "delta_usd": 0.0,
+    "balanced": true,
+    "checked_at": "2026-11-28T14:48:31+00:00"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "_nota": [
+    "Servidores MCP declarados. Ausente = lista vazia; um servidor que não",
+    "arranca aparece com `pronto: false` e o motivo — não impede o backend.",
+    "",
+    "Regra de licenças da holding: MIT/Apache-2.0/BSD/LGPL. Tudo aqui foi",
+    "verificado na API do GitHub em 2026-11-28.",
+    "",
+    "Regra de dinheiro e publicação: `sensitive_action: true` faz a ferramenta",
+    "ir pelo approval_gate em vez de executar. `third_party: true` marca",
+    "servidores que imitam apps de terceiros (risco de ban da conta)."
+  ],
+  "version": 1,
+  "servers": [
+    {
+      "name": "filesystem",
+      "description": "Leitura/escrita de ficheiros num directório autorizado. É o único que arranca sem chaves.",
+      "license": "MIT",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./vault_data/artifacts"],
+      "third_party": false,
+      "sensitive_action": false
+    },
+    {
+      "name": "github",
+      "description": "Repos, issues, PRs e Actions. Servidor oficial do GitHub.",
+      "license": "MIT",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "requires_env": ["GITHUB_PERSONAL_ACCESS_TOKEN"],
+      "third_party": false,
+      "sensitive_action": false
+    },
+    {
+      "name": "notion",
+      "description": "Páginas e bases de dados do Notion. Servidor oficial.",
+      "license": "MIT",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "requires_env": ["NOTION_API_TOKEN"],
+      "third_party": false,
+      "sensitive_action": false
+    },
+    {
+      "name": "postgres",
+      "description": "Consulta a bases de dados próprias (só leitura por convenção).",
+      "license": "MIT",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/automaton"],
+      "requires_env": [],
+      "third_party": false,
+      "sensitive_action": false
+    }
+  ],
+  "_recusados": [
+    {
+      "name": "MediaCrawler",
+      "reason": "Licença NOASSERTION (não é OSI). Viola a regra de só MIT/Apache/BSD/LGPL."
+    },
+    {
+      "name": "evolution-api",
+      "reason": "Sem licença declarada no GitHub (API devolve null). WhatsApp não-oficial: risco de ban."
+    },
+    {
+      "name": "plausible",
+      "reason": "AGPL-3.0. Fica fora da lista de licenças aceites."
+    },
+    {
+      "name": "PostHog",
+      "reason": "NOASSERTION. A alternativa MIT é o Umami, já disponível para self-host."
+    },
+    {
+      "name": "social-auto-upload",
+      "reason": "É MIT, mas automatiza upload em plataformas cujos ToS proíbem automação. A licença é boa; o uso não."
+    },
+    {
+      "name": "stripe-agent-toolkit / twilio-mcp",
+      "reason": "Os repositórios indicados devolvem 404 na API do GitHub. Não se declara o que não se verificou."
+    }
+  ]
+}

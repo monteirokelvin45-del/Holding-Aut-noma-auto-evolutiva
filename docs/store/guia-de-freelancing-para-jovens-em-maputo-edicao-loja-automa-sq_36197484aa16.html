@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guia de freelancing para jovens em Maputo — edicao loja automatica</title>
+<style>
+    :root{--bg:#0b1220;--card:#121c2e;--line:#1e2c45;--txt:#e8eefc;--muted:#8ba0c4;--acc:#22d3ee;--ok:#22c55e}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--txt);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:0 16px 64px}
+    .wrap{max-width:820px;margin:0 auto}
+    header{padding:36px 0 20px;border-bottom:1px solid var(--line);margin-bottom:28px}
+    h1{font-size:30px;letter-spacing:-.5px}h2{font-size:21px;margin:26px 0 10px}
+    .sub{color:var(--muted);margin-top:6px}
+    .grid{display:grid;gap:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+    .price{color:var(--acc);font-weight:700;font-size:22px}
+    .muted{color:var(--muted);font-size:14px}
+    .tag{display:inline-block;background:#0f2a33;color:var(--acc);border-radius:6px;padding:2px 8px;font-size:12px;margin:2px 4px 2px 0}
+    a.btn,button{display:inline-block;background:var(--acc);color:#08121c;font-weight:700;border:0;border-radius:10px;padding:12px 20px;text-decoration:none;cursor:pointer;font-size:15px}
+    a.btn:hover,button:hover{filter:brightness(1.08)}
+    .btn-sec{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+    input,textarea{width:100%;background:#0d1626;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px;font-size:15px;margin-top:6px}
+    label{display:block;margin-top:14px;font-size:14px;color:var(--muted)}
+    .pay{background:#0f1d17;border:1px solid #1d3b2c;border-radius:12px;padding:16px;margin-top:14px}
+    .codigo{font-family:ui-monospace,monospace;font-size:19px;color:var(--ok);letter-spacing:1px}
+    .warn{background:#2a1f0f;border:1px solid #4a3a17;color:#f3d68a;border-radius:10px;padding:12px;font-size:14px;margin-top:14px}
+    footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:40px;padding-top:18px}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+  <h1>Automaton Holding</h1>
+  <div class="sub">Produtos digitais feitos por agentes, revistos antes de sair.</div>
+</header>
+
+<article class="card">
+  <h2>Guia de freelancing para jovens em Maputo — edicao loja automatica</h2>
+  <p class="muted">Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.</p>
+  <p class="price" style="margin-top:10px">$12.00
+     <span class="muted">≈ 762.00 MZN</span></p>
+  <div style="margin-top:14px">Guia prático sobre Guia de freelancing para jovens em Maputo — edicao loja automatica para freelancing_mz.</div>
+</article>
+
+<div class="card" style="margin-top:18px">
+  <h2>Comprar com M-Pesa / e-Mola</h2>
+  
+<div class="pay">
+  <p><strong>1.</strong> Transfere o valor por M-Pesa para <span class="codigo">— configurar —</span></p>
+  <p style="margin-top:6px"><strong>ou</strong> e-Mola para <span class="codigo">+258860000000</span></p>
+  <p style="margin-top:8px" class="muted">Guarda o código da transacção que recebes por SMS
+  (ex.: <code>MP2406AB12CD</code>).</p>
+  <p style="margin-top:10px"><strong>2.</strong> Insere o código abaixo. O Presidente confirma
+  no extracto e a entrega é liberada.</p>
+</div>
+  <form method="POST" action="https://api.automaton-holding.example/store/pedido" onsubmit="pedir(event)">
+    <input type="hidden" name="produto_id" value="sq_36197484aa16">
+    <label>O teu nome<input name="comprador" required maxlength="80" autocomplete="name"></label>
+    <label>Contacto (telefone ou email)<input name="contacto" required maxlength="120"></label>
+    <label>Código da transacção do SMS<input name="codigo" required maxlength="24"
+           placeholder="MP2406AB12CD" style="text-transform:uppercase"></label>
+    <p style="margin-top:16px"><button type="submit">Enviar para confirmação</button></p>
+  </form>
+  <div id="estado" class="warn" style="display:none"></div>
+</div>
+
+<script>
+// A loja é estática: não há backend público a aceitar o POST. Em vez de fingir
+// que envia, mostra o que fazer com o código. Quando existir um endpoint real
+// (o backend do holding), basta trocar esta função.
+function pedir(e) {
+  e.preventDefault();
+  const f = e.target;
+  const caixa = document.getElementById('estado');
+  caixa.style.display = 'block';
+  caixa.textContent = 'Pedido preparado. A loja é estática e não tem servidor: '
+    + 'envia o código ' + (f.codigo.value || '').toUpperCase()
+    + ' por WhatsApp para o número do vendedor. A aprovação e a entrega são '
+    + 'feitas à mão até existir backend público.';
+}
+</script>
+
+<footer>
+  Pagamento local por transferência M-Pesa/e-Mola, confirmado manualmente pelo
+  Presidente antes de cada entrega. Pagamentos internacionais pelo link do
+  produto. Preços em USD; conversão de referência 1 USD ≈ 63.50 MZN.
+</footer>
+</div></body></html>

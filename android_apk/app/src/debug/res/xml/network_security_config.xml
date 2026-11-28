@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Variante usada apenas no APK de DEBUG (o Gradle sobrepõe este recurso ao de
+  main). Permite tráfego em claro para qualquer endereço, porque num APK de
+  debug o endereço do backend é escolhido pelo utilizador e pode ser qualquer
+  IP da rede local — que o Android não deixa enumerar em XML.
+
+  Isto não enfraquece o release: src/main continua com cleartext proibido por
+  omissão e autorizado só para loopback/emulador/.local. E o ApiService valida
+  a mesma regra (EndpointSettings.validar): HTTP em claro só para rede
+  privada, mesmo em debug.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
