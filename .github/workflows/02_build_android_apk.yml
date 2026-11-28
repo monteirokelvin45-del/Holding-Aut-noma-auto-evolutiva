@@ -27,6 +27,11 @@ on:
         description: "URL do backend a fixar no APK (https://... ou http://10.0.2.2:8000 para o emulador)"
         required: false
         default: ""
+      emulador:
+        description: "Correr o APK num emulador Android e trazer screenshots"
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -473,3 +478,108 @@ jobs:
               echo "| Release | não assinado (sem keystore) |"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # Execução real do APK num emulador Android.
+  #
+  # Porque vive aqui e não num workflow próprio: o GitHub Actions não registou
+  # o workflow novo (03) para dispatch em ramos sem PR — o `gh workflow run`
+  # devolvia 404 e a API de workflows listava só este. Em vez de ficar à espera
+  # de que o registo aparecesse, o job junta-se ao workflow que comprovadamente
+  # corre.
+  #
+  # Precisa de KVM, que o runner do GitHub tem e o sandbox de desenvolvimento
+  # não (medido: /dev/kvm inexistente, 0 ocorrências de vmx/svm).
+  # ===========================================================================
+  emulador:
+    name: Correr no emulador
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.emulador }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependências do backend
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet fastapi==0.115.6 uvicorn==0.34.0 \
+            pydantic==2.10.4 pyyaml httpx
+
+      - name: Subir o backend
+        run: |
+          set -euo pipefail
+          export API_ACCESS_TOKEN=token-do-emulador
+          export PYTHONPATH="$GITHUB_WORKSPACE"
+          nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 \
+            > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 40); do
+            curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && { echo "backend pronto (${i}s)"; break; }
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health | head -c 200; echo
+
+      - name: Obter o APK do build anterior
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/apk
+          git fetch --depth=1 origin apk-artifact
+          git show FETCH_HEAD:app-debug.apk > /tmp/apk/app-debug.apk
+          ls -lh /tmp/apk/app-debug.apk
+          sha256sum /tmp/apk/app-debug.apk
+
+      - name: Activar KVM
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cpu-checker qemu-kvm
+          sudo chmod 666 /dev/kvm || true
+          kvm-ok || true
+
+      - name: Executar a app no emulador
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: >-
+            -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+            -camera-back none -camera-front none
+          script: |
+            bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"
+
+      - name: Publicar as provas num ramo
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          [ -d saida_emulador ] || { echo "sem saída"; exit 0; }
+          cp /tmp/apk/app-debug.apk saida_emulador/ 2>/dev/null || true
+          mkdir -p /tmp/ev && cd /tmp/ev
+          git init -q -b emulador-evidencias
+          cp -r "$GITHUB_WORKSPACE/saida_emulador/." .
+          {
+            echo "# Prova de execução no emulador"
+            echo
+            echo "run: ${{ github.run_id }} · commit: ${{ github.sha }}"
+            echo "APK sha256: $(sha256sum app-debug.apk 2>/dev/null | cut -d' ' -f1 || echo '—')"
+            echo
+            [ -f RELATORIO.md ] && cat RELATORIO.md
+          } > README.md
+          ls -la
+          git add -A
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "evidências do run ${{ github.run_id }}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" emulador-evidencias
+          echo "provas no ramo emulador-evidencias"
+
+      - name: Resumo
+        if: always()
+        run: |
+          if [ -f saida_emulador/RELATORIO.md ]; then
+            cat saida_emulador/RELATORIO.md >> "$GITHUB_STEP_SUMMARY"
+          fi
