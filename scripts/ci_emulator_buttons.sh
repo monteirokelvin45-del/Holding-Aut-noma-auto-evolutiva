@@ -512,7 +512,7 @@ adb logcat -d > "$SAIDA/logcat_botoes.txt" 2>&1 || true
   echo "| Falhas | **$FALHAS** |"
   echo "| Fase | \`$FASE\` |"
   echo
-  echo "Screenshots nesta pasta: \`B1\`…\`B9\`. Registo completo em \`botoes.log\`."
+  echo "Screenshots nesta pasta: \`B1\`…\`B10\`. Registo completo em \`botoes.log\`."
 } > "$SAIDA/RELATORIO_BOTOES.md"
 
 cat "$SAIDA/RELATORIO_BOTOES.md"

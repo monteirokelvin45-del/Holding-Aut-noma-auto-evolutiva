@@ -19,6 +19,7 @@ para um banco moçambicano, não.**
 | Enviar por Wise | Implementado, exige aprovação biométrica | `payout_bridge` (`WiseConnector`) |
 | **Sacar PayPal → banco moçambicano** | **NÃO RESOLVIDO pela PayPal** | ver §4 |
 | Tools do Agente CFO | Implementados e testados | `backend/finance/cfo_tools.py` |
+| Cartão PayPal no APK | **Corrido no emulador, 0 falhas** | `docs/emulador/B10_paypal.png` |
 
 Nada nesta tabela foi confirmado com dinheiro real. Não há credenciais
 neste ambiente e não há rede para a PayPal. O que está provado é o
@@ -35,6 +36,24 @@ dinheiro sai    →  cfo_tools.registrar_saques() → aprovação biométrica �
 
 Juntá-los num só sítio parecia arrumado e era perigoso: quem recebe e quem
 envia têm guardas diferentes. Receber é contabilizar; enviar é autorizar.
+
+---
+
+## 2.1 Como isto se vê no telemóvel
+
+![Cartão PayPal no Tesouro](emulador/B10_paypal.png)
+
+Sem chaves, o cartão diz **«não configurado»** e lista o que falta. O aviso
+laranja — «Saque: NÃO RESOLVIDO pela PayPal» — está visível **antes** do
+botão de cobrar, não escondido numa secção de ajuda.
+
+![Formulário de cobrança](emulador/B10b_paypal_form.png)
+
+Com o campo vazio, «Criar cobrança» está **cinzento**. Uma cobrança de zero
+dólares não é uma cobrança, é um engano — e o botão recusa.
+
+Prova: `docs/emulador/RELATORIO_BOTOES_paypal.md` — 0 falhas, passo 9 com
+5 verificações OK (run `46170560596`).
 
 ---
 
