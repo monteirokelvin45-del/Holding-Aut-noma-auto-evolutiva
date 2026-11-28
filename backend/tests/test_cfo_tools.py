@@ -167,6 +167,63 @@ def test_a_divisao_continua_num_so_ficheiro():
         assert percentagem not in fonte, f"percentagem {percentagem} duplicada"
 
 
+# ==========================================================================
+# O registo de ferramentas tem de dizer a verdade
+# ==========================================================================
+def test_estado_global_nao_mente_sobre_as_degradadas():
+    """`em_falta` e `degradada` não podem ser reportadas como `pronta`.
+
+    Um agente com uma ferramenta degradada promete menos ao utilizador; um
+    agente com uma ferramenta em falta não pode prometer nada. Se o registo
+    disser "tudo pronto", o agente volta a mentir — que é o defeito que este
+    registo existe para corrigir.
+    """
+    from backend.core.tool_registry import TOOLS, estado
+
+    e = estado()
+    assert e["total"] == len(TOOLS)
+    assert e["prontas"] + e["degradadas"] + e["em_falta"] == e["total"]
+
+    # Cada entrada tem de estar classificada de acordo com a realidade.
+    for nome, entrada in TOOLS.items():
+        if entrada.estado == "em_falta":
+            assert not entrada.disponivel(), f"{nome} diz em_falta mas resolve"
+        else:
+            assert entrada.disponivel(), f"{nome} diz {entrada.estado} mas não resolve"
+        assert nome in e["lista_prontas"] + e["lista_degradadas"] + e["lista_em_falta"]
+
+
+def test_requisito_em_falta_obriga_a_estado_degradada():
+    """Se falta a chave ou o pacote, a ferramenta **não** está pronta.
+
+    Este é o invariante que impede o registo de voltar a dizer que está
+    tudo bem: uma ferramenta que caiu para uma alternativa mais fraca tem
+    de o dizer, porque é isso que limita o que o agente pode prometer.
+    """
+    from backend.core.tool_registry import TOOLS
+
+    with_requisitos = [(n, e) for n, e in TOOLS.items() if e.requer]
+    assert with_requisitos, "nenhuma ferramenta tem requisitos — o teste não testa nada"
+    for nome, entrada in with_requisitos:
+        if entrada.disponivel() and entrada.faltam():
+            assert entrada.estado == "degradada", (
+                f"{nome} tem {entrada.faltam()} em falta mas diz "
+                f"'{entrada.estado}'"
+            )
+
+
+def test_ferramenta_em_falta_levanta_erro_e_nao_devolve_none():
+    """Silêncio é pior do que erro: quem chama pode continuar e inventar."""
+    from backend.core.tool_registry import invocar
+
+    with pytest.raises(RuntimeError) as exc:
+        invocar("metagpt_pipeline")
+    assert "sem implementação" in str(exc.value)
+
+    with pytest.raises(KeyError):
+        invocar("ferramenta_que_nunca_existiu")
+
+
 def test_construir_tools_sem_crewai_nao_rebenta():
     tools = cfo_tools.construir_tools_crewai()
     assert len(tools) == 3
