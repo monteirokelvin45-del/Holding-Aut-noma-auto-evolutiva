@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
 from ..config.settings import settings
+from . import grounding
 from .clock import today_utc_str, utcnow_iso
 from .errors import ConfigurationError, ExternalServiceError
 from .logger import get_logger
@@ -1067,8 +1068,16 @@ class LLMRouter:
 
     # ------------------------------------------------------------------ público
     def complete(self, request: LLMRequest) -> LLMResponse:
-        """Executa a cadeia de fallback e devolve sempre uma ``LLMResponse``."""
+        """Executa a cadeia de fallback e devolve sempre uma ``LLMResponse``.
+
+        O `system` de todas as chamadas passa por `grounding.ancorar()`: um
+        modelo de 0,6B inventa factos de Moçambique quando não os tem à frente
+        (mediu-se: «a moeda é o moeda nacional», pagamentos «Paytm» e
+        «Mobis»). A ancoragem é feita aqui, e não em cada esquadrão, para não
+        depender de nenhum se lembrar.
+        """
         prompt, system = request.build_prompt()
+        system = grounding.ancorar(system)
         estimated = estimate_tokens(prompt) + max(32, request.max_tokens // 2)
         chain: List[str] = []
         errors: List[str] = []

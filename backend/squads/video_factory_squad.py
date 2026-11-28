@@ -708,6 +708,17 @@ class VideoFactorySquad(BaseSquad):
             # nicho...'}» em voz alta. Aqui só entram frases.
             body = [self._so_texto(b) for b in body]
             body = [b for b in body if b]
+            # Portão de factos: um guião que diz «Paytm» não pode ser narrado
+            # com voz natural e publicado. O que é corrigível por substituição
+            # directa é corrigido; o resto fica registado e bloqueia.
+            campos, notas_factos = self._verificar_factos(
+                str(data.get("title") or ""),
+                str(data.get("hook") or ""),
+                body,
+                str(data.get("cta") or ""),
+            )
+            if notas_factos:
+                log.warning("Guiao com factos duvidosos: %s", notas_factos)
             hashtags = data.get("hashtags")
             if isinstance(hashtags, str):
                 hashtags = [h.strip() for h in hashtags.split() if h.strip()]
@@ -779,6 +790,37 @@ class VideoFactorySquad(BaseSquad):
             frases=frases, titulo=script.title, out_dir=out_dir, language=language
         )
         return resultado.to_dict()
+
+    @staticmethod
+    def _verificar_factos(
+        titulo: str, hook: str, body: List[str], cta: str
+    ) -> Tuple[Tuple[str, str, List[str], str], List[str]]:
+        """Limpa e verifica os textos do guião contra os factos ancorados.
+
+        Devolve ``((titulo, hook, body, cta), problemas)``. A limpeza
+        automática resolve grafias inequívocas («Mozambique» → «Moçambique»);
+        o que sobra são problemas que o chamador deve registar.
+        """
+        from ..core import grounding
+
+        limpos: List[str] = []
+        problemas: List[str] = []
+        for rotulo, valor in (
+            ("titulo", titulo), ("hook", hook), ("cta", cta),
+        ):
+            corrigido, feitas = grounding.limpar(valor)
+            if feitas:
+                log.info("Factos corrigidos em %s: %s", rotulo, feitas)
+            problemas.extend(grounding.verificar_campo(rotulo, corrigido))
+            limpos.append(corrigido)
+        corpo_limpo: List[str] = []
+        for indice, frase in enumerate(body):
+            corrigido, feitas = grounding.limpar(frase)
+            if feitas:
+                log.info("Factos corrigidos em body[%d]: %s", indice, feitas)
+            problemas.extend(grounding.verificar_campo(f"body[{indice}]", corrigido))
+            corpo_limpo.append(corrigido)
+        return (limpos[0], limpos[1], corpo_limpo, limpos[2]), problemas
 
     @staticmethod
     def _so_texto(valor: Any) -> str:

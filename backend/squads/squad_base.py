@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from ..config.settings import settings
+from ..core import grounding
 from ..core.clock import utcnow_iso
 from ..core.errors import KillSwitchActive, ValidationBlocked
 from ..core.llm_router import LLMRequest, llm_router
@@ -151,6 +152,10 @@ class BaseSquad(abc.ABC):
             "comercial (MIT/Apache-2.0/BSD/LGPL) e nunca produzes sem validação "
             "de demanda. Escreves em português de Moçambique, com precisão factual."
         )
+        # O bloco de factos também entra aqui: o router já o injecta, mas um
+        # esquadrão pode chamar o LLM por outro caminho (CrewAI, teste
+        # directo). `ancorar` não duplica.
+        base = grounding.ancorar(base)
         if lessons:
             base += "\nLições do passado (obrigatório respeitar):\n" + "\n".join(
                 f"- {lesson}" for lesson in lessons
