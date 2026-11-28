@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.automaton.holding.data.AiCatalog
 import com.automaton.holding.data.GovernanceResponse
@@ -394,10 +395,17 @@ private fun StatBlock(
     accent: Color = HoldingsColors.TextPrimary,
 ) {
     Column(modifier = modifier) {
+        // Uma linha e elipse: "IMPOSTOS RETIDOS" (15 caracteres) não cabe nos
+        // ~1/3 da largura e, sem limite, quebrava e sobrepunha-se ao bloco
+        // seguinte — visto num screenshot da aba Diretoria no emulador
+        // ("IMPOSTOS RETIDOS" por cima de "FASE").
         Text(
             label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = HoldingsColors.TextMuted,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             value,
