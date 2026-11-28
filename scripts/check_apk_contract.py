@@ -151,13 +151,38 @@ def main() -> int:
             texto = json.dumps(resposta(rota), ensure_ascii=False, indent=2)
             (FIXTURES / f"{nome}.json").write_text(texto, encoding="utf-8")
             print(f"fixture {nome}.json ({len(texto)} bytes)")
+        # O snapshot do WebSocket tem de ter eventos lá dentro.
+        #
+        # O event bus é POR PROCESSO. Numa corrida limpa (importar a app e
+        # ligar logo ao /ws/live) o backlog está vazio, e a fixture fica com
+        # `events: []` — o que faz o teste Kotlin "snapshot entrega o
+        # backlog" falhar por falta de dados, não por defeito. Foi o que
+        # aconteceu ao regenerar: 0 eventos.
+        #
+        # Solução: emitir eventos de verdade antes de ler o snapshot. São
+        # eventos reais do bus, não texto inventado — é isso que dá valor ao
+        # contrato.
         try:
+            from backend.core.runtime_bus import event_bus
+
+            for sequencia in range(1, 4):
+                event_bus.publish(
+                    event_type="agent_step",
+                    agent="contrato",
+                    message=f"evento de contrato {sequencia}",
+                    level="info",
+                    payload={"ordem": sequencia},
+                )
             with cliente.websocket_connect("/ws/live") as ws:
                 primeiro = ws.receive_text()
+            eventos = json.loads(primeiro).get("payload", {}).get("events", [])
+            if not eventos:
+                raise RuntimeError("snapshot veio sem eventos mesmo depois de emitir 3")
             (FIXTURES / "ws_live_snapshot.json").write_text(primeiro, encoding="utf-8")
-            print("fixture ws_live_snapshot.json")
+            print(f"fixture ws_live_snapshot.json ({len(eventos)} eventos)")
         except Exception as exc:  # noqa: BLE001
-            print(f"aviso: WebSocket não produziu snapshot ({exc})")
+            print(f"ERRO: WebSocket não produziu snapshot utilizável ({exc})")
+            falhas += 1
 
     print(f"\n{'FALHAS: ' + str(falhas) if falhas else 'contrato íntegro'}")
     return 1 if falhas else 0

@@ -96,7 +96,7 @@
       "min_success_rate": 0.6,
       "min_judge_score": 85.0
     },
-    "generated_at": "2026-11-28T14:42:49+00:00"
+    "generated_at": "2026-11-28T14:48:31+00:00"
   },
   "accounting": {
     "treasury": {
@@ -146,7 +146,7 @@
       },
       "distributable_owner_usd": 0.0,
       "tax_reserve_rate": 0.05,
-      "generated_at": "2026-11-28T14:42:49+00:00"
+      "generated_at": "2026-11-28T14:48:31+00:00"
     },
     "portfolio": {
       "total": 7,
@@ -167,13 +167,13 @@
       "expected_vaults_usd": 0.0,
       "delta_usd": 0.0,
       "balanced": true,
-      "checked_at": "2026-11-28T14:42:49+00:00"
+      "checked_at": "2026-11-28T14:48:31+00:00"
     },
     "monthly_revenue_usd": 0.0,
     "phase": 1,
     "tax_rate": 0.05,
     "tax_reserve_usd": 0.0,
-    "generated_at": "2026-11-28T14:42:49+00:00"
+    "generated_at": "2026-11-28T14:48:31+00:00"
   },
   "legal": {
     "tools_available": {
@@ -228,7 +228,7 @@
       "youtube"
     ],
     "recent_audits": [],
-    "generated_at": "2026-11-28T14:42:49+00:00"
+    "generated_at": "2026-11-28T14:48:31+00:00"
   },
   "judge": {
     "threshold": 85.0,
@@ -679,7 +679,7 @@
         "at": "2026-11-28T09:11:20+00:00"
       }
     ],
-    "generated_at": "2026-11-28T14:42:49+00:00"
+    "generated_at": "2026-11-28T14:48:31+00:00"
   },
   "cemetery": {
     "total": 0,
@@ -688,5 +688,5 @@
     "embedding_model": "hash-tf-v2-stem",
     "similarity_block": 0.4
   },
-  "generated_at": "2026-11-28T14:42:49+00:00"
+  "generated_at": "2026-11-28T14:48:31+00:00"
 }

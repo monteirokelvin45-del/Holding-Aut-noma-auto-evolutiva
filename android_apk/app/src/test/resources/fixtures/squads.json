@@ -28,10 +28,10 @@
       "cac_basis": "sem_dados",
       "conversion_rate": 0.0,
       "ctr": 0.0,
-      "days_alive": 0.05,
+      "days_alive": 0.06,
       "profit_usd": 0.0,
       "roi": null,
-      "lifetime_days": 0.05
+      "lifetime_days": 0.06
     },
     {
       "id": "sq_59453be2138a",
@@ -107,10 +107,10 @@
       "cac_basis": "sem_dados",
       "conversion_rate": 0.0,
       "ctr": 0.0,
-      "days_alive": 0.07,
+      "days_alive": 0.08,
       "profit_usd": 0.0,
       "roi": null,
-      "lifetime_days": 0.07
+      "lifetime_days": 0.08
     },
     {
       "id": "sq_6c9753cf6a20",
@@ -391,5 +391,5 @@
     "conversion_check_days": 14,
     "min_spend_to_judge_usd": 0.0
   },
-  "generated_at": "2026-11-28T14:42:49+00:00"
+  "generated_at": "2026-11-28T14:48:31+00:00"
 }
