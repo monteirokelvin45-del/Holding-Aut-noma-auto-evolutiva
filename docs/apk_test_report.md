@@ -18,7 +18,8 @@ que **não** foi possível executar neste ambiente. Última actualização:
 | Compilação Kotlin/Gradle/APK | **SIM — no CI** | APK 18 MB, sha256 `9d20e979…`, run 46055045863 |
 | Testes de contrato a correr | **SIM — no CI** | 13 casos, 0 falhas |
 | Protocolo do APK contra a API real | **SIM** | `scripts/device_sim.py` → 20/20 passos |
-| Execução em dispositivo/emulador | **NÃO** — bloqueado pelo ambiente | ver §8 |
+| Execução em emulador (CI, com KVM) | **SIM — 0 falhas** | ver §10 |
+| Execução em telemóvel físico | **NÃO** | sem dispositivo; ver §10 |
 
 O APK **foi compilado no GitHub Actions** e inspeccionado a partir do próprio
 binário (§7). O que continua por fazer é executá-lo num dispositivo.
@@ -324,3 +325,50 @@ se o contrato se partir:
 O que isto prova: o **contrato e as regras** estão certos. O que não prova: que
 a UI desenha, que a biometria abre, que o WebSocket sobrevive à rede de um
 telemóvel. Essa parte continua por fazer e está dita.
+
+
+---
+
+## 10. Execução real no emulador (runner do GitHub)
+
+O ambiente de desenvolvimento não tem `/dev/kvm` nem rede para `dl.google.com`
+(§8), por isso a execução foi levada para o runner do GitHub — o único sítio
+onde "corre no telemóvel" pode ser provado em vez de afirmado.
+
+**Configuração**: AVD API 30, `x86_64`, perfil Pixel 5, KVM activo, Android 11.
+Backend real a correr em `0.0.0.0:8000` no mesmo runner (5 pacotes).
+
+**Resultado do run final: 0 falhas.**
+
+| Verificação | Resultado |
+|---|---|
+| Instalação do APK | `Success` |
+| Arranque da MainActivity | `LaunchState: COLD`, 3,0 s |
+| Processo vivo | pid devolvido |
+| 5 abas abrem | confirmado pelo título de cada ecrã |
+| Screenshots | 5 PNG distintos (ver `docs/emulador/`) |
+| FATAL EXCEPTION no logcat | nenhuma |
+| WebSocket `/ws/live` | ligado (`WebSocket /ws/live [accepted]`) |
+| Pedidos ao backend | 15 GETs com 200 |
+
+### Defeitos que a execução revelou (e que verificações estáticas não apanham)
+
+1. **`/ws/live` devolvia 404 dentro do emulador.** O uvicorn do CI não tinha
+   biblioteca de WebSocket — respondia 404 e a app mostrava «Stream em pausa:
+   Expected HTTP 101 response but was '404 Not Found'». Não era rede nem
+   endereço.
+2. **«Esquadrões» partia em duas linhas** na barra de 5 abas.
+3. **«IMPOSTOS RETIDOS» encostava a «FASE»** na aba Diretoria.
+4. **O próprio teste estava errado**: as abas 02–05 eram o mesmo ecrã (dois
+   PNG com md5 igual). O toque ia ao centro da etiqueta, não ao
+   `NavigationBarItem`. Passou a exigir o título da aba visível antes de
+   capturar.
+
+### O que continua por testar
+
+- **Telemóvel físico**: Wi-Fi real, DHCP, isolamento de clientes do router.
+- **Biometria**: o emulador não tem sensor. O diálogo nunca abriu neste teste,
+  porque não havia aprovações pendentes. `adb -e finger` testaria o diálogo,
+  não o sensor.
+- **Fluxo de escrita** (aprovar, saque, kill switch): exigem biometria e um
+  toque real no botão vermelho; fora do âmbito do teste de fumo.
