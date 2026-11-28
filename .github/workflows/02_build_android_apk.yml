@@ -378,6 +378,7 @@ jobs:
           rm -rf "$PUB"; mkdir -p "$PUB"
           cp "$APK" "$PUB/app-debug.apk"
           ( cd "$PUB"
+            set -x
             git init -q -b apk-artifact
             git config user.name  "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -392,9 +393,27 @@ jobs:
             } > README.md
             git add -A
             git commit -q -m "apk-debug: ${SHA:0:12}"
-            git push -q --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact
+            git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-artifact 2>&1 | tail -5
           )
           echo "APK publicado no ramo apk-artifact"
+
+      # Um "exit code 1" no passo do ramo custou um run inteiro sem pista.
+      # O build.log já existe; vai para o ramo apk-log quando algo falha.
+      - name: Publicar build.log quando falha
+        if: failure()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          [ -f android_apk/build.log ] || { echo "sem build.log"; exit 0; }
+          mkdir -p /tmp/lg && cd /tmp/lg
+          git init -q -b apk-log
+          cp "$GITHUB_WORKSPACE/android_apk/build.log" .
+          printf 'run: %s\ncommit: %s\nevento: %s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_EVENT_NAME" > META.txt
+          git add -A
+          git -c user.email=ci@automaton -c user.name=ci commit -q -m "log do run $GITHUB_RUN_ID"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${REPO}.git" apk-log 2>&1 | tail -3
 
       - name: Publicar evidência do APK no PR
         if: ${{ success() && github.event_name == 'pull_request' }}
@@ -500,6 +519,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # O runner traz Python 3.14; pydantic 2.10.4 não tem wheels para 3.14 e
+      # a construção a partir do código falha (diagnóstico: "Python 3.14.4" e
+      # lista de pacotes vazia). 3.12 é a família em que o backend é testado.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       # Ubuntu 24.04 recusa `pip install` no Python do sistema
       # (PEP 668: "externally-managed-environment"). Um venv resolve e isola as
