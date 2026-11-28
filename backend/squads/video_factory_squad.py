@@ -650,10 +650,21 @@ class VideoFactorySquad(BaseSquad):
     ) -> VideoScript:
         """Escreve o guião. LLM se disponível; template determinístico caso não."""
         words_target = max(60, min(240, int(duration_target * 2.6)))
+        # O modelo pequeno (0.6B) ignora instruções genéricas de idioma e
+        # chega a copiar o slug do nicho para dentro do texto — foi assim que
+        # um vídeo saiu a dizer «perde dinheiro em freelancing_video_kokoro».
+        # Duas defesas: (a) o idioma vai em maiúsculas e com exemplo de como
+        # NÃO escrever; (b) o `niche` deixa de ser um campo do prompt e passa
+        # a contexto entre parênteses, para não ser lido como material.
         prompt = (
             "Escreve um guião de vídeo vertical (9:16) para TikTok/Shorts/Reels.\n"
-            f"IDEIA: {idea}\nNICHO: {niche}\nIDIOMA: {language}\n"
+            f"IDEIA: {idea}\n"
+            f"(contexto: {niche.replace('_', ' ')}, não escrever este texto)\n"
             f"ALVO: ~{words_target} palavras de narração (~{duration_target}s).\n"
+            "ESCREVE TODO O CONTEÚDO EM PORTUGUÊS DE MOÇAMBIQUE. "
+            "title, hook, body, cta e description têm de estar em português. "
+            "Não uses palavras em inglês. Não escrevas nomes técnicos nem "
+            "identificadores com underscores.\n"
             "Regras: gancho nos primeiros 3 segundos (pergunta ou número), "
             "corpo em 2-3 blocos curtos, CTA final. Sem promessas de rendimento "
             "garantido. Devolve JSON com: title, hook, body (lista), cta, "
@@ -707,11 +718,16 @@ class VideoFactorySquad(BaseSquad):
             )
 
         # -------- template determinístico (marcado como não-LLM) -----------
+        # A narração NÃO interpola `niche`: um slug como
+        # «freelancing_video_kokoro» dentro de uma frase falada é lixo audível,
+        # e foi exactamente o que a Kokoro chegou a ler em voz alta.
+        nicho_legivel = niche.replace("_", " ").strip().lower()
         return VideoScript(
             title=f"{idea[:80]}",
             hook=(
-                f"Sabias que a maioria das pessoas perde dinheiro em {niche} "
-                "sem perceber porquê?"
+                "Sabias que a maioria das pessoas que começa a trabalhar por "
+                "conta própria perde dinheiro nos primeiros meses, sem "
+                "perceber porquê?"
             ),
             body=[
                 "Primeiro, identifica onde o dinheiro está a sair.",
