@@ -388,7 +388,20 @@ def _http_post_json(
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 body = response.read().decode("utf-8", errors="replace")
-                return json.loads(body) if body.strip() else {}
+                ctype = response.headers.get("Content-Type", "?")
+            if not body.strip():
+                return {}
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError as exc:
+                # Um 200 com HTML no corpo é o que um proxy de egress devolve
+                # quando bloqueia o destino. Sem guardar o início do corpo e o
+                # Content-Type, o erro aparece como 'JSONDecodeError char 0' e
+                # não se percebe que a rede foi interceptada.
+                raise ExternalServiceError(
+                    f"Resposta não-JSON (HTTP 200) em {url.split('?')[0]} "
+                    f"[{ctype}]: {body[:200]!r}"
+                ) from exc
         except urllib.error.HTTPError as exc:
             detail = ""
             try:

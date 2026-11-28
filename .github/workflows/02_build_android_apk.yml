@@ -569,24 +569,39 @@ jobs:
               printf '%-40s ' "$h"
               getent hosts "$h" | head -1 || echo "NAO RESOLVE"
             done
-            echo "== HTTP (sem auth: 401/403 significa que chegou lá)"
-            for u in https://models.github.ai/inference/chat/completions \
-                     https://models.inference.ai.azure.com/chat/completions; do
-              printf '%-55s ' "$u"
-              curl -s -o /dev/null -w '%{http_code}\n' --max-time 15 \
-                -X POST "$u" -H 'Content-Type: application/json' \
-                -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}' \
-                || echo "FALHOU"
-            done
-            echo "== com o token do Actions"
-            printf '%-55s ' "models.github.ai (com token)"
-            curl -s -o /tmp/resp.json -w '%{http_code}\n' --max-time 20 \
-              -X POST https://models.github.ai/inference/chat/completions \
+
+            echo
+            echo "== models.github.ai: cabecalhos + corpo (gpt-4o-mini)"
+            curl -s -i --max-time 25 -X POST \
+              https://models.github.ai/inference/chat/completions \
               -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
               -H 'Content-Type: application/json' \
+              -H 'Accept: application/json' \
               -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Diz OK"}]}' \
-              || echo FALHOU
-            head -c 300 /tmp/resp.json 2>/dev/null; echo
+              | head -c 1200
+            echo
+
+            echo
+            echo "== models.github.ai: corpo para 3 modelos"
+            for m in gpt-4o-mini gpt-4.1-mini openai/gpt-4o-mini; do
+              printf '%-25s ' "$m"
+              code=$(curl -s -o /tmp/m.json -w '%{http_code}' --max-time 25 -X POST \
+                https://models.github.ai/inference/chat/completions \
+                -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+                -H 'Content-Type: application/json' \
+                -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"Diz OK\"}]}")
+              echo "HTTP $code body=$(head -c 160 /tmp/m.json | tr -d '\n')"
+            done
+
+            echo
+            echo "== groq / gemini (sem chave: 401 significa que a API responde)"
+            for u in https://api.groq.com/openai/v1/chat/completions \
+                     https://generativelanguage.googleapis.com/v1beta/models; do
+              printf '%-60s ' "$u"
+              curl -s -o /tmp/g.json -w '%{http_code}\n' --max-time 20 -X POST "$u" \
+                -H 'Content-Type: application/json' -d '{}' || echo FALHOU
+              head -c 160 /tmp/g.json | tr -d '\n'; echo
+            done
           } 2>&1 | tee sonda_rede.txt
         env:
           GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
