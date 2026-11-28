@@ -441,6 +441,55 @@ else
   nok "ícone de ligação não encontrado"
 fi
 
+# --------------------------------------------------- 9. cartão PayPal (novo)
+# O cartão do PayPal vive no topo da Tesouraria. Sem chaves tem de aparecer
+# como "não configurado" e mostrar o aviso de que a PayPal não paga a
+# Moçambique — e o botão de cobrança tem de existir sem rebentar o ecrã.
+registar "--- 9. cartão PayPal no Tesouro"
+if tocar "Tesouro" "aba Tesouro (paypal)"; then
+  sleep 2
+  adb shell input swipe 500 1400 500 400 300 >/dev/null 2>&1   # voltar ao topo
+  sleep 1
+  if textos | grep -qi "PAYPAL"; then
+    ok "cartão PayPal presente no Tesouro"
+    ecra "B10_paypal"
+    if textos | grep -qiE "não configurado|nao configurado|ENSAIO"; then
+      ok "cartão indica o estado real (não configurado/ENSAIO)"
+    else
+      nok "cartão PayPal não diz se está configurado"
+    fi
+    if textos | grep -qi "NÃO RESOLVIDO"; then
+      ok "aviso de saque para Moçambique visível sem abrir nada"
+    else
+      nok "aviso «sacar para Moçambique» não aparece no cartão"
+    fi
+    if tocar "Nova cobrança" "abrir formulário de cobrança"; then
+      sleep 1
+      ecra "B10b_paypal_form"
+      if textos | grep -qi "Valor em USD"; then
+        ok "formulário de cobrança abre com o campo de valor"
+      else
+        nok "formulário de cobrança não mostrou «Valor em USD»"
+      fi
+      # O botão tem de estar desactivado com o campo vazio: uma cobrança de
+      # zero dólares não é uma cobrança, é um engano.
+      if textos | grep -qi "Criar cobrança"; then
+        ok "botão «Criar cobrança» existe"
+        if tocar "Cancelar" "fechar formulário"; then
+          sleep 1
+          ok "formulário fecha sem criar nada"
+        fi
+      else
+        nok "botão «Criar cobrança» ausente"
+      fi
+    else
+      nok "botão «Nova cobrança» não respondeu"
+    fi
+  else
+    nok "cartão PayPal não apareceu no Tesouro"
+  fi
+fi
+
 # ------------------------------------------------------------------ relatório
 registar "=== resultado: $FALHAS falha(s) ==="
 adb logcat -d > "$SAIDA/logcat_botoes.txt" 2>&1 || true
