@@ -131,9 +131,13 @@ agents:
       Contabilista conservador que trata o dinheiro do Presidente como se
       fosse seu — e que nunca deixa um cofre de impostos ser tocado.
     llm_tier: local
-    tools: [ledger_tools, payout_bridge, fx_rates]
+    # paypal_cobranca: receber (create_order/capture) por PayPal — o lado
+    # internacional. O payout_bridge continua a ser quem ENVIA (Payouts,
+    # M-Pesa, e-Mola, Wise). Dois sentidos, dois módulos.
+    tools: [ledger_tools, payout_bridge, paypal_cobranca, fx_rates]
     guards:
       - spend_cap_enforced
+      - nunca_dividir_fora_do_cfo   # a regra por fase vive num só sítio
       - tax_reserve_untouchable
       - biometric_required_above_threshold
 

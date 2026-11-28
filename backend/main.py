@@ -63,6 +63,7 @@ from .core.security_guard import kill_switch, prompt_shield
 from .core.shared_memory import shared_memory
 from .core.vault_store import PENDING_APPROVALS, SQUAD_METRICS, VAULT_FILES, vault
 from .finance.cfo_treasury import cfo
+from .finance.paypal_cobranca import paypal_cobranca
 from .finance.payout_bridge import PayoutRequest, payout_bridge
 from .governance.accountant_auditor import accountant
 from .governance.ceo_orchestrator import ceo
@@ -260,6 +261,23 @@ class PayoutReserveRequest(BaseModel):
     channel: str = Field(pattern="^(mpesa|emola|paypal|wise)$")
     destination: str = ""
     reason: str = ""
+
+
+class CobrancaRequest(BaseModel):
+    """Pedido de cobrança internacional (PayPal)."""
+
+    valor_usd: float = Field(gt=0)
+    descricao: str = Field(min_length=3, max_length=127)
+    reference_id: str = Field(default="", max_length=60)
+    moeda: str = Field(default="USD", max_length=3)
+
+
+class CapturaRequest(BaseModel):
+    order_id: str = Field(min_length=3, max_length=64)
+    # Registar a receita no cofre é uma decisão, não um efeito automático:
+    # uma captura pode ser feita só para confirmar o estado.
+    registar_receita: bool = True
+    squad: str = Field(default="unknown", max_length=80)
 
 
 class RevenueRequest(BaseModel):
@@ -519,6 +537,73 @@ def get_approval(approval_id: str) -> Dict[str, Any]:
 # ==========================================================================
 # Tesouraria
 # ==========================================================================
+@app.get("/paypal", tags=["cobranca"])
+def paypal_estado() -> Dict[str, Any]:
+    """Estado honesto do PayPal: o que funciona e o que não está resolvido."""
+    return paypal_cobranca.diagnostico()
+
+
+@app.get("/paypal/ferramentas", tags=["cobranca"])
+def paypal_ferramentas() -> Dict[str, Any]:
+    """As operações que o toolkit oficial da PayPal expõe a agentes de IA."""
+    ferramentas = paypal_cobranca.ferramentas_do_agente()
+    return {
+        "total": len(ferramentas),
+        "ferramentas": ferramentas,
+        "nota": (
+            "Lidas do pacote paypal-agent-toolkit em tempo de execução."
+            if ferramentas
+            else "toolkit não instalado (pip install paypal-agent-toolkit)"
+        ),
+    }
+
+
+@app.post("/paypal/cobrancas", tags=["cobranca"],
+          dependencies=[Depends(require_token)])
+def criar_cobranca(payload: CobrancaRequest) -> Dict[str, Any]:
+    """Cria um pedido de cobrança. Sem credenciais devolve dry-run."""
+    cobranca = paypal_cobranca.criar_cobranca(
+        valor_usd=payload.valor_usd,
+        descricao=payload.descricao,
+        reference_id=payload.reference_id,
+        moeda=payload.moeda,
+    )
+    return {"ok": cobranca.ok, **cobranca.to_dict()}
+
+
+@app.post("/paypal/capturar", tags=["cobranca"],
+          dependencies=[Depends(require_token)])
+def capturar_cobranca(payload: CapturaRequest) -> Dict[str, Any]:
+    """Captura um pedido aprovado e, se for o caso, registra a receita.
+
+    A receita só entra no cofre com estado COMPLETED. «Aprovado» não é
+    «pago», e tratá-los como iguais é como se contabiliza dinheiro que
+    nunca chegou.
+    """
+    resultado = paypal_cobranca.capturar(payload.order_id)
+    registo = None
+    if resultado.get("capturado") and payload.registar_receita:
+        valor = float(resultado.get("amount_usd") or 0)
+        if valor <= 0:
+            # Não inventar um montante. Entrar no cofre com o valor errado
+            # é pior do que não entrar: estraga a divisão por fase em
+            # silêncio e ninguém descobre até ao fecho do mês.
+            raise ValidationBlocked(
+                f"PayPal capturou {payload.order_id} mas não devolveu o "
+                "montante. Registe a receita manualmente em /treasury/revenue "
+                "com o valor real."
+            )
+        divisao = cfo.record_revenue(
+            valor,
+            source="paypal",
+            squad=payload.squad,
+            description=f"Receita PayPal {payload.order_id}",
+            external_ref=payload.order_id,
+        )
+        registo = divisao.to_dict()
+    return {"ok": resultado.get("ok", False), **resultado, "receita_registada": registo}
+
+
 @app.get("/treasury", tags=["tesouraria"])
 def treasury() -> Dict[str, Any]:
     return {
