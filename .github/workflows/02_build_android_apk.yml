@@ -504,16 +504,23 @@ jobs:
       # Ubuntu 24.04 recusa `pip install` no Python do sistema
       # (PEP 668: "externally-managed-environment"). Um venv resolve e isola as
       # versões das do runner.
+      # Os logs do Actions não são alcançáveis daqui (results-receiver → EOF), e
+      # um passo que só diz "exit code 1" custa uma iteração cega por
+      # tentativa. Por isso: nada de --quiet, e as mensagens vão para um ramo
+      # quando falha.
       - name: Instalar dependências do backend
+        id: deps
         run: |
-          set -euo pipefail
+          set -x
+          python3 --version
           python3 -m venv /tmp/venv
-          /tmp/venv/bin/pip install --quiet --upgrade pip
-          /tmp/venv/bin/pip install --quiet fastapi==0.115.6 uvicorn==0.34.0 \
-            pydantic==2.10.4 pyyaml httpx
+          /tmp/venv/bin/python -m pip install --upgrade pip 2>&1 | tail -5
+          /tmp/venv/bin/python -m pip install fastapi==0.115.6 uvicorn==0.34.0 \
+            pydantic==2.10.4 pyyaml httpx 2>&1 | tail -20
           /tmp/venv/bin/python -c "import fastapi, uvicorn, yaml, httpx; print('deps ok', fastapi.__version__)"
 
       - name: Subir o backend
+        id: backend
         run: |
           set -euo pipefail
           export API_ACCESS_TOKEN=token-do-emulador
@@ -557,13 +564,29 @@ jobs:
           script: |
             bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"
 
+      - name: Guardar diagnóstico do job
+        if: failure()
+        run: |
+          {
+            echo "venv existe: $([ -x /tmp/venv/bin/python ] && echo sim || echo nao)"
+            /tmp/venv/bin/python --version 2>&1 || true
+            /tmp/venv/bin/python -m pip list 2>&1 | head -20 || true
+            echo "--- backend.log ---"
+            tail -40 /tmp/backend.log 2>/dev/null || echo "(sem backend.log)"
+            echo "--- saída do emulador ---"
+            ls -la saida_emulador 2>/dev/null || echo "(sem saida_emulador)"
+            tail -60 saida_emulador/adb.log 2>/dev/null || true
+          } > /tmp/diag.txt 2>&1
+          cat /tmp/diag.txt | tail -40
+
       - name: Publicar as provas num ramo
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
-          [ -d saida_emulador ] || { echo "sem saída"; exit 0; }
+          mkdir -p saida_emulador
+          cp /tmp/diag.txt saida_emulador/DIAGNOSTICO.txt 2>/dev/null || true
           cp /tmp/apk/app-debug.apk saida_emulador/ 2>/dev/null || true
           mkdir -p /tmp/ev && cd /tmp/ev
           git init -q -b emulador-evidencias
