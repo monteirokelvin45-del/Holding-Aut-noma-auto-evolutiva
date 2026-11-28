@@ -598,6 +598,24 @@ jobs:
               print(f"  {passo['step']:12} {passo['status']:9} "
                     f"{json.dumps(passo.get('detail', {}), ensure_ascii=False)[:200]}")
 
+          # Guardar a sonda em ficheiro: os logs do Actions não são alcançáveis
+          # de fora, e a pergunta que importa é "quem respondeu, LLM ou
+          # heurística?". Sem isto, a resposta perde-se.
+          Path("sonda_llm.json").write_text(
+              json.dumps({
+                  "ordem": st["order"],
+                  "providers": {k: {"configurado": v["configured"],
+                                    "motivo": v["reason"]}
+                                for k, v in st["providers"].items()},
+                  "escolhido": sonda.provider,
+                  "is_llm": sonda.is_llm,
+                  "cadeia": sonda.fallback_chain,
+                  "erro": sonda.error,
+              }, ensure_ascii=False, indent=2), encoding="utf-8")
+          print("SONDA_JSON " + json.dumps({
+              "escolhido": sonda.provider, "is_llm": sonda.is_llm,
+              "cadeia": sonda.fallback_chain}, ensure_ascii=False))
+
           resumo = os.environ.get("GITHUB_STEP_SUMMARY")
           if resumo:
               with open(resumo, "a", encoding="utf-8") as f:
@@ -618,6 +636,7 @@ jobs:
           mkdir -p /tmp/res && cd /tmp/res
           git init -q -b estado-ciclo
           cp "$GITHUB_WORKSPACE/cycle_report.json" . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/sonda_llm.json" . 2>/dev/null || true
           # estado do cofre (aprovações, testes de demanda, ledger)
           mkdir -p vault_data
           cp -r "$GITHUB_WORKSPACE/vault_data/." vault_data/ 2>/dev/null || true
