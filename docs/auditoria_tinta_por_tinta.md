@@ -12,12 +12,13 @@ verificou e **o que falhou**, incluindo os erros que eram meus.
 
 | Eixo | Antes | Depois |
 |---|---|---|
-| Testes do backend | 114 | **189** |
+| Testes do backend | 114 | **194** |
 | Mutações apanhadas | — | **14/14** |
 | Ferramentas declaradas vs. implementadas | 14 em falta | **1 em falta, 11 degradadas, 37 prontas** |
 | Rotas PayPal | 0 | 6 (+ cartão no APK) |
-| Bugs reais encontrados | — | **9** |
-| Erros no próprio teste | — | **7** (corrigidos) |
+| Bugs reais encontrados | — | **11** |
+| Erros no próprio teste | — | **9** (corrigidos) |
+| Avisos do pyflakes | 45 | **13** (só variáveis de diagnóstico) |
 
 ---
 
@@ -122,11 +123,11 @@ inexistente, porque nada o chamava.
 |---|---|---|
 | Contrato (dry-run) | `test_paypal.py` | 12 |
 | Ponta a ponta (SDK real contra PayPal falso) | `test_paypal_e2e.py` | 10 |
-| Caos e concorrência | `test_dinheiro_caos.py` | 10 |
+| Caos, concorrência e atomicidade | `test_dinheiro_caos.py` | 16 |
 | Contrato HTTP + segurança | `test_paypal_api.py` | 16 |
-| Tools do CFO + registo | `test_cfo_tools.py` | 24 |
+| Tools do CFO + registo | `test_cfo_tools.py` | 26 |
 
-**Total: 189 testes, 0 falhas.**
+**Total: 194 testes, 0 falhas.**
 
 ### 4.1 Mutação — a prova de que os testes servem
 
@@ -174,6 +175,31 @@ token para não partir chamadas internas — ficam documentadas como decisão.
 **Fuga de credenciais:** um teste percorre as respostas JSON das rotas novas
 à procura de chaves com valor. `paypal_client_secret: false` passa (é um
 booleano); `paypal_client_secret: "A21AA..."` falharia.
+
+---
+
+## 5.1 Código morto e ligações em falta
+
+Encontraram-se dois casos em que o código existia mas **nada a ele chegava**:
+
+**a) O `CrewBridge` nunca entregava ferramentas ao CrewAI.** O `Agent(...)`
+não tinha `tools=`. O defeito corrigido no registo reaparecia uma camada
+mais fundo: o agente lia «podes usar registrar_saques» e não tinha função
+nenhuma. Agora `_tools_crewai()` liga-o — CFO com 3, scout com 4.
+
+**b) `vault_store.transaction` fazia um `deepcopy` que ninguém usava.** O
+nome `snapshot` sugeria rollback; não havia rollback. Verificou-se que a
+atomicidade era real (a escrita acontece depois do `yield`, e uma excepção
+impede-a) e o trabalho a fingir saiu — substituído por três testes:
+
+| Teste | O que prova |
+|---|---|
+| excepção a meio | nada gravado |
+| contexto abandonado (GeneratorExit) | nada gravado |
+| escrita normal | **grava mesmo** |
+
+Sem o terceiro, os outros dois passariam com o cofre permanentemente
+congelado e não provavam nada.
 
 ---
 
@@ -244,3 +270,23 @@ não é um teste, é uma coincidência.
    produz o mesmo artefacto sem ela.
 4. **11 ferramentas degradadas** por falta de chave/pacote. Cada uma diz
    qual é a alternativa que está a usar.
+5. **A deduplicação de receita cresce linearmente** com o número de eventos
+   (procura linear em `revenue_events`). Com dezenas de milhares de eventos
+   passa a notar-se. A solução é um índice por `(source, external_ref)`;
+   não se fez porque, a este volume, seria optimização sem problema.
+
+---
+
+## 9. Estado final verificado
+
+| Verificação | Resultado |
+|---|---|
+| `pytest backend/tests` | **194 passed**, 0 falhas |
+| Mutações apanhadas | **14/14** |
+| `compileall backend` | exit 0 |
+| `pyflakes backend` | 13 (variáveis de diagnóstico, por desenho) |
+| Símbolos Kotlin sem import | **0** |
+| Build do APK (CI) | **success** |
+| Emulador (CI) | **success**, 18 verificações OK, 0 falhas |
+| Rotas novas no OpenAPI | 6 |
+| Segredos em código | 0 |
