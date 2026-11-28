@@ -845,6 +845,75 @@ class LLMRouter:
         )
 
     def _call_ollama(self, request: LLMRequest, prompt: str, system: str) -> LLMResponse:
+        """Ollama, preferindo o endpoint OpenAI-compatível.
+
+        O Ollama expõe duas APIs: a nativa (`/api/chat`, que devolve
+        `message.content` e `eval_count`) e a compatível com OpenAI
+        (`/v1/chat/completions`, que devolve o mesmo envelope da Groq e da
+        OpenAI). A segunda é preferível:
+
+        * é o mesmo formato que os outros providers já falam, portanto um
+          Ollama remoto (num portátil com 16 GB, por exemplo) comporta-se
+          exactamente como a Groq — uma só via de código;
+        * é a que ferramentas externas (PraisonAI, OpenAI SDK, LangChain)
+          esperam encontrar em `http://localhost:11434/v1`.
+
+        A nativa fica como alternativa, para Ollama antigo sem `/v1`.
+        """
+        try:
+            return self._call_ollama_openai(request, prompt, system)
+        except ExternalServiceError as exc:
+            log.info("Ollama /v1 indisponível (%s); a tentar a API nativa", exc)
+            return self._call_ollama_nativo(request, prompt, system)
+
+    def _call_ollama_openai(
+        self, request: LLMRequest, prompt: str, system: str
+    ) -> LLMResponse:
+        """Endpoint OpenAI-compatível do Ollama: `{base}/v1/chat/completions`."""
+        base = settings.ollama_base_url.rstrip("/")
+        if base.endswith("/v1"):
+            url = base + "/chat/completions"
+        else:
+            url = base + "/v1/chat/completions"
+        messages: List[Dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        payload: Dict[str, Any] = {
+            "model": settings.ollama_model,
+            "messages": messages,
+            "temperature": request.temperature,
+            "max_tokens": max(64, request.max_tokens),
+            "stream": False,
+        }
+        if request.json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        started = time.monotonic()
+        raw = _http_post_json(url, payload, {}, timeout=180)
+        latency = int((time.monotonic() - started) * 1000)
+        try:
+            text = raw["choices"][0]["message"]["content"] or ""
+        except (KeyError, IndexError, TypeError) as exc:
+            raise ExternalServiceError(
+                f"Resposta Ollama /v1 inesperada: {str(raw)[:200]}"
+            ) from exc
+        if not text.strip():
+            raise ExternalServiceError("Ollama /v1 devolveu resposta vazia")
+        meta = raw.get("usage") or {}
+        usage = TokenUsage(
+            prompt_tokens=int(meta.get("prompt_tokens", estimate_tokens(prompt))),
+            completion_tokens=int(meta.get("completion_tokens", estimate_tokens(text))),
+            total_tokens=0,
+        )
+        usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        return LLMResponse(
+            text=text, provider="ollama", model=settings.ollama_model,
+            usage=usage, cost_usd=0.0, latency_ms=latency, is_llm=True,
+        )
+
+    def _call_ollama_nativo(
+        self, request: LLMRequest, prompt: str, system: str
+    ) -> LLMResponse:
         payload: Dict[str, Any] = {
             "model": settings.ollama_model,
             "messages": (

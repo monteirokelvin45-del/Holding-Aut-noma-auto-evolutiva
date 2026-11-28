@@ -626,16 +626,39 @@ def test_tts_available_expoe_os_motores_offline():
     assert motores["kokoro"] is True, "pesos em models/kokoro/ deviam ser detectados"
     assert motores["espeak_ng"] is True, "espeakng-loader devia ser detectado"
     assert set(motores) >= {"edge_tts", "kokoro", "chatterbox", "piper", "espeak_ng"}
-    assert Path("models/kokoro/kokoro-v1.0.q8.onnx").is_file()
+    # O nome mudou: o instalador grava kokoro-q8.onnx (remontado de 6
+    # fragmentos com SHA verificado), não o kokoro-v1.0.q8.onnx do
+    # fetch_models.sh.
+    assert Path("models/kokoro/kokoro-q8.onnx").is_file(), (
+        "correr scripts/instalar_motor_local.sh"
+    )
 
 
-def test_kokoro_recusa_portugues_em_vez_de_ler_com_voz_inglesa(tmp_path):
-    """Vozes v1.0 só cobrem en/zh: ler PT com voz inglesa sairia incompreensível."""
+def test_kokoro_local_gera_portugues_com_voz_pt(tmp_path):
+    """Kokoro-82M tem vozes portuguesas; a antiga recusa era falsa.
+
+    Este teste chamava-se `test_kokoro_recusa_portugues_em_vez_de_ler_com_
+    voz_inglesa` e fixava o erro: «o pacote voices-v1.0 só tem vozes
+    en/zh». O pacote tem pf_dora, pm_alex e pm_santa. Agora o que se
+    verifica é o contrário — que sai áudio em português com voz portuguesa.
+    """
+    import wave
+
     from backend.squads.video_factory_squad import TTSRegistry
+    from backend.squads.kokoro_tts import kokoro_local
 
-    ok, detalhe = TTSRegistry._kokoro("Teste.", tmp_path / "pt.wav", "pt")
-    assert ok is False
-    assert "sem_voz_pt" in detalhe
+    if not kokoro_local.disponivel()[0]:
+        pytest.skip("pesos do Kokoro ausentes; correr scripts/instalar_motor_local.sh")
+
+    destino = tmp_path / "pt.wav"
+    ok, detalhe = TTSRegistry._kokoro_local("Isto é português.", destino, "pt")
+    assert ok is True, detalhe
+    assert detalhe.startswith("kokoro:pf_dora")
+    with wave.open(str(destino), "rb") as wav:
+        assert wav.getframerate() == 24000
+        assert wav.getnframes() > 2400  # pelo menos 0,1 s
+        amostras = wav.readframes(wav.getnframes())
+    assert any(b != 0 for b in amostras), "áudio silencioso não serve"
 
 
 def test_espeak_ng_escreve_wav_com_amostras_nao_silenciosas(tmp_path):
@@ -1228,3 +1251,62 @@ def test_kokoro_diz_porque_nao_pode_sem_pesos(tmp_path):
     ok, motivo = k.sintetizar("olá", tmp_path / "x.wav")
     assert ok is False
     assert motivo.startswith("kokoro:")
+
+
+# --------------------------------------------------------------------------- #
+# 15. Ollama: endpoint OpenAI-compatível primeiro, nativo depois
+# --------------------------------------------------------------------------- #
+def test_ollama_usa_o_endpoint_openai_quando_existe(monkeypatch):
+    """`/v1/chat/completions` é o formato que todos os outros providers falam.
+
+    Assim um Ollama num portátil com 16 GB responde igual à Groq, e
+    ferramentas externas (PraisonAI, OpenAI SDK) encontram o que esperam em
+    http://localhost:11434/v1.
+    """
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    urls = []
+
+    def falso_post(url, payload, headers, timeout=30):
+        urls.append(url)
+        return {
+            "choices": [{"message": {"content": "resposta do ollama"}}],
+            "usage": {"prompt_tokens": 9, "completion_tokens": 4},
+        }
+
+    object.__setattr__(cfg, "ollama_base_url", "http://localhost:11434")
+    monkeypatch.setattr(mod, "_http_post_json", falso_post)
+    router = mod.LLMRouter()
+    resposta = router._call_ollama(mod.LLMRequest(prompt="oi"), "oi", "")
+
+    assert urls == ["http://localhost:11434/v1/chat/completions"]
+    assert resposta.provider == "ollama"
+    assert resposta.text == "resposta do ollama"
+    assert resposta.is_llm is True
+    assert resposta.cost_usd == 0.0
+
+
+def test_ollama_recua_para_api_nativa_sem_v1(monkeypatch):
+    """Ollama antigo sem `/v1` continua a funcionar pela API nativa."""
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    urls = []
+
+    def falso_post(url, payload, headers, timeout=30):
+        urls.append(url)
+        if "/v1/" in url:
+            raise mod.ExternalServiceError("HTTP 404 em /v1/chat/completions")
+        return {"message": {"content": "pela nativa"}, "eval_count": 7,
+                "prompt_eval_count": 5}
+
+    object.__setattr__(cfg, "ollama_base_url", "http://localhost:11434")
+    monkeypatch.setattr(mod, "_http_post_json", falso_post)
+    router = mod.LLMRouter()
+    resposta = router._call_ollama(mod.LLMRequest(prompt="oi"), "oi", "")
+
+    assert urls[0].endswith("/v1/chat/completions")
+    assert urls[-1].endswith("/api/chat")
+    assert resposta.text == "pela nativa"
+    assert resposta.usage.completion_tokens == 7
