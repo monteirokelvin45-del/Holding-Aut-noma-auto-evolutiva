@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-27T17:38:24+00:00",
+  "embedding_model": "hash-tf-v1",
+  "embedding_dim": 128,
+  "entries": []
+}

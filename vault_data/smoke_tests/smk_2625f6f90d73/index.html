@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Validar a funcionalidade do software de mercado através de uma testagem demandada</title>
+  <meta name="description" content="Estamos a validar interesse em geral. Entra na lista VIP e recebe acesso antecipado." />
+  <meta property="og:title" content="Validar a funcionalidade do software de mercado através de uma testagem demandada" />
+  <meta property="og:description" content="Estamos a validar interesse em geral. Entra na lista VIP e recebe acesso antecipado." />
+  <meta property="og:type" content="website" />
+  <style>
+    :root { color-scheme: dark; --bg:#0b0f17; --card:#131a26; --accent:#22d3ee; --text:#e8eef7; --muted:#94a3b8; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: radial-gradient(circle at 20% 10%, #16324a 0%, var(--bg) 55%);
+            color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    main { background: var(--card); border: 1px solid #1f2a3a; border-radius: 20px; padding: 28px 22px;
+            max-width: 520px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+    .badge { display:inline-block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+              color: var(--accent); border: 1px solid rgba(34,211,238,.35); border-radius: 999px;
+              padding: 6px 12px; margin-bottom: 18px; }
+    h1 { font-size: clamp(22px, 6vw, 30px); line-height: 1.2; margin-bottom: 12px; }
+    p.sub { color: var(--muted); font-size: 15px; line-height: 1.55; margin-bottom: 18px; }
+    ul { list-style: none; margin: 0 0 20px; }
+    li { padding: 10px 0 10px 28px; position: relative; font-size: 15px; border-bottom: 1px solid #1c2534; }
+    li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+    .price { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+    .price strong { color: var(--text); }
+    form { display: flex; flex-direction: column; gap: 10px; }
+    input[type=email] { background: #0d141f; border: 1px solid #24344a; border-radius: 12px;
+      color: var(--text); padding: 14px 16px; font-size: 16px; }
+    input[type=email]:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    button { background: linear-gradient(135deg, #22d3ee, #3b82f6); border: 0; border-radius: 12px;
+      color: #04121c; font-weight: 700; font-size: 16px; padding: 15px 18px; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: default; }
+    .foot { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .ok { display:none; margin-top: 14px; padding: 14px; border-radius: 12px;
+           background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.4); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main data-smoke-test="smk_2625f6f90d73">
+    <span class="badge">Validação de demanda · 2026-12-01</span>
+    <h1>Validar a funcionalidade do software de mercado através de uma testagem demandada</h1>
+    <p class="sub">Estamos a validar interesse em geral. Entra na lista VIP e recebe acesso antecipado.</p>
+    <ul>
+        <li>Acesso antecipado antes do lançamento público</li>
+        <li>Preço de fundador congelado para sempre</li>
+        <li>Conteúdo prático, sem enrolação</li>
+    </ul>
+    <p class="price">Acesso antecipado <strong>gratuito</strong> para a lista VIP</p>
+    <form id="vip" novalidate>
+      <input type="email" id="email" name="email" placeholder="o.teu@email.com" required
+             autocomplete="email" inputmode="email" />
+      <button type="submit" id="btn">Realizar testagem demandada no período de 3-7 dias.</button>
+    </form>
+    <div class="ok" id="ok">Estás na lista VIP. Vais receber o acesso antecipado.</div>
+    <p class="foot">
+      Página de teste de interesse. Sem promessas de rendimento. Os teus dados
+      só são usados para este lançamento e podem ser removidos a pedido.
+    </p>
+  </main>
+  <script>
+    // Endpoint relativo ao backend que serve esta página.
+    var API_BASE = window.location.pathname.replace(/\/validation\/.*$/, '') || '';
+    var TEST_ID = document.querySelector('main').dataset.smokeTest;
+    function track(event, extra) {
+      var payload = Object.assign({ event: event, source: 'landing' }, extra || {});
+      try {
+        fetch(API_BASE + '/validation/' + TEST_ID + '/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+        });
+      } catch (e) { /* nunca bloquear o utilizador por telemetria */ }
+    }
+    track('click');
+    document.getElementById('vip').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var email = document.getElementById('email').value.trim();
+      if (!email || email.indexOf('@') < 1) { document.getElementById('email').focus(); return; }
+      track('signup', { email_hash: email });
+      document.getElementById('btn').disabled = true;
+      document.getElementById('vip').style.display = 'none';
+      document.getElementById('ok').style.display = 'block';
+    });
+  </script>
+</body>
+</html>

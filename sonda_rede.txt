@@ -1,0 +1,27 @@
+== DNS
+models.github.ai                         140.82.113.22   glb-db52c2cf8be544.github.com models.github.ai
+models.inference.ai.azure.com            NAO RESOLVE
+generativelanguage.googleapis.com        2001:4860:4846:400:: generativelanguage.googleapis.com
+api.groq.com                             2a06:98c1:3105::6812:26ec api.groq.com
+
+== 1. CABECALHOS COMPLETOS (com token)
+HTTP/2 200 
+content-type: text/plain
+
+corpo: OK
+
+== 2. PROMPT DIFERENTE (deve mudar o corpo se for um LLM)
+OK
+
+== 3. MODELO INEXISTENTE (um LLM real devolve 400/404)
+HTTP 200 corpo: OK
+== 4. CAMINHO INVALIDO (um servidor real devolve 404)
+HTTP 200 corpo: OK
+== 5. JSON INVALIDO (um servidor real devolve 400)
+HTTP 200 corpo: OK
+
+== 6. groq / gemini sem chave (401 = API viva e a validar)
+https://api.groq.com/openai/v1/chat/completions                             401
+{"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}
+https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent 403
+{  "error": {    "code": 403,    "message": "Permission denied on the service.",    "status": "PERMISSION_DENIED",    "details": [      {        "@type": "type.googleapis.com/google.rpc.ErrorIn

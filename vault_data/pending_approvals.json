@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-28T09:12:23+00:00",
+  "sequence": 2,
+  "items": [
+    {
+      "id": "apr_8d95b4c48300",
+      "title": "Venda: Guia Real (MP2406AB12CD)",
+      "kind": "custom",
+      "amount_usd": 12.0,
+      "priority": "critical",
+      "status": "pending",
+      "requested_by": "storefront",
+      "reason": "Ana Silva declara ter pago $12.00 com o código MP2406AB12CD. Confirmar no extracto antes de aprovar.",
+      "metadata": {},
+      "created_at": "2026-11-28T09:09:20+00:00",
+      "expires_at": "2026-12-01T09:09:20+00:00",
+      "decided_at": null,
+      "decided_by": null,
+      "biometric_verified": false,
+      "decision_note": "",
+      "batch_id": "",
+      "execution_result": {}
+    },
+    {
+      "id": "apr_1fff7ad7e097",
+      "title": "Publicar: Guia de freelancing + vídeo de 24s",
+      "kind": "custom",
+      "amount_usd": 0.0,
+      "priority": "normal",
+      "status": "pending",
+      "requested_by": "ceo_orchestrator",
+      "reason": "Primeiro produto e primeiro vídeo produzidos pelo ciclo real. E-book de 5 capítulos (texto template, sem LLM) e Short 1080x1920 com voz espeak-ng. Aprovar publica a loja e autoriza a divulgação.",
+      "metadata": {
+        "produto": "ebook-freelancing-mz",
+        "video": "vault_data/media/videos/teste_manual/short.mp4",
+        "preco_usd": 12.0
+      },
+      "created_at": "2026-11-28T09:12:23+00:00",
+      "expires_at": "2026-12-01T09:12:23+00:00",
+      "decided_at": null,
+      "decided_by": null,
+      "biometric_verified": false,
+      "decision_note": "",
+      "batch_id": "",
+      "execution_result": {}
+    }
+  ]
+}

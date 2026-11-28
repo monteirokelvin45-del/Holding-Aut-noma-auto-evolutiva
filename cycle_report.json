@@ -1,0 +1,122 @@
+{
+  "cycle_id": "cyc_20261128T114108",
+  "status": "completed",
+  "started_at": "2026-11-28T11:41:08+00:00",
+  "finished_at": "2026-11-28T11:43:07+00:00",
+  "duration_seconds": 118.81,
+  "steps": [
+    {
+      "step": "hygiene",
+      "status": "ok",
+      "detail": {
+        "approvals_expired": 0,
+        "smoke_tests_decided": 0
+      }
+    },
+    {
+      "step": "scout",
+      "status": "completed",
+      "detail": {
+        "found": 8,
+        "viable": 8,
+        "sources_skipped": [
+          {
+            "source": "reddit_sideproject",
+            "reason": "sem resultados (rede, rate limit ou vazio)"
+          },
+          {
+            "source": "reddit_entrepreneur",
+            "reason": "sem resultados (rede, rate limit ou vazio)"
+          },
+          {
+            "source": "reddit_passiveincome",
+            "reason": "sem resultados (rede, rate limit ou vazio)"
+          },
+          {
+            "source": "gumroad",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          },
+          {
+            "source": "appsumo",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          },
+          {
+            "source": "youtube_trending",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          },
+          {
+            "source": "tiktok_creative",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          }
+        ]
+      }
+    },
+    {
+      "step": "validation",
+      "status": "ok",
+      "detail": {
+        "created": 3,
+        "tests": [
+          {
+            "id": "smk_c9cb611f7940",
+            "idea": "Validar compatibilidade do projeto Marvisak/VIctory em PC com testes d"
+          },
+          {
+            "id": "smk_74d2d3a53bcd",
+            "idea": "Validar a demanda com Smoke Test em Rust, usando ferramentas licenciad"
+          },
+          {
+            "id": "smk_2625f6f90d73",
+            "idea": "Validar a funcionalidade do software de mercado através de uma testage"
+          }
+        ]
+      }
+    },
+    {
+      "step": "production",
+      "status": "skipped",
+      "detail": {
+        "count": 0,
+        "items": []
+      }
+    },
+    {
+      "step": "accounting",
+      "status": "ok",
+      "detail": {
+        "evaluated": 4,
+        "kill_orders": 0,
+        "watched": []
+      }
+    },
+    {
+      "step": "hr",
+      "status": "ok",
+      "detail": {
+        "agents_reviewed": 7,
+        "actions_needed": []
+      }
+    },
+    {
+      "step": "legal",
+      "status": "ok",
+      "detail": {
+        "passed": true,
+        "critical": []
+      }
+    },
+    {
+      "step": "treasury",
+      "status": "ok",
+      "detail": {
+        "phase": 1,
+        "phase_changed": false,
+        "monthly_revenue_usd": 0.0,
+        "audit_balanced": true
+      }
+    }
+  ],
+  "approvals_created": [],
+  "errors": [],
+  "summary": "Ciclo cyc_20261128T114108 · 3 smoke test(s) novo(s) · 0 produção(ões) · 0 ordem(ns) de abate para aprovação · 2 aprovação(ões) pendente(s) ($12.00)"
+}

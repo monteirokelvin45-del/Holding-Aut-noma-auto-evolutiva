@@ -1,0 +1,54 @@
+{
+  "ordem": [
+    "groq",
+    "gemini",
+    "local_gguf",
+    "ollama",
+    "github_models",
+    "openrouter",
+    "local"
+  ],
+  "providers": {
+    "groq": {
+      "configurado": false,
+      "motivo": "sem_chave"
+    },
+    "gemini": {
+      "configurado": false,
+      "motivo": "sem_chave"
+    },
+    "github_models": {
+      "configurado": false,
+      "motivo": "sem_chave"
+    },
+    "openrouter": {
+      "configurado": false,
+      "motivo": "sem_chave"
+    },
+    "ollama": {
+      "configurado": false,
+      "motivo": "sem_chave"
+    },
+    "local_gguf": {
+      "configurado": true,
+      "motivo": "pronto"
+    },
+    "local": {
+      "configurado": true,
+      "motivo": "sempre_disponivel"
+    }
+  },
+  "escolhido": "local_gguf",
+  "is_llm": true,
+  "cadeia": [
+    "local_gguf:try"
+  ],
+  "erro": null,
+  "texto_bruto": "<think>\nOkay, the user just said \"OK.\" I need to respond in a way that's clear and concise. Since they're confirming the response, maybe a simple \"OK\" or a confirmation message. Let me make sure it's direct and doesn't add extra information. I should check if there's any specific context needed, but since there's no context provided, a straightforward \"OK\" is appropriate. Let me confirm once more to avoid any misunderstandings.\n</think>\n\nOK",
+  "json_escolhido": "local_gguf",
+  "json_is_llm": true,
+  "json_dados": {
+    "idea": "Freelancing in Mozambique offers flexible opportunities for individuals to work remotely and gain skills without needing a permanent job."
+  },
+  "json_erro": null
+}

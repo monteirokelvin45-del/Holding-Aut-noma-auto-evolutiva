@@ -1,0 +1,47 @@
+{
+  "updated_at": "2026-11-28T11:43:07+00:00",
+  "daily": {
+    "groq": {
+      "date": "2026-11-28",
+      "requests": 0,
+      "tokens": 0,
+      "cost_usd": 0.0
+    },
+    "gemini": {
+      "date": "2026-11-28",
+      "requests": 0,
+      "tokens": 0,
+      "cost_usd": 0.0
+    },
+    "github_models": {
+      "date": "2026-11-28",
+      "requests": 0,
+      "tokens": 0,
+      "cost_usd": 0.0
+    },
+    "openrouter": {
+      "date": "2026-11-28",
+      "requests": 0,
+      "tokens": 0,
+      "cost_usd": 0.0
+    },
+    "ollama": {
+      "date": "2026-11-28",
+      "requests": 0,
+      "tokens": 0,
+      "cost_usd": 0.0
+    },
+    "local_gguf": {
+      "date": "2026-11-28",
+      "requests": 10,
+      "tokens": 5729,
+      "cost_usd": 0.0
+    },
+    "local": {
+      "date": "2026-11-28",
+      "requests": 0,
+      "tokens": 0,
+      "cost_usd": 0.0
+    }
+  }
+}

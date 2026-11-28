@@ -1,0 +1,43 @@
+
+== python
+3.12.16 /tmp/venv/bin/python
+
+== pacotes
+  llama_cpp          0.3.38
+  misaki             0.9.4
+  onnxruntime        1.32.0
+  phonemizer         3.6.0
+  espeakng_loader    ok
+  soundfile          0.14.0
+
+== ficheiros
+  /home/runner/modelos: existe
+    Qwen3-0.6B-Q4_K_M.gguf — 396705472 bytes
+  models/kokoro: existe
+    kokoro-q8.onnx — 92361116 bytes
+    voices — dir
+  vozes: 54 ficheiros .bin
+
+== providers segundo o router
+  ordem: ['groq', 'gemini', 'local_gguf', 'ollama', 'github_models', 'openrouter', 'local']
+  groq           configurado=False sem_chave
+  gemini         configurado=False sem_chave
+  github_models  configurado=False sem_chave
+  openrouter     configurado=False sem_chave
+  ollama         configurado=False sem_chave
+  local_gguf     configurado=False sem_chave
+  local          configurado=True  sempre_disponivel
+
+== motor GGUF
+  LOCAL_GGUF_PATH = (vazio)
+  existe: False
+
+== Kokoro
+  disponivel: True — pronto
+
+== TTS disponíveis
+  edge_tts     False
+  kokoro       True
+  chatterbox   False
+  piper        False
+  espeak_ng    True
