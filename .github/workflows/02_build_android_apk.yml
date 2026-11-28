@@ -961,38 +961,13 @@ jobs:
           emulator-options: >-
             -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
             -camera-back none -camera-front none
+          # Toda a lógica vive em scripts/ci_emulator_all.sh, não aqui.
+          # Deste lado do YAML chegou a haver um bloco com `if`s que o
+          # runner rejeitava com exit 2 antes de correr uma linha, e os
+          # logs do job não são acessíveis por API — três runs às cegas.
+          # Um script no repositório testa-se com `bash -n`.
           script: |
-            # Duas passagens: o smoke (as abas abrem) e os botões (os
-            # botões fazem). Os dois correm sempre — interessa o retrato
-            # completo, não parar no primeiro sintoma — e no fim o passo
-            # falha se qualquer um falhou.
-            #
-            # Sem `|| echo`: um `||` transformava a falha em sucesso e o CI
-            # ficava verde com os botões partidos. Pior do que não testar,
-            # porque dá confiança falsa.
-            #
-            # Sem `|| rc=$?` + `[ "$rc" -ne 0 ]`: essa forma deu "Illegal
-            # number" no runner (a variável chegou vazia ao `[`), e o passo
-            # falhava com exit 2 por um defeito do próprio diagnóstico, não
-            # do emulador. O código de cada script fica num ficheiro, para o
-            # teste poder ser lido mesmo que a lógica de controlo se engane.
-            # MARCA: se esta linha não aparecer no diagnóstico, o problema
-            # é o runner não executar este bloco (e não os scripts).
-            echo "MARCA-inicio workspace=[${GITHUB_WORKSPACE:-VAZIO}] pwd=[$(pwd)]"
-            ls -d scripts 2>&1 | head -2
-            falhou=0
-            if ! bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"; then
-              falhou=1
-              echo "::error::smoke do emulador falhou"
-            fi
-            echo "$falhou" > /tmp/rc_smoke
-            if ! bash scripts/ci_emulator_buttons.sh "$GITHUB_WORKSPACE/saida_botoes" descartavel; then
-              falhou=1
-              echo "::error::teste de botões falhou (ver saida_botoes/botoes.log)"
-            fi
-            echo "$falhou" > /tmp/rc_botoes
-            echo "falhou=$falhou"
-            test "$falhou" = "0"
+            bash scripts/ci_emulator_all.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador" "$GITHUB_WORKSPACE/saida_botoes" descartavel
 
       - name: Guardar diagnóstico do job
         if: failure()
