@@ -884,26 +884,32 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8000/health | head -c 200; echo
 
-      - name: Obter o APK do build anterior
+      # O APK vem do ARTEFACTO DESTE RUN, não do ramo `apk-artifact`.
+      #
+      # O ramo é partilhado e reescrito a cada build. Com dois runs ao mesmo
+      # commit (push + pull_request, ou dois dispatches seguidos), o job do
+      # emulador podia receber o APK do OUTRO run. A verificação de SHA que
+      # aqui esteve apanhou exactamente isso — mas falhar é pior do que não
+      # depender: o artefacto do `needs: build` é, por construção, o binário
+      # compilado para este commit.
+      - name: Obter o APK deste build
+        uses: actions/download-artifact@v4
+        with:
+          name: automaton-holding-debug-apk
+          path: /tmp/apk
+
+      - name: Verificar o APK recebido
         run: |
           set -euo pipefail
-          mkdir -p /tmp/apk
-          # O ramo apk-artifact e reescrito a cada build. Numa fila com dois
-          # runs ao mesmo commit, o ramo pode ja ter o APK do SEGUNDO run
-          # quando este job comeca — e o SHA do README nao bate com o nosso.
-          # Aqui exige-se que bata: um APK de outro run nao prova nada sobre
-          # este commit.
-          git fetch --depth=1 origin apk-artifact
-          git show FETCH_HEAD:app-debug.apk > /tmp/apk/app-debug.apk
-          git show FETCH_HEAD:README.md | sed -n 3p
-          ESPERADO="${{ github.sha }}"
-          OBTIDO=$(git show FETCH_HEAD:README.md | sed -n 's/^Commit de origem: //p')
-          if [ -n "$OBTIDO" ] && [ "$OBTIDO" != "$ESPERADO" ]; then
-            echo "::error::O APK do ramo e de $OBTIDO, nao deste commit ($ESPERADO)."
-            exit 1
-          fi
-          ls -lh /tmp/apk/app-debug.apk
+          ls -lh /tmp/apk
+          # O upload usa dist/app-debug.apk; o download pode achatar ou não.
+          APK=$(find /tmp/apk -name '*.apk' | head -1)
+          test -n "$APK" || { echo "::error::nenhum APK no artefacto"; exit 1; }
+          cp "$APK" /tmp/apk/app-debug.apk
           sha256sum /tmp/apk/app-debug.apk
+          # Um APK com menos de 5 MB não é este APK.
+          BYTES=$(stat -c%s /tmp/apk/app-debug.apk)
+          [ "$BYTES" -gt 5000000 ] || { echo "::error::APK suspeito ($BYTES bytes)"; exit 1; }
 
       # O runner do GitHub já tem /dev/kvm e o emulador precisa dele. Não se
       # instala nada por apt: o android-emulator-runner trata do AVD, e um
