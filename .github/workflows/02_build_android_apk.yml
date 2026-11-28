@@ -501,19 +501,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Ubuntu 24.04 recusa `pip install` no Python do sistema
+      # (PEP 668: "externally-managed-environment"). Um venv resolve e isola as
+      # versões das do runner.
       - name: Instalar dependências do backend
         run: |
           set -euo pipefail
-          python3 -m pip install --quiet --upgrade pip
-          python3 -m pip install --quiet fastapi==0.115.6 uvicorn==0.34.0 \
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install --quiet --upgrade pip
+          /tmp/venv/bin/pip install --quiet fastapi==0.115.6 uvicorn==0.34.0 \
             pydantic==2.10.4 pyyaml httpx
+          /tmp/venv/bin/python -c "import fastapi, uvicorn, yaml, httpx; print('deps ok', fastapi.__version__)"
 
       - name: Subir o backend
         run: |
           set -euo pipefail
           export API_ACCESS_TOKEN=token-do-emulador
           export PYTHONPATH="$GITHUB_WORKSPACE"
-          nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 \
+          nohup /tmp/venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 \
             > /tmp/backend.log 2>&1 &
           for i in $(seq 1 40); do
             curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && { echo "backend pronto (${i}s)"; break; }
