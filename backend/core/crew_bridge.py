@@ -49,62 +49,19 @@ REQUIRED_TASK_FIELDS = ("description", "agent")
 VALID_TIERS = {"reasoning", "fast", "long_context", "local"}
 
 
-def _resolver_tools_reais() -> Dict[str, Any]:
-    """Objectos que existem mesmo, por nome usado nos YAML.
-
-    Antes desta função, ``tools: [kill_switch, approval_gate, ...]`` era
-    texto decorativo: nada era instanciado e nenhum agente tinha ferramenta
-    alguma. Um agente que *pensa* ter um kill switch é pior do que um agente
-    que sabe que não tem.
-
-    A resolução é tolerante: importa dentro de try/except e só acrescenta ao
-    dicionário o que conseguiu encontrar. O que falhar fica registado em
-    ``_FALHAS_RESOLUCAO`` e é reportado por ``cobertura_de_tools()`` — não
-    desaparece em silêncio.
-    """
-    import importlib
-
-    # nome declarado no YAML -> (módulo, atributo)
-    mapa = {
-        "kill_switch": ("backend.core.security_guard", "kill_switch"),
-        "approval_gate": ("backend.core.approvals", "approval_gate"),
-        "llm_router": ("backend.core.llm_router", "llm_router"),
-        "shared_memory": ("backend.core.shared_memory", "shared_memory"),
-        "vault_store": ("backend.core.vault_store", "vault"),
-        "event_bus": ("backend.core.runtime_bus", "event_bus"),
-        "payout_bridge": ("backend.finance.payout_bridge", "payout_bridge"),
-        "paypal_cobranca": ("backend.finance.paypal_cobranca", "paypal_cobranca"),
-        "cfo": ("backend.finance.cfo_treasury", "cfo"),
-        "cfo_treasury": ("backend.finance.cfo_treasury", "cfo"),
-        "receber_pagamento": ("backend.finance.cfo_tools", "receber_pagamento"),
-        "dividir_lucro": ("backend.finance.cfo_tools", "dividir_lucro"),
-        "registrar_saques": ("backend.finance.cfo_tools", "registrar_saques"),
-    }
-    resolvidos: Dict[str, Any] = {}
-    for nome, (modulo, atributo) in mapa.items():
-        try:
-            objecto = getattr(importlib.import_module(modulo), atributo)
-        except Exception as exc:  # noqa: BLE001
-            _FALHAS_RESOLUCAO[nome] = f"{type(exc).__name__}: {exc}"
-            continue
-        resolvidos[nome] = objecto
-    return resolvidos
-
-
-#: Ferramentas que falharam a resolução (nome -> motivo).
-_FALHAS_RESOLUCAO: Dict[str, str] = {}
-
-
 def cobertura_de_tools() -> Dict[str, Any]:
-    """O que os YAML prometem aos agentes vs. o que existe de facto."""
-    reais = _resolver_tools_reais()
+    """O que os YAML prometem aos agentes vs. o que existe de facto.
+
+    A resolução real vive em ``core/tool_registry.py``; aqui só se cruza o
+    mapa declarativo dos agentes com esse registo. Antes esta função lia
+    nomes e devolvia "0 em falta" — o pior resultado possível, porque
+    parecia boa notícia.
+    """
+    from .tool_registry import TOOLS, cobertura
+
     prometidas: Dict[str, List[str]] = {}
     try:
-        texto = AGENTS_FILE.read_text(encoding="utf-8")
-        dados = yaml.safe_load(texto) or {}
-        # O YAML tem estrutura aninhada: agents: <id>: {...}. Ler o topo
-        # devolveria {"version":1,"agents":{...}} e a cobertura sairia "0 em
-        # falta" — o pior resultado possível, porque parece boa notícia.
+        dados = yaml.safe_load(AGENTS_FILE.read_text(encoding="utf-8")) or {}
         if "agents" in dados and isinstance(dados["agents"], dict):
             dados = dados["agents"]
         for nome_agente, corpo in dados.items():
@@ -115,22 +72,7 @@ def cobertura_de_tools() -> Dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         return {"erro": f"não foi possível ler agents.yaml: {exc}"}
 
-    faltam: Dict[str, List[str]] = {}
-    for agente, lista in prometidas.items():
-        em_falta = [t for t in lista if t not in reais]
-        if em_falta:
-            faltam[agente] = em_falta
-    return {
-        "implementadas": sorted(reais),
-        "por_agente": prometidas,
-        "sem_implementacao": faltam,
-        "falhas_resolucao": dict(_FALHAS_RESOLUCAO),
-        "nota": (
-            "Nomes em `sem_implementacao` são declarados nos YAML mas não "
-            "existem como objecto Python. Não é um erro fatal: é uma lista "
-            "de trabalho pendente, dita em voz alta."
-        ),
-    }
+    return cobertura(prometidas)
 
 
 # ==========================================================================
@@ -168,34 +110,39 @@ class AgentSpec:
         exista é devolvido em ``declaradas_sem_implementacao`` — melhor
         saber que falta do que fingir que existe.
         """
-        reais = _resolver_tools_reais()
+        from .tool_registry import TOOLS
+
         implementadas: List[Dict[str, Any]] = []
         em_falta: List[str] = []
+        desconhecidas: List[str] = []
         for nome in self.tools:
-            objecto = reais.get(nome)
-            if objecto is None:
+            entrada = TOOLS.get(nome)
+            if entrada is None:
+                desconhecidas.append(nome)
+                continue
+            if not entrada.disponivel():
                 em_falta.append(nome)
                 continue
-            descricao = ""
-            getattr_doc = getattr(objecto, "__doc__", None)
-            if getattr_doc:
-                descricao = getattr_doc.strip().splitlines()[0][:160]
-            implementadas.append(
-                {
-                    "nome": nome,
-                    "tipo": type(objecto).__name__,
-                    "descricao": descricao,
-                }
-            )
-        return [{"implementadas": implementadas, "sem_implementacao": em_falta}]
+            implementadas.append(entrada.to_dict())
+        return [
+            {
+                "implementadas": implementadas,
+                "sem_implementacao": em_falta,
+                "nao_registadas": desconhecidas,
+            }
+        ]
 
     def system_prompt(self) -> str:
         """Prompt de sistema derivado da ficha (usado pelo caminho nativo)."""
         guards = ", ".join(self.guards) if self.guards else "nenhuma"
         tools_reais = ""
         try:
-            reais = _resolver_tools_reais()
-            disponiveis = [t for t in self.tools if t in reais]
+            from .tool_registry import TOOLS
+
+            disponiveis = [
+                t for t in self.tools
+                if t in TOOLS and TOOLS[t].disponivel()
+            ]
             if disponiveis:
                 tools_reais = (
                     "\nFerramentas que podes usar: "
