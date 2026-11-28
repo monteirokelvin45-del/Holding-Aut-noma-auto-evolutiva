@@ -98,17 +98,49 @@ tocar_texto() {  # $1 = etiqueta da aba, $2 = nome do screenshot
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
   adb pull /sdcard/ui.xml /tmp/ui.xml >/dev/null 2>&1
   local coords
+  # A etiqueta da aba NÃO é a área clicável: num NavigationBarItem, tocar no
+  # centro da Row do ícone/texto não acende a aba (medido: as abas 02-05
+  # ficaram iguais). Usa-se o menor nó *clicável* que contém esse texto — o
+  # próprio NavigationBarItem.
   coords=$(python3 -c '
 import re, sys
+from xml.etree import ElementTree as ET
+
 alvo = sys.argv[1]
 try:
-    xml = open("/tmp/ui.xml", encoding="utf-8", errors="ignore").read()
-except FileNotFoundError:
+    raiz = ET.parse("/tmp/ui.xml").getroot()
+except Exception:
     sys.exit(0)
-for m in re.finditer(r"text=\"([^\"]*)\"[^>]*bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\"", xml):
-    if m.group(1).strip() == alvo:
-        x1, y1, x2, y2 = map(int, m.groups()[1:])
-        print((x1 + x2) // 2, (y1 + y2) // 2)
+
+def caixa(no):
+    m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", no.get("bounds", ""))
+    return tuple(map(int, m.groups())) if m else None
+
+def centro(b):
+    return (b[0] + b[2]) // 2, (b[1] + b[3]) // 2
+
+clicaveis = []
+for no in raiz.iter():
+    if no.get("clickable") == "true" and caixa(no):
+        clicaveis.append(no)
+
+def tem_texto(no):
+    if (no.get("text") or "").strip() == alvo:
+        return True
+    return any((d.get("text") or "").strip() == alvo for d in no.iter())
+
+candidatos = [n for n in clicaveis if tem_texto(n)]
+if candidatos:
+    menor = min(candidatos, key=lambda n: (caixa(n)[2]-caixa(n)[0]) * (caixa(n)[3]-caixa(n)[1]))
+    x, y = centro(caixa(menor))
+    print(x, y)
+    sys.exit(0)
+
+# Sem nó clicável: cair para o centro do texto.
+for no in raiz.iter():
+    if (no.get("text") or "").strip() == alvo and caixa(no):
+        x, y = centro(caixa(no))
+        print(x, y)
         break
 ' "$1")
   if [ -z "$coords" ]; then
