@@ -565,6 +565,20 @@ jobs:
           echo "LOCAL_GGUF_PATH=$HOME/modelos/Qwen3-0.6B-Q4_K_M.gguf" >> "$GITHUB_ENV"
           echo "LOCAL_GGUF_THREADS=2" >> "$GITHUB_ENV"
           echo "TTS_ENGINE=kokoro" >> "$GITHUB_ENV"
+          # Os logs do Actions não são alcançáveis de fora (o blob de
+          # resultados recusa a ligação), por isso o diagnóstico vai para um
+          # ficheiro que é publicado no ramo estado-ciclo.
+          {
+            echo "== motor local"
+            python -c "import llama_cpp; print('llama_cpp', llama_cpp.__version__)" 2>&1 | head -2
+            python -c "import misaki; print('misaki ok')" 2>&1 | head -2
+            python -c "import onnxruntime; print('onnxruntime', onnxruntime.__version__)" 2>&1 | head -2
+            python -c "import phonemizer; print('phonemizer ok')" 2>&1 | head -2
+            ls -la "$HOME/modelos" 2>&1 | head -5
+            ls -la models/kokoro 2>&1 | head -5
+            ls models/kokoro/voices 2>/dev/null | wc -l
+          } > motor_local.txt 2>&1
+          cat motor_local.txt
 
       # Diagnóstico de rede: o provider github_models ficou 'configurado' mas
       # falhou com "Name or service not known". Antes de acusar o código, é
@@ -737,6 +751,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/cycle_report.json" . 2>/dev/null || true
           cp "$GITHUB_WORKSPACE/sonda_llm.json" . 2>/dev/null || true
           cp "$GITHUB_WORKSPACE/sonda_rede.txt" . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/motor_local.txt" . 2>/dev/null || true
           # estado do cofre (aprovações, testes de demanda, ledger)
           mkdir -p vault_data
           cp -r "$GITHUB_WORKSPACE/vault_data/." vault_data/ 2>/dev/null || true
