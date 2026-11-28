@@ -255,12 +255,71 @@ pausa de 180 ms.
 - Fila `pending_approvals.json`: **3 pendentes**, incluindo
   `apr_d1b1b28d5990` «Publicar: Guia de freelancing (e-book) + vídeo Kokoro 21s».
 
-### 9.6 O que continua por fazer (honesto)
+### 9.6 A ancoragem de factos: o 0,6B deixou de inventar Moçambique
 
-1. **A qualidade do texto é de um modelo de 0,6B.** Escreve português correcto
-   mas genérico: «Explore plataformas como o Mercado Livre» para um público de
-   Maputo é um erro factual (o Mercado Livre não opera em Moçambique). Um
-   modelo de 3B–7B melhoraria isto; precisa de mais RAM do que os 3,8 GB.
+Um modelo de 0,6 mil milhões de parâmetros não é burro — é **ignorante**. Não
+sabe qual é a moeda de Moçambique, e em vez de admitir, adivinha. Medido neste
+sandbox, antes de qualquer correcção:
+
+| Pergunta | Resposta do modelo 0.6B | Realidade |
+|---|---|---|
+| Qual é a moeda oficial de Moçambique? | «a **moeda nacional**» | Metical (MZN) |
+| Que pagamentos móveis se usam em Maputo? | «**Paytm**, **Mobis**, **Mobis Pay**» | M-Pesa e e-Mola |
+| Plataformas para freelancers em Maputo | «**Mercado Livre**» | não opera em Moçambique |
+
+Paytm é indiano. «Mobis» não existe. O erro não se corrige pedindo «sê
+factual» — corrige-se **dando os factos**.
+
+`backend/core/grounding.py` guarda o bloco uma só vez e injecta-o em dois
+sítios, porque um só não chegava:
+
+- `llm_router.complete()` — todas as chamadas, incluindo as que o CrewAI faz
+  por fora do `SquadBase`;
+- `SquadBase._default_system()` — quem chamar o LLM por outro caminho.
+
+`ancorar()` é idempotente (dois blocos gastariam contexto sem ensinar nada) e
+põe os factos **à frente** da instrução específica: num modelo pequeno, o
+início do prompt pesa mais.
+
+O mesmo prompt, depois da ancoragem:
+
+- «A moeda oficial de Moçambique é o **Metical (código: MZN)**.»
+- «Em Moçambique os pagamentos móveis mais usados são **M-Pesa e e-Mola**.»
+
+`grounding.problemas()` → `[]` nos dois casos.
+
+Há ainda um **portão no esquadrão de vídeo**: o guião passa por
+`_verificar_factos()` antes de ser narrado. O que é inequívoco é corrigido por
+substituição directa (`Mozambique` → `Moçambique`, `Paytm` → `M-Pesa`,
+`mapa-voz` → `Maputo`); o resto fica registado. A fronteira de palavra é
+respeitada, para que «mobilidade» não seja lida como «Mobis».
+
+13 testes novos em `backend/tests/test_grounding.py` fixam o comportamento —
+incluindo um que verifica que o *router* ancora todas as chamadas. Se a
+ancoragem ficasse a cargo de cada esquadrão, bastava um esquecer-se para o
+modelo voltar a inventar.
+
+### 9.7 Ciclo de confirmação, depois da ancoragem
+
+| | Antes | Depois |
+|---|---|---|
+| Factos errados na narração | Mercado Livre, «moeda nacional», Paytm | **nenhum** (`problemas` → `[]`) |
+| Juiz | 91,3/100 | 88,0/100 (hook 90, clareza 90, compliance 90) |
+| Vídeo | 21,59 s, 646 frames | **20,17 s** (ffprobe) / 20,12 s (pacote), 1 898 226 B |
+| Duração do ciclo | 203 s | **145 s** |
+| Custo | $0.00 | $0.00 |
+
+O guião ficou mais honesto e mais genérico — um 0,6B ancorado não fica
+eloquente, fica apenas **correcto**. O que continua por resolver é o ponto 1 de
+9.6: para escrever com substância sobre freelancing em Maputo, é preciso um
+modelo maior, não mais instruções.
+
+### 9.8 O que continua por fazer (honesto)
+
+1. **A qualidade do texto é de um modelo de 0,6B.** Depois da ancoragem já não
+   inventa factos (9.6), mas também não tem substância: escreve português
+   correcto e vazio. Um modelo de 3B–7B melhoraria isto — precisa de mais RAM
+   do que os 3,8 GB medidos. Isto é um limite de hardware, não de código.
 2. **O sotaque é brasileiro.** O espeak só tem `pt-br`; não existe `pt-MZ`.
 3. **O Scout continua a ler repositórios do GitHub trending** — a fonte mudou
    de "cópia literal" para "proposta gerada sobre um sinal fraco", mas o sinal
