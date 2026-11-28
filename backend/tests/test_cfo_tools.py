@@ -224,6 +224,33 @@ def test_ferramenta_em_falta_levanta_erro_e_nao_devolve_none():
         invocar("ferramenta_que_nunca_existiu")
 
 
+def test_os_tools_chegam_ao_crew_bridge():
+    """Um tool que ninguém constrói é código morto com boa documentação.
+
+    `construir_tools_crewai()` só era chamado por testes: o agente CrewAI
+    nunca recebia as ferramentas. Este teste garante que o caminho
+    `AgentSpec → CrewBridge._tools_crewai` devolve os três tools do CFO.
+    """
+    from backend.core.crew_bridge import CrewBridge, agent_registry
+
+    cfo = next(a for a in agent_registry.agents() if a.id == "cfo_treasury")
+    tools = CrewBridge._tools_crewai(cfo)
+    nomes = {
+        t.get("nome") if isinstance(t, dict) else getattr(t, "name", "")
+        for t in tools
+    }
+    assert {"receber_pagamento", "dividir_lucro", "registrar_saques"} <= nomes
+
+
+def test_ferramenta_em_falta_nao_chega_ao_agente():
+    """Entregar `None` ao CrewAI seria pior do que não entregar nada."""
+    from backend.core.crew_bridge import CrewBridge, agent_registry
+
+    micro = next(a for a in agent_registry.agents() if a.id == "micro_saas_dev")
+    for tool in CrewBridge._tools_crewai(micro):
+        assert tool is not None
+
+
 def test_construir_tools_sem_crewai_nao_rebenta():
     tools = cfo_tools.construir_tools_crewai()
     assert len(tools) == 3

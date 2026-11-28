@@ -29,11 +29,10 @@ import sys
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from ..config.settings import settings
 from ..core.clock import utcnow_iso
-from ..core.errors import ValidationBlocked
 from ..core.llm_router import LLMRequest, llm_router
 from ..core.logger import get_logger
 from .squad_base import BaseSquad, SquadRunResult

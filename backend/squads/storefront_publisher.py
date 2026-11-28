@@ -44,14 +44,13 @@ import html
 import json
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..config.settings import settings
 from ..core.errors import ValidationBlocked
 from ..core.logger import get_logger
-from ..core.vault_store import vault
 
 log = get_logger(__name__)
 

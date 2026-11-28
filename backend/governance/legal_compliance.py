@@ -229,8 +229,6 @@ class LegalCompliance:
                     or meta.get("License-Expression", "")
                     or ""
                 )
-                classifiers = " ".join(meta.get_all("Classifier") or [])
-                combined = _norm(f"{license_text} {classifiers}") or "unknowable"
                 if any(bad in _norm(license_text) for bad in FORBIDDEN_LICENSES):
                     findings.append(
                         AuditFinding(

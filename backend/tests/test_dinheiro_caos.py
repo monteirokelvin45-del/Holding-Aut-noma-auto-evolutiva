@@ -202,3 +202,57 @@ def test_o_snapshot_e_json_serializavel():
     assert isinstance(texto, str) and len(texto) > 10
     reconstruido = json.loads(texto)
     assert set(reconstruido) == set(estado)
+
+
+# ==========================================================================
+# 6. Atomicidade das transacções do cofre
+# ==========================================================================
+def test_excepcao_a_meio_nao_grava_nada():
+    """O cofre não pode ficar com metade de uma operação falhada."""
+    antes = cfo.ledger()["gross_revenue_usd"]
+    from backend.core.vault_store import LEDGER, vault
+
+    with pytest.raises(RuntimeError):
+        with vault.transaction(LEDGER) as dados:
+            dados["gross_revenue_usd"] = 999999.0
+            raise RuntimeError("falha a meio de uma escrita")
+
+    assert cfo.ledger()["gross_revenue_usd"] == antes
+
+
+def test_abandonar_a_transacao_nao_grava_nada():
+    """Sair do contexto sem o completar (GeneratorExit) não pode gravar.
+
+    Acontece quando o chamador rebenta a meio e o gerador é fechado pelo
+    recolector: sem esta guarda, um valor errado entrava no cofre sem
+    nenhum erro a acompanhar.
+    """
+    from backend.core.vault_store import LEDGER, vault
+
+    antes = cfo.ledger()["gross_revenue_usd"]
+    contexto = vault.transaction(LEDGER)
+    dados = contexto.__enter__()
+    dados["gross_revenue_usd"] = 777777.0
+    # `@contextmanager` devolve True e engole o GeneratorExit: não levanta.
+    # O que interessa é o efeito — nada gravado.
+    contexto.__exit__(GeneratorExit, GeneratorExit(), None)
+
+    assert cfo.ledger()["gross_revenue_usd"] == antes
+
+
+def test_escrita_normal_grava_mesmo():
+    """A prova contrária: se o caminho feliz não gravasse, os dois testes
+    acima passariam por o cofre estar sempre congelado."""
+    from backend.core.vault_store import LEDGER, vault
+
+    antes = cfo.ledger()["gross_revenue_usd"]
+    with vault.transaction(LEDGER) as dados:
+        dados["gross_revenue_usd"] = antes
+    assert cfo.ledger()["gross_revenue_usd"] == antes
+
+    with vault.transaction(LEDGER) as dados:
+        dados["campo_de_teste_atomico"] = 42
+    assert cfo.ledger()["campo_de_teste_atomico"] == 42
+    # limpar
+    with vault.transaction(LEDGER) as dados:
+        dados.pop("campo_de_teste_atomico", None)

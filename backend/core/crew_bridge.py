@@ -502,6 +502,43 @@ class CrewBridge:
 
         return RouterLLM()
 
+    @staticmethod
+    def _tools_crewai(spec: AgentSpec) -> List[Any]:
+        """Objectos de ferramenta para o CrewAI, apenas os realmente prontos.
+
+        Ferramentas ``degradada`` também entram: funcionam em modo reduzido e
+        o agente deve saber disso, em vez de não ter nada. As ``em_falta``
+        ficam de fora — não há o que entregar.
+        """
+        try:
+            from ..finance.cfo_tools import CFO_TOOLS, construir_tools_crewai
+            from .tool_registry import TOOLS
+        except Exception:  # noqa: BLE001
+            return []
+
+        disponiveis = [
+            nome for nome in spec.tools
+            if nome in TOOLS and TOOLS[nome].disponivel()
+        ]
+        if not disponiveis:
+            return []
+        # Os tools do CFO têm adaptador CrewAI próprio (com nome e descrição);
+        # os outros objectos (kill_switch, llm_router...) passam-se tal como
+        # são. O CrewAI usa-os se tiverem a interface que espera.
+        prontos: List[Any] = []
+        if any(nome in CFO_TOOLS for nome in disponiveis):
+            try:
+                prontos.extend(construir_tools_crewai())
+            except Exception as exc:  # noqa: BLE001
+                log.warning("Tools do CFO não construídas: %s", exc)
+        for nome in disponiveis:
+            if nome in CFO_TOOLS:
+                continue
+            funcao = TOOLS[nome].funcao()
+            if funcao is not None:
+                prontos.append(funcao)
+        return prontos
+
     def model_for_tier(self, tier: str) -> str:
         """Modelo concreto para o tier, priorizando provedores configurados."""
         from ..config.settings import settings
@@ -568,6 +605,12 @@ class CrewBridge:
                         llm=self.build_crewai_llm(spec),
                         verbose=False,
                         allow_delegation=False,
+                        # As ferramentas que o YAML declara e o registo
+                        # confirma. Sem isto o agente do CrewAI recebia um
+                        # prompt a dizer «podes usar registrar_saques» e não
+                        # tinha função nenhuma para chamar — o mesmo defeito
+                        # de antes, só numa camada mais funda.
+                        tools=self._tools_crewai(spec),
                     )
                     crew_task = Task(
                         description=self._native_prompt(task, spec, payload),

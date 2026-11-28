@@ -311,7 +311,10 @@ class VaultStore:
                 # seguro porque já temos o lock do processo e do ficheiro, e a
                 # reparação é feita em memória, gravada no fim da transacção.
                 data = self._read_unlocked(name)
-                snapshot = copy.deepcopy(data)
+                # Nota: não há cópia de segurança a restaurar. A escrita só
+                # acontece depois do `yield` regressar, por isso uma excepção
+                # no bloco impede-a — o ficheiro fica intacto. O `deepcopy`
+                # que aqui existia nunca foi usado; era trabalho a fingir.
                 yield data
                 data["schema_version"] = data.get("schema_version", 1)
                 data["updated_at"] = utcnow_iso()
