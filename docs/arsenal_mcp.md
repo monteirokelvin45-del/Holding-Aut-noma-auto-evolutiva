@@ -167,3 +167,48 @@ Por ordem de retorno sobre esforço:
 O caminho 4 é o mais subestimado: um servidor MCP que expõe o próprio cofre
 dá ao agente as ferramentas que ele realmente precisa, em vez de adaptar-se
 a 200 que não servem.
+
+
+---
+
+## 8. O CI que mentia (achado ao provar o arsenal)
+
+A caminho desta integração apareceu um defeito mais grave do que qualquer
+falta de ferramenta: **o job do emulador ficou verde com uma anotação de
+erro** (`::error::teste de botões falhou`).
+
+A causa:
+
+```yaml
+bash scripts/ci_emulator_buttons.sh ... || \
+  echo "::error::teste de botões falhou"
+```
+
+O `echo` devolve 0, o passo passa, o job fica verde. Um CI que diz *success*
+com os botões partidos é pior do que não testar — dá confiança falsa, que é
+exactamente o que este projecto tem vindo a eliminar.
+
+Ao corrigir, apareceram mais dois erros, ambos meus:
+
+1. `|| rc=$?` com `[ "$rc" -ne 0 ]` → **`Illegal number`** no runner. O
+   passo falhava por causa do diagnóstico, não dos scripts.
+2. A lógica vivia **dentro do `script:` do android-emulator-runner**, que
+   rejeitava o bloco com exit 2 antes de correr uma linha. Sem logs
+   acessíveis por API, três runs foram às cegas.
+
+**A lição que fica:** lógica dentro de YAML não se testa. Não há `bash -n`,
+não há execução local, não há nada. Agora toda a lógica está em
+`scripts/ci_emulator_all.sh`, e o `script:` tem uma linha que o chama.
+
+Estado depois da correcção — run `46177110189`:
+
+| Verificação | Resultado |
+|---|---|
+| `Compilar APK` | success |
+| `Correr no emulador` | success |
+| Smoke | **16 OK, 0 falhas** |
+| Botões | **18 OK, 0 falhas** |
+| Passo 9 (PayPal) | 5 OK, verde |
+
+O verde de hoje é o mesmo tipo de verde de antes — mas agora há um caminho
+pelos dados que o confirma, e uma falha deixa rasto.
