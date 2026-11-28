@@ -252,7 +252,6 @@ class ApiContractTest {
         assertEquals(502, excecao.code)
         assertTrue(excecao.message!!.contains("502"))
     }
-}
 
     // ------------------------------------------------ chaves da lista ------
     /**
@@ -289,3 +288,4 @@ class ApiContractTest {
         // E a lista continua ordenável sem ambiguidade.
         assertTrue(backlog.all { it.sequence > 0L })
     }
+}
