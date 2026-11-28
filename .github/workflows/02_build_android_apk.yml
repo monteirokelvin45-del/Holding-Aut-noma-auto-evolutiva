@@ -905,7 +905,13 @@ jobs:
           # O upload usa dist/app-debug.apk; o download pode achatar ou não.
           APK=$(find /tmp/apk -name '*.apk' | head -1)
           test -n "$APK" || { echo "::error::nenhum APK no artefacto"; exit 1; }
-          cp "$APK" /tmp/apk/app-debug.apk
+          # Se o artefacto já se chama app-debug.apk, `cp` para o mesmo
+          # caminho rebenta ("É o mesmo ficheiro") e o passo falha sem que
+          # nada esteja errado com o APK. Foi o que aconteceu no run
+          # 46163471941: download OK, verificação falhada por um cp.
+          if [ "$APK" != "/tmp/apk/app-debug.apk" ]; then
+            cp "$APK" /tmp/apk/app-debug.apk
+          fi
           sha256sum /tmp/apk/app-debug.apk
           # Um APK com menos de 5 MB não é este APK.
           BYTES=$(stat -c%s /tmp/apk/app-debug.apk)
