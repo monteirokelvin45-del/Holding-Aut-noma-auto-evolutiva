@@ -389,3 +389,133 @@ Sem isso dá `3 failed`: os testes de TTS verificam que os motores offline
 existem, e não existiam porque os pesos (`.onnx`, `.npz`) e as bibliotecas não
 são versionados. A falha era do ambiente, não do código — e o teste está certo
 a recusar-se a passar sem o que diz precisar.
+
+---
+
+## 12. Segunda auditoria (2026-11-28): os botões, o cérebro e os agentes
+
+A auditoria anterior provou que o APK **arranca e navega**. Não provou que
+**faça** alguma coisa: o `ci_emulator_smoke.sh` toca nas cinco abas e confirma o
+título de cada uma. Zero botões eram premidos. Esta secção fecha essa lacuna e
+documenta três defeitos reais encontrados pelo caminho.
+
+### 12.1 O que foi executado, e como
+
+| Prova | Como | Resultado |
+|---|---|---|
+| O binário existe e é real | `apk-artifact` via `git show` | 18 MB, 8 ficheiros `.dex`, 517 entradas, ABIs arm64/armeabi/x86/x86_64 |
+| O protocolo do APK | `scripts/device_sim.py` contra a API real | **20/20 passos** |
+| Os botões | `scripts/ci_emulator_buttons.sh` (novo) | corre no CI, em cofre descartável |
+| **Não** executado aqui | emulador Android | sem Java/Gradle/SDK; `maven`, `dl.google.com`, `services.gradle.org` → **000** |
+
+A primeira corrida do simulador deu **10/18**. Não era defeito da app: era o meu
+arranque — token trocado (`apk-test-token` vs. o configurado) e `websockets`
+instalado *depois* do uvicorn arrancar. Com o token certo e o servidor
+reiniciado: 20/20. Um relatório que registasse «10/18» como defeito do APK
+estaria a mentir na direcção mais confortável.
+
+### 12.2 Defeito 1 — o cérebro estava desligado, em silêncio
+
+O `settings` só lia `LOCAL_GGUF_PATH` do ambiente. O modelo reconstruído por
+`scripts/instalar_motor_local.sh` fica em `~/modelos/`. Ninguém exportava nada,
+e o resultado era este, no `/agents`:
+
+```json
+"local_gguf": { "configured": false, "available": false, "reason": "sem_chave" }
+```
+
+Duas mentiras numa linha: o cérebro *estava* no disco (397 MB), e um modelo
+local **não usa chave nenhuma**. O ciclo caía na heurística sem avisar, e a
+única pista era um `reason` falso.
+
+Corrigido em dois pontos: descoberta automática (`_descobrir_gguf`, com glob
+sobre `~/modelos/*.gguf`) e motivos honestos (`gguf_nao_encontrado`,
+`ollama_desligado`, `desligado_por_omissao`). Medido depois:
+
+```
+local_gguf: reason=pronto, available=True, Qwen3-0.6B-Q4_K_M.gguf
+resposta em 5,7 s · provider=local_gguf · is_llm=True · custo $0.00
+```
+
+### 12.3 Defeito 2 — o APK deitava fora os agentes
+
+A API enviava 11 agentes. O `AiCatalog` Kotlin era:
+
+```kotlin
+data class AiCatalog(val bridge: BridgeInfo, val validation: JsonObject?, val llm: JsonObject?)
+```
+
+O campo `agents` não tinha destino. O `kotlinx.serialization` ignora campos
+desconhecidos **sem erro** — a pior forma de falhar: 11 agentes no servidor,
+zero no ecrã, nenhum aviso. Acrescentado `AgentSpecDto` e um cartão
+«AGENTES DE IA (17)» na Diretoria, com tier de motor e ferramentas.
+
+A segunda tentativa de build falhou nos testes Kotlin por outra razão minha:
+declarei `tasks` como `JsonObject` quando `/agents` devolve uma **lista**. Isso
+rebentava a descodificação do catálogo inteiro. Corrigido para
+`List<JsonObject>`, e o teste de contrato passou a exigir agentes não vazios —
+o teste anterior limitava-se a verificar o `bridge` e passava com 11 agentes
+descartados, ou seja, não protegia nada.
+
+### 12.4 Os agentes: 11 → 17
+
+Seis novos, todos no motor local (zero chave, zero custo), todos com tarefa
+declarada em `tasks.yaml`:
+
+| Agente | Tarefa | O que faz |
+|---|---|---|
+| `tradutor_local` | `localizar_texto` | pt-MZ, não pt-BR; corrige moeda e pagamentos |
+| `revisor_estilo` | `revisar_legibilidade` | corta sem alterar factos nem números |
+| `guardiao_marca` | `auditar_tom_marca` | caça promessas de lucro e superlativos |
+| `analista_feedback` | `triar_feedback` | comentários → temas → 3 mudanças |
+| `arquivista_memoria` | `consolidar_memoria` | cemitério de negócios e padrões de falha |
+| `operador_telegram` | `interpretar_comando` | linguagem natural → comando seguro |
+
+Não são nomes num YAML. O `tradutor_local` correu e corrigiu de facto:
+
+```
+"antes": "Compre com RMB no Mercado Livre",  → "depois": "Compre com Metical (MZN)"
+"antes": "pague com Paytm",                  → "depois": "pague com M-Pesa"
+motivo: "A moeda oficial é Metical (MZN), não RMB."
+```
+
+Deixou passar «Mercado Livre» até o nomearmos no bloco de factos. Um 0,6B não
+generaliza: o que não estiver escrito, não sabe. Depois de nomeado, passou.
+
+### 12.5 Os botões (novo `ci_emulator_buttons.sh`)
+
+Oito passos, pela ordem em que um utilizador os faria: **Ciclo**,
+**Actualizar**, **STOP**, **LIVRE**, **Pedir saque**, **Aprovar**,
+**Cancelar**, **Ligar ao backend**.
+
+Corre em **cofre descartável** (`VAULT_DIR=/tmp/cofre-ci`), com uma aprovação
+criada de propósito. A razão não é técnica, é de governação: aprovar a partir
+do CI estaria a gastar a única decisão humana do ciclo, e um verde no Actions
+passaria a significar «aprovações aprovadas por um robot».
+
+### 12.6 Endpoints públicos sem chave
+
+A busca no GitHub rendeu pouco do que é reutilizável: os projectos em alta
+(`opencode2dsh`, `ollamafreeapi`) reencaminham para Ollama ou para serviços com
+chave. O que serve é `api.llm7.io` e `text.pollinations.ai` — implementados no
+router como `llm7` e `pollinations`, **desligados por omissão**
+(`LLM_SEM_CHAVE_ATIVO=true` liga).
+
+**Não foram medidos contra a rede**: os dois domínios devolvem **000** neste
+sandbox. O que está provado é o contrato do cliente, com resposta simulada:
+URL, payload, parsing, custo `$0.00` e — a parte que define «sem chave» — a
+**ausência de qualquer cabeçalho de autenticação** no pedido.
+
+### 12.7 Suíte de testes
+
+| | Antes | Depois |
+|---|---|---|
+| Testes backend | 102 | **114** |
+| Duração | 4m32s | **3m48s** |
+| Testes Kotlin | 13 | 13 (2 reforçados) |
+
+A descida de 9m55s para 3m48s não é cosmética: quando o cérebro passou a ser
+encontrado, os testes de integração começaram a carregar 397 MB e a inferir a
+25 tok/s — **416 s num único caso**. Um teste que bloqueia a suíte durante dez minutos
+deixa de ser corrido. Agora o motor real é opt-in
+(`AUTOMATON_TESTAR_MOTOR_REAL=1`) e por omissão usa um duplo determinístico.
