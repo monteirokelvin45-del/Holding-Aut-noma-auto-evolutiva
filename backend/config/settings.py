@@ -123,8 +123,12 @@ class Settings:
 
     # --------------------------------------------------------------------- LLM
     groq_api_key: str = ""
-    groq_model_reasoning: str = "gpt-oss-120b"
-    groq_model_fast: str = "qwen3-27b"
+    # IDs de modelo da Groq exigem o sufixo de versão: "gpt-oss-120b" sem
+    # sufixo devolve HTTP 400 model_not_found, e um 400 não é retentado —
+    # a chave do utilizador pareceria inválida. Verificado na consola da
+    # Groq; ambos são free-tier.
+    groq_model_reasoning: str = "openai/gpt-oss-120b"
+    groq_model_fast: str = "qwen/qwen3-27b"
     groq_rpm_limit: int = 30
     groq_rpd_limit: int = 1000
     groq_tpd_limit: int = 200_000
@@ -367,8 +371,8 @@ def _build_settings() -> Settings:
         base_currency=env_str("BASE_CURRENCY", "USD"),
         usd_mzn_rate=env_float("USD_MZN_RATE", 63.5, minimum=0.01),
         groq_api_key=env_str("GROQ_API_KEY"),
-        groq_model_reasoning=env_str("GROQ_MODEL_REASONING", "gpt-oss-120b"),
-        groq_model_fast=env_str("GROQ_MODEL_FAST", "qwen3-27b"),
+        groq_model_reasoning=env_str("GROQ_MODEL_REASONING", "openai/gpt-oss-120b"),
+        groq_model_fast=env_str("GROQ_MODEL_FAST", "qwen/qwen3-27b"),
         groq_rpm_limit=env_int("GROQ_RPM_LIMIT", 30, minimum=1),
         groq_rpd_limit=env_int("GROQ_RPD_LIMIT", 1000, minimum=1),
         groq_tpd_limit=env_int("GROQ_TPD_LIMIT", 200_000, minimum=1),

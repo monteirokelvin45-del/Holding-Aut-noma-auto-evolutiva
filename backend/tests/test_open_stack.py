@@ -1065,3 +1065,40 @@ def test_loja_recusa_video_sem_audio_e_juiz_reprovado(tmp_path, monkeypatch):
 
     # nada disto criou catálogo
     assert not (tmp_path / "store" / "produtos.json").exists()
+
+
+def test_groq_troca_de_modelo_quando_o_nome_esta_errado(monkeypatch):
+    """HTTP 400 num modelo não pode parecer chave inválida.
+
+    A Groq retira modelos e exige o prefixo de autor (`openai/gpt-oss-120b`,
+    `qwen/qwen3-27b`). Com o nome curto, a resposta é 400 model_not_found;
+    como 400 não é retentado, a chave do utilizador pareceria inválida quando
+    só o nome do modelo estava errado.
+    """
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    router = mod.LLMRouter()
+    object.__setattr__(cfg, "groq_api_key", "gsk-teste")
+    tentados = []
+
+    def falso_post(url, payload, headers, timeout=30):
+        tentados.append(payload["model"])
+        if payload["model"] == "modelo-que-saiu":
+            raise mod.ExternalServiceError("HTTP 400 em ...: model_not_found")
+        return {
+            "choices": [{"message": {"content": "resposta do modelo"}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 3},
+        }
+
+    monkeypatch.setattr(mod, "_http_post_json", falso_post)
+    object.__setattr__(cfg, "groq_model_reasoning", "modelo-que-saiu")
+    try:
+        resposta = router._call_groq(mod.LLMRequest(prompt="oi", task="strategy"), "oi", "")
+    finally:
+        object.__setattr__(cfg, "groq_api_key", "")
+
+    assert "modelo-que-saiu" not in tentados or tentados[0] == "modelo-que-saiu"
+    assert len(tentados) >= 2  # tentou um alternativo
+    assert resposta.text == "resposta do modelo"
+    assert resposta.is_llm is True

@@ -574,11 +574,32 @@ class LLMRouter:
         if request.json_mode:
             payload["response_format"] = {"type": "json_object"}
         started = time.monotonic()
-        raw = _http_post_json(
-            "https://api.groq.com/openai/v1/chat/completions",
-            payload,
-            {"Authorization": f"Bearer {settings.groq_api_key}"},
-        )
+        # A Groq retira modelos sem aviso e um 400 model_not_found não é
+        # retentado — a chave do utilizador pareceria inválida. Tentam-se
+        # nomes alternativos antes de desistir do provider.
+        tentativas = [model] + [
+            outro for outro in self.GROQ_MODEL_FALLBACKS if outro != model
+        ]
+        raw = None
+        erros: list[str] = []
+        for nome in tentativas:
+            payload["model"] = nome
+            try:
+                raw = _http_post_json(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    payload,
+                    {"Authorization": f"Bearer {settings.groq_api_key}"},
+                )
+                model = nome
+                break
+            except ExternalServiceError as exc:
+                if "HTTP 400" not in str(exc) and "404" not in str(exc):
+                    raise
+                erros.append(f"{nome}: {str(exc)[:120]}")
+        if raw is None:
+            raise ExternalServiceError(
+                "Groq recusou todos os modelos configurados: " + " | ".join(erros)
+            )
         latency = int((time.monotonic() - started) * 1000)
         try:
             text = raw["choices"][0]["message"]["content"] or ""
@@ -639,6 +660,17 @@ class LLMRouter:
             text=text, provider="gemini", model=model, usage=usage,
             cost_usd=0.0, latency_ms=latency, is_llm=True,
         )
+
+    #: Modelos alternativos na Groq. Os IDs levam prefixo de autor e sufixo de
+    #: versão (`openai/gpt-oss-120b`, `qwen/qwen3-27b`); escrever o nome curto
+    #: dá HTTP 400 e a chave do utilizador parece inválida quando só o nome
+    #: do modelo estava errado.
+    GROQ_MODEL_FALLBACKS = (
+        "openai/gpt-oss-120b",
+        "qwen/qwen3-27b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+    )
 
     #: Endpoints do GitHub Models, por ordem de tentativa.
     #:
