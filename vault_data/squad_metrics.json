@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-28T13:19:23+00:00",
+  "updated_at": "2026-11-28T13:27:00+00:00",
   "kill_policy": {
     "min_traction_days": 7,
     "min_views_in_traction_window": 200,
@@ -305,6 +305,32 @@
       "metadata": {},
       "verdict_history": [],
       "updated_at": "2026-11-28T13:00:32+00:00"
+    },
+    "sq_01f551041ca5": {
+      "id": "sq_01f551041ca5",
+      "name": "Guia prático de freelancing para jovens de Maputo",
+      "type": "video_factory",
+      "niche": "freelancing em Maputo",
+      "owner_agent": "video_factory",
+      "status": "active",
+      "created_at": "2026-11-28T13:24:35+00:00",
+      "activated_at": "2026-11-28T13:24:35+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [],
+      "updated_at": "2026-11-28T13:24:35+00:00"
     }
   },
   "artifacts": [
@@ -2634,6 +2660,160 @@
       "validated_demand": true,
       "created_at": "2026-11-28T13:19:23+00:00",
       "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
+    },
+    {
+      "type": "video_package",
+      "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_01f551041ca5/2026-11-28/publication_package.json",
+      "publishable": true,
+      "publish_blockers": [],
+      "squad_id": "sq_01f551041ca5",
+      "title": "Guia prático de freelancing para jovens de Maputo",
+      "description": "3 passos práticos sobre Guia prático de freelancing para jovens de Maputo.",
+      "hashtags": [
+        "#shorts",
+        "#dicas",
+        "#aprender",
+        "#freelancingemMaputo",
+        "#moçambique"
+      ],
+      "platforms": [
+        "tiktok",
+        "youtube_shorts",
+        "instagram_reels"
+      ],
+      "narration": "Sabias que a maioria das pessoas que começa a trabalhar por conta própria perde dinheiro nos primeiros meses, sem perceber porquê? Primeiro, identifica onde o dinheiro está a sair. Segundo, compara com o que realmente gera retorno. Terceiro, corta o que não paga as contas. Segue para mais e entra na lista VIP no link da bio.",
+      "script": {
+        "title": "Guia prático de freelancing para jovens de Maputo",
+        "hook": "Sabias que a maioria das pessoas que começa a trabalhar por conta própria perde dinheiro nos primeiros meses, sem perceber porquê?",
+        "body": [
+          "Primeiro, identifica onde o dinheiro está a sair.",
+          "Segundo, compara com o que realmente gera retorno.",
+          "Terceiro, corta o que não paga as contas."
+        ],
+        "cta": "Segue para mais e entra na lista VIP no link da bio.",
+        "hashtags": [
+          "#shorts",
+          "#dicas",
+          "#aprender",
+          "#freelancingemMaputo",
+          "#moçambique"
+        ],
+        "description": "3 passos práticos sobre Guia prático de freelancing para jovens de Maputo.",
+        "language": "pt",
+        "engine": "template",
+        "is_llm": false,
+        "word_count": 57
+      },
+      "render": {
+        "ok": true,
+        "video_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_01f551041ca5/2026-11-28/short.mp4",
+        "audio_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_01f551041ca5/2026-11-28/narracao.wav",
+        "duration_seconds": 20.12,
+        "resolution": "1080x1920",
+        "fps": 30,
+        "steps": {
+          "tts": {
+            "ok": true,
+            "engine": "kokoro:pf_dora:7.5s",
+            "ms": 14289
+          },
+          "subtitles": {
+            "ok": true,
+            "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_01f551041ca5/2026-11-28/legendas.srt"
+          },
+          "render": {
+            "ok": true,
+            "ffmpeg": "imageio-ffmpeg",
+            "ms": 95659,
+            "frames": 604,
+            "pipeline": "offline_frame_by_frame"
+          }
+        },
+        "warnings": []
+      },
+      "footage": {
+        "source": "generated",
+        "kind": "motion_graphics",
+        "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_01f551041ca5/2026-11-28/footage/motion/motion_base.mp4",
+        "license": "own_work",
+        "url": "",
+        "query": "freelancing em Maputo",
+        "engine": "pillow+ffmpeg",
+        "scenes": 5,
+        "has_text": true,
+        "note": "5 planos animados gerados localmente (Pillow + ffmpeg), sem GPU e sem material de terceiros."
+      },
+      "judge": {
+        "score": 88.0,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 90.0,
+          "clarity": 90.0,
+          "technical": 80.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 22.5,
+          "clarity": 22.5,
+          "technical": 20.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "CTA explícito presente no guião.",
+          "Frases legíveis (média 11.4 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:27:00+00:00"
+      },
+      "compliance": {
+        "subject": "media",
+        "kind": "copyright",
+        "passed": true,
+        "findings": [
+          {
+            "check": "video_source_source",
+            "passed": true,
+            "severity": "info",
+            "message": "video_source: fonte 'generated' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "generated",
+                "license": "own_work"
+              }
+            }
+          },
+          {
+            "check": "audio_source",
+            "passed": true,
+            "severity": "info",
+            "message": "audio: fonte 'kokoro' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "kokoro",
+                "license": "apache-2.0"
+              }
+            }
+          }
+        ],
+        "tool": "curated-media-policy",
+        "generated_at": "2026-11-28T13:27:00+00:00"
+      },
+      "smoke_test_id": "smk_a5881f8bbf3f",
+      "validated_demand": true,
+      "created_at": "2026-11-28T13:27:00+00:00",
+      "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
     }
   ],
   "agents": {
@@ -2826,21 +3006,22 @@
           "by": "bootstrap"
         }
       ],
-      "calls": 4,
+      "calls": 5,
       "tokens": 0,
       "cost_usd": 0.0,
-      "successes": 4,
+      "successes": 5,
       "failures": 0,
       "judge_scores": [
         88.0,
         89.29,
         91.27,
-        91.27
+        91.27,
+        88.0
       ],
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T11:12:37+00:00",
-      "updated_at": "2026-11-28T13:19:23+00:00",
+      "updated_at": "2026-11-28T13:27:00+00:00",
       "reviews": [
         {
           "agent_id": "video_factory",
@@ -4491,6 +4672,52 @@
         "title": "Guia Prático de Freelancing para jovens de Maputo"
       },
       "at": "2026-11-28T13:19:23+00:00"
+    },
+    {
+      "squad_id": "sq_01f551041ca5",
+      "agent_id": "video_factory",
+      "content_type": "video_short",
+      "content_hash": "len330",
+      "verdict": {
+        "score": 88.0,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 90.0,
+          "clarity": 90.0,
+          "technical": 80.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 22.5,
+          "clarity": 22.5,
+          "technical": 20.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "CTA explícito presente no guião.",
+          "Frases legíveis (média 11.4 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:27:00+00:00"
+      },
+      "metadata": {
+        "duration_seconds": 20.12,
+        "has_cta": true,
+        "title": "Guia prático de freelancing para jovens de Maputo"
+      },
+      "at": "2026-11-28T13:27:00+00:00"
     }
   ]
 }
