@@ -1,0 +1,31 @@
+[18:43:10] à espera do dispositivo
+[18:43:10] modelo: Android SDK built for x86_64 · Android 11
+[18:43:11] a instalar /tmp/apk/app-debug.apk
+Performing Streamed Install
+Success
+[18:43:12] OK   APK instalado
+[18:43:13] a arrancar com.automaton.holding.debug/com.automaton.holding.MainActivity
+Starting: Intent { cmp=com.automaton.holding.debug/com.automaton.holding.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.automaton.holding.debug/com.automaton.holding.MainActivity
+TotalTime: 2246
+WaitTime: 2248
+Complete
+[18:43:27] OK   processo vivo (pid 2140)
+[18:43:34] OK   aba 'Aprovar' aberta (título "MESA DE APROVAÇÕES" visível)
+[18:43:34] OK   screenshot 02_aprovar.png (173882 bytes)
+[18:43:41] OK   aba 'Tesouro' aberta (título "COFRES" visível)
+[18:43:41] OK   screenshot 03_tesouro.png (243783 bytes)
+[18:43:47] OK   aba 'Diretoria' aberta (título "DIRETORIA" visível)
+[18:43:48] OK   screenshot 04_diretoria.png (227994 bytes)
+[18:43:54] OK   aba 'Esquadrões' aberta (título "ABATIDOS" visível)
+[18:43:54] OK   screenshot 05_esquadroes.png (110579 bytes)
+[18:44:01] OK   aba 'Ao Vivo' aberta (título "TERMINAL DE OPERAÇÕES" visível)
+[18:44:01] OK   screenshot 06_ao_vivo_de_volta.png (133526 bytes)
+[18:44:01] a copiar o logcat
+[18:44:01] OK   sem FATAL EXCEPTION
+[18:44:01] OK   WebSocket ligado ao backend
+[18:44:01] OK   backend recebeu 16 pedidos GET da app
+[18:44:01] OK   backend registou a ligação /ws/live
+[18:44:01] fim: 0 falha(s)

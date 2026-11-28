@@ -1,0 +1,50 @@
+[18:44:01] === botões do APK (fase: descartavel) ===
+Starting: Intent { cmp=com.automaton.holding.debug/com.automaton.holding.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.automaton.holding.debug/com.automaton.holding.MainActivity
+TotalTime: 1782
+WaitTime: 1783
+Complete
+[18:44:09] --- 1. ciclo a partir do telemóvel
+--- tocar em «Ciclo» @ 939 602 (botão Ciclo)
+[18:44:31]   [OK   ] botão «Ciclo» respondeu
+[18:44:31] --- 2. actualização manual
+[18:44:36]   [OK   ] botão «Actualizar» premido
+[18:44:36] --- 3. congelar o sistema (STOP)
+--- tocar em «STOP» @ 973 234 (botão vermelho (congelar))
+[18:44:43]   [OK   ] diálogo do kill switch abriu
+--- premir (area) «PARAR TUDO» @ 795 1457 (confirmar congelamento)
+[18:44:53]   [OK   ] sistema congelado pelo APK (topo mostra «SISTEMA CONGELADO»)
+[18:44:53] --- 4. descongelar (LIVRE)
+--- tocar em «LIVRE» @ 973 234 (botão vermelho (descongelar))
+[18:45:03]   [OK   ] sistema descongelado pelo APK
+[18:45:03] --- 5. diálogo de saque (Tesouro)
+--- tocar em «Tesouro» @ 541 2030 (aba Tesouro)
+[18:45:25]   [OK   ] botão «Pedir saque» visível no Tesouro (após rolar)
+[18:45:26]   [OK   ] botão «Pedir saque» visível no Tesouro
+--- tocar em «Pedir saque (requer aprovação)» @ 540 1349 (premir com campo vazio)
+[18:45:33]   [OK   ] botão desactivado com campo vazio não fez nada — correcto
+--- tocar em «Montante em USD» @ 540 722 (campo de montante)
+[18:45:41]   [OK   ] montante 5 escrito no campo
+--- tocar em «Pedir saque (requer aprovação)» @ 540 1384 (pedir saque com valor)
+[18:45:51]   [OK   ] saque pedido: o APK criou uma aprovação (cartão «Ir para Aprovações»)
+[18:45:51] --- 6. diálogo de aprovação
+--- tocar em «Aprovar» @ 320 2030 (aba Aprovar)
+--- tocar em «Aprovar» @ 304 967 (botão Aprovar de um item)
+[18:46:08]   [OK   ] diálogo de biometria abriu ao premir Aprovar
+--- tocar em «Cancelar» @ 812 1470 (cancelar decisão)
+[18:46:15]   [OK   ] «Cancelar» fechou o diálogo sem decidir
+[18:46:15] --- 8. diálogo «Ligar ao backend»
+[18:46:21]   [OK   ] diálogo de endpoint abriu
+--- premir (area) «Cancelar» @ 486 1702 (fechar diálogo de endpoint)
+[18:46:26] --- 9. cartão PayPal no Tesouro
+--- tocar em «Tesouro» @ 541 2030 (aba Tesouro (paypal))
+[18:46:43]   [OK   ] cartão PayPal presente no Tesouro
+[18:46:45]   [OK   ] cartão indica o estado real
+[18:46:46]   [OK   ] aviso de saque para Moçambique visível sem abrir nada
+--- tocar em «Nova cobrança» @ 266 934 (abrir formulário de cobrança)
+[18:46:55]   [OK   ] formulário de cobrança abriu com o campo de valor
+--- tocar em «Cancelar» @ 568 1330 (fechar formulário)
+[18:47:03]   [OK   ] formulário fechou e não criou nada
+[18:47:03] === resultado: 0 falha(s) ===
