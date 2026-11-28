@@ -1,0 +1,216 @@
+{
+  "total": 42,
+  "ferramentas": [
+    {
+      "metodo": "create_order",
+      "nome": "Create PayPal Order",
+      "descricao": "Use this tool to create a PayPal order when the user intends to purchase goods or services.\n\nThis tool is used to create a new order in PayPal. This is typically the first step in initiating a payment"
+    },
+    {
+      "metodo": "pay_order",
+      "nome": "Process payment for PayPal Order",
+      "descricao": "Use this tool after the user has approved the PayPal order.\n\nParamters:\n- order_id (str, required): The PayPal order ID provided after the user has approved the payment. \n  It typically appears in the"
+    },
+    {
+      "metodo": "get_order_details",
+      "nome": "Get PayPal Order Details",
+      "descricao": "Use this tool to retrieve the current status of a PayPal order.\n\nParamters:\n- order_id (str, required): The PayPal order ID you want to check."
+    },
+    {
+      "metodo": "create_product",
+      "nome": "Create PayPal Product",
+      "descricao": "Create a product in PayPal using product catalog - create products API.\nThis function creates a new product that will be used in subscription plans, subscriptions.\nRequired Arguments are: name (produc"
+    },
+    {
+      "metodo": "list_products",
+      "nome": "List PayPal Products",
+      "descricao": "List products from PayPal.\n\nThis function retrieves a list of products with optional pagination parameters."
+    },
+    {
+      "metodo": "show_product_details",
+      "nome": "Show PayPal Product Details",
+      "descricao": "List products from PayPal.\n\nThis function retrieves a list of products with optional pagination parameters."
+    },
+    {
+      "metodo": "create_subscription_plan",
+      "nome": "Create PayPal Subscription Plan",
+      "descricao": "Create a subsctiption plan in PayPal using subscription - create plan API.\nThis function creates a new subscription plan that defines pricing and billing cycle details for subscriptions.\nRequired para"
+    },
+    {
+      "metodo": "list_subscription_plans",
+      "nome": "List PayPal Subscription Plans",
+      "descricao": "List subscription plans from PayPal.\n\nThis function retrieves a list of subscription plans with optional product filtering and pagination parameters."
+    },
+    {
+      "metodo": "show_subscription_plan_details",
+      "nome": "List PayPal Subscription Plan Details",
+      "descricao": "Show subscription plan details from PayPal.\nThis function retrieves the details of a specific subscription plan using its ID.\nRequired parameters are: plan_id (the ID of the subscription plan)."
+    },
+    {
+      "metodo": "create_subscription",
+      "nome": "Create PayPal Subscription",
+      "descricao": "Create a subscription in PayPal using the subscription - create subscription API.\nThis function allows you to create a new subscription for a specific plan, enabling the management of recurring paymen"
+    },
+    {
+      "metodo": "show_subscription_details",
+      "nome": "Show PayPal Subscription Details",
+      "descricao": "Show subscription details from PayPal.\nThis function retrieves the details of a specific subscription using its ID.\nRequired parameters are: subscription_id (the ID of the subscription)."
+    },
+    {
+      "metodo": "cancel_subscription",
+      "nome": "Cancel PayPal Subscription",
+      "descricao": "Cancel a customer subscription in PayPal.\n\nThis function cancels an active subscription for a customer. It requires the subscription ID and an optional reason for cancellation.\nRequired parameters are"
+    },
+    {
+      "metodo": "create_invoice",
+      "nome": "Create PayPal Invoice",
+      "descricao": "Create Invoices on PayPal.\n\nThis function creates a draft invoice, specifying a currency code, the invoicer's business information, one or more recipients to bill, and line items. Once created, the in"
+    },
+    {
+      "metodo": "create_recurring_series",
+      "nome": "Create Recurring Invoice Series",
+      "descricao": "Create a recurring invoice series on PayPal.\n\nThis function creates a recurring invoice series that automatically generates and sends invoices to a customer on a schedule, specifying a billing frequen"
+    },
+    {
+      "metodo": "activate_recurring_series",
+      "nome": "Activate Recurring Invoice Series",
+      "descricao": "Activate a recurring invoice series on PayPal.\n\nThis function activates a recurring invoice series by its ID, moving it out of DRAFT status. Once activated, PayPal automatically generates and sends in"
+    },
+    {
+      "metodo": "get_recurring_series",
+      "nome": "Get Recurring Invoice Series",
+      "descricao": "Get a recurring invoice series from PayPal.\n\nThis function retrieves details of a specific recurring invoice series using its ID, including its schedule, status, template, and recipient information."
+    },
+    {
+      "metodo": "cancel_recurring_series",
+      "nome": "Cancel Recurring Invoice Series",
+      "descricao": "Cancel a recurring invoice series on PayPal.\n\nThis function cancels a recurring invoice series by its ID. Once cancelled, PayPal stops generating and sending further invoices for the series. This acti"
+    },
+    {
+      "metodo": "delete_recurring_series",
+      "nome": "Delete Recurring Invoice Series",
+      "descricao": "Delete a recurring invoice series on PayPal.\n\nThis function permanently deletes a recurring invoice series by its ID. Only series in DRAFT status can be deleted -- for a series that has already been a"
+    },
+    {
+      "metodo": "list_invoices",
+      "nome": "List Invoices",
+      "descricao": "List invoices from PayPal.\n\nThis function retrieves a list of invoices with optional pagination parameters."
+    },
+    {
+      "metodo": "get_invoice",
+      "nome": "Get Invoice",
+      "descricao": "Get an invoice from PayPal.\n\nThis function retrieves details of a specific invoice using its ID."
+    },
+    {
+      "metodo": "send_invoice",
+      "nome": "Send Invoice",
+      "descricao": "Send an invoice to the recipient(s).\n\nThis function sends a previously created invoice to its intended recipients."
+    },
+    {
+      "metodo": "send_invoice_reminder",
+      "nome": "Send Invoice Reminder",
+      "descricao": "Send a reminder for an invoice.\n\nThis function sends a reminder for an invoice that has already been sent but hasn't been paid yet."
+    },
+    {
+      "metodo": "cancel_sent_invoice",
+      "nome": "Cancel Sent Invoice",
+      "descricao": "Cancel a sent invoice.\n\nThis function cancels an invoice that has already been sent to the recipient(s)."
+    },
+    {
+      "metodo": "delete_invoice",
+      "nome": "Delete Invoice",
+      "descricao": "Delete a draft or scheduled invoice on PayPal.\n\nThis function permanently deletes an invoice that is in the draft or scheduled state, by ID. It does not work on invoices that have already been sent --"
+    },
+    {
+      "metodo": "generate_invoice_qr_code",
+      "nome": "Generate Invoice QR Code",
+      "descricao": "Generate a QR code for an invoice.\n\nThis function generates a QR code for an invoice, which can be used to pay the invoice using a mobile device or scanning app."
+    },
+    {
+      "metodo": "generate_invoice_number",
+      "nome": "Generate Invoice Number",
+      "descricao": "Generate the next invoice number available to the merchant.\n\nThis function generates the next invoice number by using the prefix and suffix from the merchant's last invoice number and incrementing the"
+    },
+    {
+      "metodo": "setup_invoice_auto_reminders",
+      "nome": "Setup Invoice Auto Reminders",
+      "descricao": "Initialize the invoice auto reminder configuration for the merchant's PayPal account.\n\nThis function sets up automatic reminders for unpaid invoices, for BEFORE_DUE and/or AFTER_DUE reminder types."
+    },
+    {
+      "metodo": "update_invoice_auto_reminder",
+      "nome": "Update Invoice Auto Reminder",
+      "descricao": "Update an existing invoice auto reminder configuration by its configuration ID.\n\nThis function performs a full update of the reminder configuration's timing interval, repetition count and notification"
+    },
+    {
+      "metodo": "search_invoicing",
+      "nome": "Search Invoices or Recurring Invoice Series",
+      "descricao": "Search for invoices or recurring invoice series on PayPal.\n\nUse resource_type \"invoice\" with invoice_filters, or \"recurring_series\" with recurring_series_filters -- only set the matching filters objec"
+    },
+    {
+      "metodo": "update_invoicing",
+      "nome": "Update Invoice or Recurring Invoice Series",
+      "descricao": "Update an existing invoice or recurring invoice series on PayPal.\n\nUse resource_type \"invoice\" with invoice_update, or \"recurring_series\" with recurring_series_update -- only set the matching object. "
+    },
+    {
+      "metodo": "cancel_invoice_auto_reminder",
+      "nome": "Cancel Invoice Auto Reminder",
+      "descricao": "Cancel all scheduled automatic reminders for an invoice.\n\nThis function permanently cancels every automatic reminder scheduled for a specific invoice, by invoice ID. This action is irreversible -- onc"
+    },
+    {
+      "metodo": "record_payment_for_invoice",
+      "nome": "Record Payment For Invoice",
+      "descricao": "Record a payment for an invoice on PayPal.\n\nThis function records an external or manual payment (for example, cash, check, bank transfer, or a PayPal transaction) against an invoice, by invoice ID. If"
+    },
+    {
+      "metodo": "record_refund_for_invoice",
+      "nome": "Record Refund For Invoice",
+      "descricao": "Record a refund for an invoice on PayPal.\n\nThis function records a refund against an invoice, by invoice ID. If all payments on the invoice are refunded, PayPal marks the invoice REFUNDED; otherwise i"
+    },
+    {
+      "metodo": "create_conditional_rules_for_invoice",
+      "nome": "Create Conditional Rules For Invoice",
+      "descricao": "Create conditional rules for an invoice on PayPal."
+    },
+    {
+      "metodo": "list_disputes",
+      "nome": "List Disputes",
+      "descricao": "List disputes from PayPal.\n\nThis function retrieves a list of disputes with optional pagination and filtering parameters."
+    },
+    {
+      "metodo": "get_dispute",
+      "nome": "Get Dispute",
+      "descricao": "Get details for a specific dispute from PayPal.\n\nThis tool is used to lists disputes with a summary set of details, which shows the dispute_id, reason, status, dispute_state, dispute_life_cycle_stage,"
+    },
+    {
+      "metodo": "accept_dispute_claim",
+      "nome": "Accept Dispute Claim",
+      "descricao": "Accept liability for a dispute claim.\n\nThis tool is used to accept liability for a dispute claim. When you accept liability for a dispute claim, the dispute closes in the customer's favor and PayPal a"
+    },
+    {
+      "metodo": "create_shipment_tracking",
+      "nome": "Create Shipment",
+      "descricao": "Create a shipment for a transaction in PayPal.\nThis function creates a shipment record for a specific transaction, allowing you to track the shipment status and details.\nThe transaction_id can fetch f"
+    },
+    {
+      "metodo": "get_shipment_tracking",
+      "nome": "Get Shipment Tracking",
+      "descricao": "Get tracking information for a shipment by ID.\nThis function retrieves tracking information for a specific shipment using the transaction ID and tracking number.\nThe transaction_id can fetch from the "
+    },
+    {
+      "metodo": "update_shipment_tracking",
+      "nome": "Update Shipment Tracking",
+      "descricao": "Update tracking information for a shipment by ID and status. \n\nThis tool updates tracking information such as the carrier or the tracking number for a specific shipment using the transaction ID and st"
+    },
+    {
+      "metodo": "list_transactions",
+      "nome": "List Transactions",
+      "descricao": "List transactions from PayPal.\n\nThis tool is used to list transactions with optional filtering parameters within a date range of 31 days. This tool can also be used to list details of a transaction gi"
+    },
+    {
+      "metodo": "get_merchant_insights",
+      "nome": "Get Merchant Insights",
+      "descricao": "Use this tool to retrieve business intelligence metrics and analytics for a merchant, filtered by start date, end date, insight type, and time interval.\n\nParameters: \n-start_date (str, required): The "
+    }
+  ],
+  "nota": "Lidas do pacote paypal-agent-toolkit em tempo de execução."
+}

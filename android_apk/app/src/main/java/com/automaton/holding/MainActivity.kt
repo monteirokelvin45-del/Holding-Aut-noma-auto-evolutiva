@@ -119,6 +119,8 @@ fun HoldingApp(
 ) {
     val status by viewModel.status.collectAsState()
     val treasury by viewModel.treasury.collectAsState()
+    val paypal by viewModel.paypal.collectAsState()
+    val cobranca by viewModel.cobranca.collectAsState()
     val approvals by viewModel.approvals.collectAsState()
     val portfolio by viewModel.portfolio.collectAsState()
     val governance by viewModel.governance.collectAsState()
@@ -362,6 +364,10 @@ fun HoldingApp(
                     onOpenApprovals = { tab = HoldingTab.APPROVALS },
                     onRefreshQuote = viewModel::refreshAll,
                     busyAction = busyAction,
+                    paypal = paypal,
+                    cobranca = cobranca,
+                    onCriarCobranca = viewModel::criarCobranca,
+                    onLimparCobranca = viewModel::limparCobranca,
                 )
 
                 HoldingTab.GOVERNANCE -> GovernanceScreen(

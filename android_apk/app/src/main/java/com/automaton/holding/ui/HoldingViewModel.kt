@@ -72,6 +72,12 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
     private val _treasury = MutableStateFlow<TreasuryResponse?>(null)
     val treasury: StateFlow<TreasuryResponse?> = _treasury.asStateFlow()
 
+    private val _paypal = MutableStateFlow<PayPalStatus?>(null)
+    val paypal: StateFlow<PayPalStatus?> = _paypal.asStateFlow()
+
+    private val _cobranca = MutableStateFlow<CobrancaResponse?>(null)
+    val cobranca: StateFlow<CobrancaResponse?> = _cobranca.asStateFlow()
+
     private val _approvals = MutableStateFlow<List<ApprovalItem>>(emptyList())
     val approvals: StateFlow<List<ApprovalItem>> = _approvals.asStateFlow()
 
@@ -118,6 +124,24 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     // ----------------------------------------------------------- carregamento
+    /**
+     * Cria uma cobrança PayPal. Sem chaves o backend devolve dry-run e a
+     * app mostra-o como aviso — nunca como sucesso silencioso.
+     */
+    fun criarCobranca(valorUsd: Double, descricao: String) {
+        viewModelScope.launch {
+            _busyAction.value = "cobranca_paypal"
+            api.criarCobranca(valorUsd, descricao)
+                .onSuccess { _cobranca.value = it }
+                .onFailure { registerError("cobrança PayPal", it) }
+            _busyAction.value = null
+        }
+    }
+
+    fun limparCobranca() {
+        _cobranca.value = null
+    }
+
     fun refreshAll() {
         viewModelScope.launch {
             _loading.value = true
@@ -129,6 +153,11 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
             api.getTreasury()
                 .onSuccess { _treasury.value = it }
                 .onFailure { registerError("tesouraria", it) }
+            // O PayPal é opcional: sem chaves devolve `configurado=false` e
+            // a app mostra o que falta. Não é um erro, é um estado.
+            api.getPayPalStatus()
+                .onSuccess { _paypal.value = it }
+                .onFailure { _paypal.value = null }
             api.getApprovals()
                 .onSuccess { _approvals.value = it.items }
                 .onFailure { registerError("aprovações", it) }

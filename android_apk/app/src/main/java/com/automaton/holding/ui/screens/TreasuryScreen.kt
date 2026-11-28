@@ -35,6 +35,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.automaton.holding.data.CobrancaResponse
+import com.automaton.holding.data.PayPalStatus
 import com.automaton.holding.data.TreasuryResponse
 import com.automaton.holding.ui.theme.HoldingsColors
 
@@ -65,6 +68,10 @@ fun TreasuryScreen(
     onOpenApprovals: () -> Unit,
     onRefreshQuote: () -> Unit,
     busyAction: String?,
+    paypal: PayPalStatus? = null,
+    cobranca: CobrancaResponse? = null,
+    onCriarCobranca: (Double, String) -> Unit = { _, _ -> },
+    onLimparCobranca: () -> Unit = {},
 ) {
     val snapshot = treasury?.snapshot
     val channels = treasury?.channels
@@ -81,6 +88,20 @@ fun TreasuryScreen(
             .verticalScroll(scroll)
             .padding(horizontal = 14.dp),
     ) {
+        Spacer(Modifier.height(12.dp))
+
+        // ----------------------------- PayPal --------------------------------
+        // O aviso de que a PayPal não paga a Moçambique aparece aqui, antes
+        // do botão de cobrar: quem recebe dinheiro que não consegue tirar de
+        // lá só descobre o problema demasiado tarde.
+        PayPalCardMzn(
+            paypal = paypal,
+            cobranca = cobranca,
+            onCriarCobranca = onCriarCobranca,
+            onLimparCobranca = onLimparCobranca,
+            busy = busyAction == "cobranca_paypal",
+        )
+
         Spacer(Modifier.height(12.dp))
 
         // ------------------------- Cabeçalho da fase -------------------------
@@ -464,4 +485,233 @@ private fun ChannelChip(
         ),
         border = null,
     )
+}
+
+
+/**
+ * Cartão do PayPal na tesouraria.
+ *
+ * Três estados, e a diferença entre eles é o que este cartão existe para
+ * mostrar: (1) sem chaves — lista o que falta, não inventa nada; (2)
+ * configurado mas em sandbox — diz que é ensaio; (3) uma cobrança criada —
+ * mostra o link de aprovação e, se for dry-run, diz que **nada aconteceu**.
+ *
+ * O texto de `sacarParaMocambique` vem do backend e é mostrado inteiro. Não
+ * é um detalhe técnico: é o motivo pelo qual este dinheiro pode não sair.
+ */
+@Composable
+fun PayPalCardMzn(
+    paypal: PayPalStatus?,
+    cobranca: CobrancaResponse?,
+    onCriarCobranca: (Double, String) -> Unit,
+    onLimparCobranca: () -> Unit,
+    busy: Boolean,
+) {
+    var mostrarFormulario by remember { mutableStateOf(false) }
+    var valorTexto by remember { mutableStateOf("") }
+    var descricao by remember { mutableStateOf("") }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = HoldingsColors.Surface),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, HoldingsColors.Border, RoundedCornerShape(16.dp)),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "PAYPAL",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = HoldingsColors.Accent,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    when {
+                        paypal == null -> "sem dados"
+                        !paypal.configurado -> "não configurado"
+                        paypal.modo == "sandbox" -> "ENSAIO"
+                        else -> "activo"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = when {
+                        paypal?.configurado == true && paypal.modo != "sandbox" ->
+                            HoldingsColors.Success
+                        paypal?.configurado == true -> HoldingsColors.Warning
+                        else -> HoldingsColors.TextMuted
+                    },
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+
+            if (paypal == null) {
+                Text(
+                    "Estado do PayPal indisponível. Actualiza para tentar de novo.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HoldingsColors.TextMuted,
+                )
+                return@Column
+            }
+
+            if (!paypal.configurado) {
+                Text(
+                    "Falta: " + paypal.faltam.joinToString(", ").ifEmpty { "credenciais" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HoldingsColors.TextMuted,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Sem chaves, uma cobrança devolve um ensaio: nada é criado " +
+                        "na PayPal e nada entra no cofre. É o comportamento certo.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HoldingsColors.TextMuted,
+                )
+            } else {
+                Text(
+                    "Receber: ${paypal.moedas.joinToString("/")} · " +
+                        "${paypal.ferramentasDoAgente} operações para agentes",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HoldingsColors.TextMuted,
+                )
+            }
+
+            // O aviso que ninguém quer ler, mas que tem de estar à frente.
+            if (paypal.sacarParaMocambique.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            HoldingsColors.Warning.copy(alpha = 0.10f),
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(8.dp),
+                ) {
+                    Text(
+                        "Saque: ${paypal.sacarParaMocambique}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HoldingsColors.Warning,
+                    )
+                }
+            }
+
+            // ---------------------------------------------- cobrança criada
+            cobranca?.let { c ->
+                Spacer(Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            (if (c.dryRun) HoldingsColors.Warning else HoldingsColors.Success)
+                                .copy(alpha = 0.12f),
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(10.dp),
+                ) {
+                    Column {
+                        Text(
+                            when {
+                                c.dryRun -> "ENSAIO — nada foi cobrado"
+                                c.pago -> "Pago"
+                                c.orderId.isNotBlank() -> "Pedido criado: ${c.orderId}"
+                                else -> c.status.ifBlank { "sem estado" }
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (c.dryRun) HoldingsColors.Warning else HoldingsColors.Success,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        if (c.message.isNotBlank()) {
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                c.message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = HoldingsColors.TextMuted,
+                            )
+                        }
+                        if (c.approvalUrl.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Link de aprovação (abrir no browser):",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = HoldingsColors.TextMuted,
+                            )
+                            Text(
+                                c.approvalUrl,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = HoldingsColors.Accent,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                TextButton(onClick = onLimparCobranca) {
+                    Text("Fechar", color = HoldingsColors.TextMuted)
+                }
+            }
+
+            // ------------------------------------------------- formulário
+            if (mostrarFormulario && cobranca == null) {
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = valorTexto,
+                    onValueChange = { novo -> valorTexto = novo.filter { it.isDigit() || it == '.' } },
+                    label = { Text("Valor em USD") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = descricao,
+                    onValueChange = { descricao = it },
+                    label = { Text("Descrição do produto") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val valor = valorTexto.toDoubleOrNull() ?: 0.0
+                            if (valor > 0 && descricao.length >= 3) {
+                                onCriarCobranca(valor, descricao)
+                            }
+                        },
+                        enabled = !busy &&
+                            (valorTexto.toDoubleOrNull() ?: 0.0) > 0 &&
+                            descricao.length >= 3,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = HoldingsColors.Accent,
+                        ),
+                    ) {
+                        if (busy) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = HoldingsColors.Background,
+                            )
+                        } else {
+                            Text("Criar cobrança")
+                        }
+                    }
+                    TextButton(onClick = { mostrarFormulario = false }) {
+                        Text("Cancelar", color = HoldingsColors.TextMuted)
+                    }
+                }
+            } else if (cobranca == null) {
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = { mostrarFormulario = true },
+                    enabled = !busy,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = HoldingsColors.Accent,
+                    ),
+                ) {
+                    Text("Nova cobrança")
+                }
+            }
+        }
+    }
 }

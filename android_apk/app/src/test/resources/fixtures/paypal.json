@@ -1,0 +1,22 @@
+{
+  "configurado": false,
+  "faltam": [
+    "PAYPAL_CLIENT_ID",
+    "PAYPAL_CLIENT_SECRET"
+  ],
+  "modo": "sandbox",
+  "sdk_oficial_instalado": true,
+  "sdk_pacote": "paypalserver-sdk (import: paypalserversdk)",
+  "toolkit_instalado": true,
+  "ferramentas_do_agente": 42,
+  "moedas": [
+    "USD",
+    "EUR"
+  ],
+  "receber": "dry-run explícito",
+  "sacar_para_mocambique": "NÃO RESOLVIDO pela PayPal — usar o conector Wise do payout_bridge ou Payoneer. O saldo recebe-se; a saída é a parte frágil.",
+  "descontinuados_a_evitar": [
+    "paypalrestsdk",
+    "paypal-checkout-serversdk"
+  ]
+}

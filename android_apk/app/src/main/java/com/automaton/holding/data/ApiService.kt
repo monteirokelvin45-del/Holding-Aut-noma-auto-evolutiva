@@ -133,12 +133,68 @@ data class TreasuryResponse(
     val channels: ChannelsStatus = ChannelsStatus(),
 )
 
+/**
+ * Estado do PayPal, tal como `GET /paypal` o devolve.
+ *
+ * `sacarParaMocambique` não é um detalhe técnico: é o aviso de que a PayPal
+ * não transfere saldo para bancos moçambicanos. Aparece na app porque o
+ * utilizador tem de o saber **antes** de receber dinheiro que não consegue
+ * tirar de lá.
+ */
+@Serializable
+data class PayPalStatus(
+    val configurado: Boolean = false,
+    val modo: String = "sandbox",
+    val faltam: List<String> = emptyList(),
+    @SerialName("sdk_oficial_instalado") val sdkOficialInstalado: Boolean = false,
+    @SerialName("toolkit_instalado") val toolkitInstalado: Boolean = false,
+    @SerialName("ferramentas_do_agente") val ferramentasDoAgente: Int = 0,
+    val moedas: List<String> = emptyList(),
+    val receber: String = "",
+    @SerialName("sacar_para_mocambique") val sacarParaMocambique: String = "",
+)
+
+/** Uma ferramenta do toolkit oficial da PayPal, exposta a agentes de IA. */
+@Serializable
+data class PayPalTool(
+    val metodo: String = "",
+    val nome: String = "",
+    val descricao: String = "",
+)
+
+@Serializable
+data class PayPalToolsResponse(
+    val total: Int = 0,
+    val ferramentas: List<PayPalTool> = emptyList(),
+    val nota: String = "",
+)
+
+/** Resposta de `POST /paypal/cobrancas`. `dryRun` significa: nada aconteceu. */
+@Serializable
+data class CobrancaResponse(
+    val ok: Boolean = false,
+    @SerialName("order_id") val orderId: String = "",
+    val status: String = "",
+    @SerialName("approval_url") val approvalUrl: String = "",
+    @SerialName("amount_usd") val amountUsd: Double = 0.0,
+    val currency: String = "USD",
+    @SerialName("dry_run") val dryRun: Boolean = false,
+    val pago: Boolean = false,
+    val message: String = "",
+)
+
 @Serializable
 data class QuoteResponse(
     val usd: Double = 0.0,
     val rate: Double = 0.0,
     val mzn: Double = 0.0,
     @SerialName("reference_note") val referenceNote: String = "",
+)
+
+@Serializable
+data class CobrancaBody(
+    @SerialName("valor_usd") val valorUsd: Double,
+    val descricao: String,
 )
 
 @Serializable
@@ -603,6 +659,31 @@ class ApiService(
         return execute(
             requestBuilder("/treasury/payouts/reserve").post(bodyOf(payload)).build()
         ) { text -> json.decodeFromString(ReserveResponse.serializer(), text) }
+    }
+
+    // ---------------------------------------------------------------- PayPal
+    /**
+     * Estado do PayPal. Nunca lança por falta de chaves: o backend devolve
+     * `configurado=false` com a lista do que falta, e é isso que se mostra.
+     */
+    suspend fun getPayPalStatus(): Result<PayPalStatus> =
+        execute(requestBuilder("/paypal").get().build()) { text ->
+            json.decodeFromString(PayPalStatus.serializer(), text)
+        }
+
+    suspend fun getPayPalTools(): Result<PayPalToolsResponse> =
+        execute(requestBuilder("/paypal/ferramentas").get().build()) { text ->
+            json.decodeFromString(PayPalToolsResponse.serializer(), text)
+        }
+
+    suspend fun criarCobranca(valorUsd: Double, descricao: String): Result<CobrancaResponse> {
+        val payload = json.encodeToString(
+            CobrancaBody.serializer(),
+            CobrancaBody(valorUsd, descricao)
+        )
+        return execute(requestBuilder("/paypal/cobrancas").post(bodyOf(payload)).build()) { text ->
+            json.decodeFromString(CobrancaResponse.serializer(), text)
+        }
     }
 
     // ----------------------------------------------------------- aprovações
