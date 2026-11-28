@@ -101,6 +101,60 @@ PY
 
 textos() { dump; grep -o 'text="[^"]*"' /tmp/ui_botoes.xml 2>/dev/null | sed 's/text="//; s/"$//'; }
 
+# Toca no no cujo PROPRIO texto e exactamente o pedido, usando os bounds
+# desse no. Em dialogos, o no clicavel «mais pequeno que contem o texto»
+# pode ser o fundo do dialogo ou o scrim - foi o que aconteceu com
+# «PARAR TUDO»: o toque caiu em (743,1457) e o botao estava em (~478,975).
+tocar_texto_exacto() {  # $1 = texto, $2 = descricao
+  dump
+  local xy
+  xy=$(python3 - "$1" <<'PY'
+import re, sys
+from xml.etree import ElementTree as ET
+alvo = sys.argv[1]
+try:
+    raiz = ET.parse("/tmp/ui_botoes.xml").getroot()
+except Exception:
+    sys.exit(0)
+def caixa(no):
+    m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", no.get("bounds", ""))
+    return tuple(map(int, m.groups())) if m else None
+def area(n):
+    b = caixa(n)
+    return (b[2] - b[0]) * (b[3] - b[1])
+candidatos = [
+    n for n in raiz.iter()
+    if (n.get("text") or "").strip() == alvo and caixa(n)
+]
+if not candidatos:
+    sys.exit(0)
+b = caixa(min(candidatos, key=area))
+print((b[0] + b[2]) // 2, (b[1] + b[3]) // 2)
+PY
+)
+  if [ -z "$xy" ]; then
+    nok "$2: «$1» não encontrado no ecrã"
+    return 1
+  fi
+  echo "--- tocar (exacto) em «$1» @ $xy ($2)" >> "$LOG"
+  # shellcheck disable=SC2086
+  adb shell input tap $xy
+  sleep "${ESPERA:-3}"
+  return 0
+}
+
+# Desliza para cima ate o texto aparecer (ecras com scroll).
+rolar_ate() {  # $1 = texto, $2 = tentativas
+  local i=0
+  while [ "$i" -lt "${2:-3}" ]; do
+    tem_texto_no_ecra "$1" && return 0
+    adb shell input swipe 540 1600 540 950 300
+    sleep 2
+    i=$((i + 1))
+  done
+  tem_texto_no_ecra "$1"
+}
+
 tem_texto_no_ecra() { textos | grep -qiF -- "$1"; }
 
 ecra() { adb exec-out screencap -p > "$SAIDA/$1.png"; }
@@ -152,7 +206,7 @@ sleep 4
 
 # Se o ecrã de ligação estiver aberto, fechá-lo sem mexer na configuração.
 if tem_texto_no_ecra "Ligar ao backend"; then
-  tocar "Fechar" "fechar configuração inicial" && sleep 1
+  tocar "Cancelar" "fechar configuração inicial" >/dev/null 2>&1 || true
 fi
 
 # ------------------------------------------------------- 1. botão «Ciclo»
@@ -204,7 +258,7 @@ if tocar "STOP" "botão vermelho (congelar)"; then
     ecra "B3_dialogo_stop"
     # Confirmar dentro do diálogo, se houver botão próprio.
     for rotulo in "PARAR TUDO" "Confirmar"; do
-      if tocar "$rotulo" "confirmar congelamento"; then break; fi
+      if tocar_texto_exacto "$rotulo" "confirmar congelamento"; then break; fi
     done
     sleep 3
     if tem_texto_no_ecra "SISTEMA CONGELADO"; then
@@ -233,11 +287,24 @@ fi
 registar "--- 5. diálogo de saque (Tesouro)"
 if tocar "Tesouro" "aba Tesouro"; then
   sleep 2
-  if tem_texto_no_ecra "Pedir saque (requer aprovação)"; then
-    ok "botão «Pedir saque» visível no Tesouro"
+  # O botao vive no fundo de um ecra com scroll. Na primeira execucao este
+  # passo falhou porque o ecra estava no topo, nao porque o botao faltasse -
+  # por isso se rola antes de concluir que ele nao existe.
+  if rolar_ate "Pedir saque (requer aprovação)" 3; then
+    ok "botão «Pedir saque» visível no Tesouro (após rolar)"
     ecra "B6_tesouro"
+    # Prime o botao: prova que abre o dialogo, nao so que existe.
+    if tocar "Pedir saque (requer aprovação)" "abrir diálogo de saque"; then
+      if esperar "Montante em USD" 8; then
+        ok "diálogo de saque abriu ao premir o botão"
+        ecra "B6b_dialogo_saque"
+        tocar "Cancelar" "fechar diálogo de saque" >/dev/null
+      else
+        nok "botão «Pedir saque» premido mas o diálogo não abriu"
+      fi
+    fi
   else
-    nok "«Pedir saque» não está visível no Tesouro"
+    nok "«Pedir saque» não apareceu nem depois de rolar"
   fi
 fi
 
@@ -303,7 +370,7 @@ if [ -n "$XY_WIFI" ]; then
   if tem_texto_no_ecra "Ligar ao backend"; then
     ok "diálogo de endpoint abriu"
     ecra "B9_endpoint"
-    tocar "Fechar" "fechar diálogo de endpoint" >/dev/null
+    tocar "Cancelar" "fechar diálogo de endpoint" >/dev/null
   else
     nok "diálogo de endpoint não abriu"
   fi
