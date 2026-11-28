@@ -976,6 +976,10 @@ jobs:
             # falhava com exit 2 por um defeito do próprio diagnóstico, não
             # do emulador. O código de cada script fica num ficheiro, para o
             # teste poder ser lido mesmo que a lógica de controlo se engane.
+            # MARCA: se esta linha não aparecer no diagnóstico, o problema
+            # é o runner não executar este bloco (e não os scripts).
+            echo "MARCA-inicio workspace=[${GITHUB_WORKSPACE:-VAZIO}] pwd=[$(pwd)]"
+            ls -d scripts 2>&1 | head -2
             falhou=0
             if ! bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"; then
               falhou=1
@@ -1001,6 +1005,7 @@ jobs:
             tail -40 /tmp/backend.log 2>/dev/null || echo "(sem backend.log)"
             echo "--- saída do emulador ---"
             ls -la saida_emulador 2>/dev/null || echo "(sem saida_emulador)"
+            ls -la "$GITHUB_WORKSPACE/saida_emulador" 2>/dev/null || echo "(nada em workspace/saida_emulador)"
             tail -60 saida_emulador/adb.log 2>/dev/null || true
           } > /tmp/diag.txt 2>&1
           cat /tmp/diag.txt | tail -40
