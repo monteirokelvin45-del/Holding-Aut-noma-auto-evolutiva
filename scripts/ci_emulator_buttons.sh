@@ -343,6 +343,12 @@ if tocar "Tesouro" "aba Tesouro"; then
       sleep 1
       ok "montante 5 escrito no campo"
       ecra "B6_tesouro_com_valor"
+      # O teclado empurra o layout e o botao sai do ecra. Rolar de novo antes
+      # de premir — foi esta a causa da falha anterior: «nao encontrei
+      # «Pedir saque» no ecra» logo depois de escrever o valor.
+      adb shell input keyevent 4 >/dev/null 2>&1     # BACK: garante teclado fechado
+      sleep 1
+      rolar_ate "Pedir saque (requer aprovação)" 3 || true
       if tocar "Pedir saque (requer aprovação)" "pedir saque com valor"; then
         if esperar "Ir para Aprovações" 10; then
           ok "saque pedido: o APK criou uma aprovação (cartão «Ir para Aprovações»)"
@@ -371,6 +377,13 @@ if [ "$COFRE_REAL" = "1" ]; then
 else
   if tocar "Aprovar" "aba Aprovar"; then
     sleep 2
+    # O ecra pode ter sido aberto antes de o ciclo terminar. Actualizar e
+    # esperar nao e o mesmo que concluir que o cofre esta vazio: o ciclo do
+    # proprio APK cria uma aprovacao de $12.00 (ver B4_congelado.png).
+    if not tem_texto_no_ecra "Vetar"; then
+      tocar "Actualizar" "actualizar antes de olhar para a fila" >/dev/null 2>&1 || true
+      esperar "Vetar" 12 || true
+    fi
     if tem_texto_no_ecra "Aprovar" && tem_texto_no_ecra "Vetar"; then
       if tocar "Aprovar" "botão Aprovar de um item"; then
         if esperar "Confirmar com biometria" 8; then
