@@ -39,6 +39,12 @@ class EstadoFake:
     def __init__(self) -> None:
         self.pedidos: Dict[str, Dict[str, Any]] = {}
         self.sequencia = 0
+        # Sufixo único por servidor: os ids da PayPal real nunca se repetem,
+        # e ids repetidos entre instâncias de teste escondiam colisões de
+        # deduplicação que em produção não existem.
+        import uuid
+
+        self.instancia = uuid.uuid4().hex[:6].upper()
         self.lock = threading.Lock()
         self.tokens_emitidos: List[str] = []
         self.pedidos_api: List[Tuple[str, str]] = []
@@ -46,7 +52,7 @@ class EstadoFake:
     def novo_pedido(self, corpo: Dict[str, Any], base: str) -> Dict[str, Any]:
         with self.lock:
             self.sequencia += 1
-            order_id = f"FAKE{self.sequencia:06d}"
+            order_id = f"FAKE{self.instancia}{self.sequencia:04d}"
         unidades = corpo.get("purchase_units") or [{}]
         valor = (unidades[0].get("amount") or {}).get("value", "0.00")
         moeda = (unidades[0].get("amount") or {}).get("currency_code", "USD")

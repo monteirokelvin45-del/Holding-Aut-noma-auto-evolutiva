@@ -237,7 +237,15 @@ class CFOTreasury:
             )
             if external_ref and external_ref not in referencias:
                 for anterior in data["revenue_events"]:
-                    if str(anterior.get("external_ref") or "") == external_ref:
+                    # A chave é o par (origem, referência), não a referência
+                    # sozinha: o id `123` de uma cobrança PayPal não tem nada
+                    # a ver com o id `123` de um saque M-Pesa, e tratá-los
+                    # como iguais bloquearia receita legítima.
+                    if (
+                        str(anterior.get("external_ref") or "") == external_ref
+                        and str(anterior.get("source") or "").lower()
+                        == str(source or "").lower()
+                    ):
                         log.warning(
                             "Receita já registada para ref=%s (evento %s): "
                             "ignorado o duplicado de $%.2f.",
