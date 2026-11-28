@@ -571,36 +571,55 @@ jobs:
             done
 
             echo
-            echo "== models.github.ai: cabecalhos + corpo (gpt-4o-mini)"
-            curl -s -i --max-time 25 -X POST \
+            echo "== 1. CABECALHOS COMPLETOS (com token)"
+            curl -s -D - -o /tmp/b1 -m 25 -X POST \
               https://models.github.ai/inference/chat/completions \
               -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
               -H 'Content-Type: application/json' \
-              -H 'Accept: application/json' \
-              -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Diz OK"}]}' \
-              | head -c 1200
-            echo
+              -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Diz OK"}]}'
+            echo "corpo: $(head -c 300 /tmp/b1)"
 
             echo
-            echo "== models.github.ai: corpo para 3 modelos"
-            for m in gpt-4o-mini gpt-4.1-mini openai/gpt-4o-mini; do
-              printf '%-25s ' "$m"
-              code=$(curl -s -o /tmp/m.json -w '%{http_code}' --max-time 25 -X POST \
-                https://models.github.ai/inference/chat/completions \
-                -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
-                -H 'Content-Type: application/json' \
-                -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"Diz OK\"}]}")
-              echo "HTTP $code body=$(head -c 160 /tmp/m.json | tr -d '\n')"
-            done
+            echo "== 2. PROMPT DIFERENTE (deve mudar o corpo se for um LLM)"
+            curl -s -m 25 -X POST https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Escreve um haiku sobre chuva em Maputo. Só o haiku."}]}'
+            echo
+
+            echo "== 3. MODELO INEXISTENTE (um LLM real devolve 400/404)"
+            printf 'HTTP '
+            curl -s -o /tmp/b3 -w '%{http_code}' -m 25 -X POST \
+              https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              -d '{"model":"modelo-que-nao-existe-xyz","messages":[{"role":"user","content":"hi"}]}'
+            echo " corpo: $(head -c 200 /tmp/b3)"
+
+            echo "== 4. CAMINHO INVALIDO (um servidor real devolve 404)"
+            printf 'HTTP '
+            curl -s -o /tmp/b4 -w '%{http_code}' -m 25 -X POST \
+              https://models.github.ai/caminho/que/nao/existe \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' -d '{"x":1}'
+            echo " corpo: $(head -c 200 /tmp/b4)"
+
+            echo "== 5. JSON INVALIDO (um servidor real devolve 400)"
+            printf 'HTTP '
+            curl -s -o /tmp/b5 -w '%{http_code}' -m 25 -X POST \
+              https://models.github.ai/inference/chat/completions \
+              -H "Authorization: Bearer ${GITHUB_MODELS_TOKEN}" \
+              -H 'Content-Type: application/json' -d 'isto-nao-e-json'
+            echo " corpo: $(head -c 200 /tmp/b5)"
 
             echo
-            echo "== groq / gemini (sem chave: 401 significa que a API responde)"
+            echo "== 6. groq / gemini sem chave (401 = API viva e a validar)"
             for u in https://api.groq.com/openai/v1/chat/completions \
-                     https://generativelanguage.googleapis.com/v1beta/models; do
-              printf '%-60s ' "$u"
-              curl -s -o /tmp/g.json -w '%{http_code}\n' --max-time 20 -X POST "$u" \
+                     https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent; do
+              printf '%-75s ' "$u"
+              curl -s -o /tmp/g -w '%{http_code}\n' -m 20 -X POST "$u" \
                 -H 'Content-Type: application/json' -d '{}' || echo FALHOU
-              head -c 160 /tmp/g.json | tr -d '\n'; echo
+              head -c 200 /tmp/g | tr -d '\n'; echo
             done
           } 2>&1 | tee sonda_rede.txt
         env:
