@@ -148,7 +148,7 @@ class Settings:
     #   models.inference.ai.azure.com   (original, em descontinuação)
     #   models.github.ai/inference      (sucessor)
     # Se um falhar, o outro é tentado antes de desistir do provider.
-    github_models_enabled: bool = True
+    github_models_enabled: bool = True  # token presente; ver github_models_ativo
     github_models_token: str = ""
     github_models_model: str = "gpt-4o-mini"
     github_models_rpm_limit: int = 10
@@ -161,9 +161,29 @@ class Settings:
     openrouter_rpd_limit: int = 50
     openrouter_rpd_limit_upgraded: int = 1000
 
-    ollama_base_url: str = "http://ollama:11434"
+    #: Ollama / motor local. `localhost` por omissão (e não `ollama`, que só
+    #: existe em docker-compose). O ciclo no GitHub Actions aponta
+    #: OLLAMA_BASE_URL para onde estiver o servidor.
+    ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:3b"
     ollama_enabled: bool = False
+
+    #: GitHub Models fica DESLIGADO por omissão. Medido no runner: o host
+    #: devolve `200 text/plain "OK"` a tudo (modelo inexistente, caminho
+    #: inválido, JSON inválido) — é um proxy de egress. Cada tentativa custa
+    #: ~25 s de TLS/retry antes de falhar, e como estava antes do motor local
+    #: na cadeia, pagava-se esse tempo em cada uma das dezenas de chamadas do
+    #: ciclo. Quem tiver acesso real liga com GITHUB_MODELS_ENABLED=true.
+    github_models_ativo: bool = False
+
+    #: Caminho directo para um GGUF local — o motor que **não** precisa de
+    #: Ollama nem de chave. É o que corre quando o Ollama não está instalado
+    #: (sandbox, runner sem Docker): abre o ficheiro .gguf e responde.
+    local_gguf_path: str = ""
+    #: Contexto do motor GGUF. 2048 chega para os prompts dos esquadrões e
+    #: cabe em 4 GB de RAM com um modelo Q4 de 0,6B.
+    local_gguf_ctx: int = 2048
+    local_gguf_threads: int = 2
 
     llm_provider_order: List[str] = field(
         default_factory=lambda: [
@@ -400,12 +420,18 @@ def _build_settings() -> Settings:
         openrouter_rpd_limit_upgraded=env_int(
             "OPENROUTER_RPD_LIMIT_UPGRADED", 1000, minimum=1
         ),
-        ollama_base_url=env_str("OLLAMA_BASE_URL", "http://ollama:11434"),
+        ollama_base_url=env_str("OLLAMA_BASE_URL", "http://localhost:11434"),
         ollama_model=env_str("OLLAMA_MODEL", "llama3.2:3b"),
         ollama_enabled=env_bool("OLLAMA_ENABLED", False),
+        local_gguf_path=env_str("LOCAL_GGUF_PATH", ""),
+        local_gguf_ctx=env_int("LOCAL_GGUF_CTX", 2048),
+        local_gguf_threads=env_int("LOCAL_GGUF_THREADS", 2),
         llm_provider_order=env_list(
             "LLM_PROVIDER_ORDER",
-            ["groq", "gemini", "github_models", "openrouter", "ollama", "local"],
+            # Duas cópias da lista já causaram um provider invisível: o
+            # default do dataclass e este env_str. Mantêm-se iguais.
+            ["groq", "gemini", "local_gguf", "ollama", "github_models",
+             "openrouter", "local"],
         ),
         llm_failover_threshold=env_float("LLM_FAILOVER_THRESHOLD", 0.85),
         langfuse_enabled=env_bool("LANGFUSE_ENABLED", False),

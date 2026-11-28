@@ -635,7 +635,7 @@ jobs:
           GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN || secrets.GITHUB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LLM_PROVIDER_ORDER: "groq,gemini,github_models,openrouter,local"
+          LLM_PROVIDER_ORDER: "groq,gemini,local_gguf,ollama,github_models,openrouter,local"
           SCOUT_USER_AGENT: "AutomatonHoldingBot/1.0 (+https://github.com/${{ github.repository }})"
         run: |
           set -uo pipefail

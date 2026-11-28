@@ -807,8 +807,15 @@ def test_github_models_entra_na_cadeia_e_falha_com_elegancia(monkeypatch):
     # A fixture autouse limpa as chaves; aqui repõe-se o token para que o
     # provider seja elegível — é exactamente isso que este teste cobre.
     object.__setattr__(mod.settings, "github_models_token", "token-de-teste")
+    # `github_models_ativo` fica False por omissão desde que se provou que o
+    # endpoint é um proxy (ver test_github_models_nao_aceita_o_ok_do_proxy).
+    # Este teste continua a cobrir a elegibilidade, por isso liga-o aqui.
+    object.__setattr__(mod.settings, "github_models_ativo", True)
     monkeypatch.setattr(
         type(llm_router), "GITHUB_MODELS_ENDPOINTS", ("http://127.0.0.1:9/nada",)
+    )
+    monkeypatch.setattr(
+        type(llm_router), "GITHUB_MODELS_TIMEOUT", 1
     )
     resposta = llm_router.complete(LLMRequest(prompt="Diz olá.", max_tokens=32))
     # Caiu para o local, e disse porquê.
@@ -816,6 +823,7 @@ def test_github_models_entra_na_cadeia_e_falha_com_elegancia(monkeypatch):
     assert resposta.is_llm is False
     assert any("github_models" in passo for passo in resposta.fallback_chain)
     assert "github_models" in (resposta.error or "")
+    object.__setattr__(mod.settings, "github_models_ativo", False)
 
 
 def test_github_models_usa_o_token_do_actions_sem_configuracao_extra():
@@ -1102,3 +1110,77 @@ def test_groq_troca_de_modelo_quando_o_nome_esta_errado(monkeypatch):
     assert len(tentados) >= 2  # tentou um alternativo
     assert resposta.text == "resposta do modelo"
     assert resposta.is_llm is True
+
+
+# --------------------------------------------------------------------------- #
+# 13. Motor local GGUF — o caminho sem chave nenhuma
+# --------------------------------------------------------------------------- #
+def test_extrair_json_ignora_o_bloco_de_raciocinio_do_qwen3():
+    """O Qwen3 escreve <think>…</think> com JSON de exemplo lá dentro.
+
+    Medido no sandbox: sem remover o bloco, o extractor apanhava o JSON de
+    exemplo do raciocínio (``{"idea": "uma frase"}``) em vez da resposta real.
+    """
+    from backend.core.llm_router import _extract_json_object
+
+    texto = (
+        "<think>\nO utilizador quer JSON. Exemplo dado: {\"idea\": \"uma frase\"}. "
+        "Vou responder.\n</think>\n\n"
+        '{"idea": "Guia de freelancing em Maputo", "price_anchor_usd": 12}'
+    )
+    dados = _extract_json_object(texto)
+    assert dados is not None
+    assert dados["idea"] == "Guia de freelancing em Maputo"
+    assert dados["price_anchor_usd"] == 12
+
+
+def test_extrair_json_com_bloco_de_raciocinio_aberto():
+    """Se o orçamento de tokens acabar a meio do <think>, não há JSON."""
+    from backend.core.llm_router import _extract_json_object
+
+    assert _extract_json_object("<think>\nOkay, o utilizador quer…") is None
+
+
+def test_local_gguf_nao_conta_sem_ficheiro(tmp_path):
+    """Caminho morto não pode gastar uma tentativa da cadeia."""
+    from backend.core.llm_router import LLMRouter
+
+    router = LLMRouter()
+    specs = {s.name: s for s in router.provider_specs()}
+    # Sem LOCAL_GGUF_PATH no ambiente dos testes, não está configurado.
+    assert specs["local_gguf"].configured is False
+
+
+def test_local_gguf_responde_e_e_marcado_como_llm(monkeypatch, tmp_path):
+    """O provider local devolve is_llm=True e custo $0.00 — sem rede."""
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    gguf = tmp_path / "modelo.gguf"
+    gguf.write_bytes(b"GGUF")
+    object.__setattr__(cfg, "local_gguf_path", str(gguf))
+
+    class ModeloFalso:
+        def create_chat_completion(self, messages, max_tokens, temperature):
+            # Imita o Qwen3: raciocínio e depois o JSON.
+            return {
+                "choices": [{"message": {"content":
+                    "<think>a pensar</think>{\"idea\": \"curso de Excel\", "
+                    "\"cta\": \"Quero\"}"}}],
+                "usage": {"prompt_tokens": 40, "completion_tokens": 12},
+            }
+
+    router = mod.LLMRouter()
+    monkeypatch.setattr(router, "_carregar_gguf", lambda: ModeloFalso())
+    try:
+        resposta = router._call_local_gguf(
+            mod.LLMRequest(prompt="dá uma ideia", max_tokens=200), "dá uma ideia", ""
+        )
+    finally:
+        object.__setattr__(cfg, "local_gguf_path", "")
+
+    assert resposta.is_llm is True
+    assert resposta.provider == "local_gguf"
+    assert resposta.cost_usd == 0.0
+    assert resposta.model == "modelo.gguf"
+    assert "curso de Excel" in resposta.text

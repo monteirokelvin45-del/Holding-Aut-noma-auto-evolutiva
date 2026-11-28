@@ -494,7 +494,9 @@ class LLMRouter:
                 tpd_limit=settings.github_models_tpd_limit,
                 model=settings.github_models_model,
                 configured=bool(
-                    settings.github_models_enabled and settings.github_models_token
+                    settings.github_models_enabled
+                    and settings.github_models_ativo
+                    and settings.github_models_token
                 ),
             ),
             ProviderSpec(
@@ -512,6 +514,20 @@ class LLMRouter:
                 tpd_limit=0,
                 model=settings.ollama_model,
                 configured=bool(settings.ollama_enabled),
+            ),
+            # Motor GGUF local: zero chave, zero rede, zero limite. Só conta
+            # como configurado se o ficheiro existir — um caminho morto não
+            # deve gastar uma tentativa da cadeia.
+            ProviderSpec(
+                name="local_gguf",
+                rpm_limit=0,
+                rpd_limit=0,
+                tpd_limit=0,
+                model=Path(settings.local_gguf_path).name if settings.local_gguf_path else "",
+                configured=bool(
+                    settings.local_gguf_path
+                    and Path(settings.local_gguf_path).is_file()
+                ),
             ),
         ]
 
@@ -863,6 +879,123 @@ class LLMRouter:
             usage=usage, cost_usd=0.0, latency_ms=latency, is_llm=True,
         )
 
+    #: Cache do modelo carregado. Carregar o GGUF leva ~0,6 s, mas em CPU o
+    #: que dói é ficar a recarregar 397 MB por chamada — os 11 agentes fazem
+    #: dezenas. Chave = (caminho, contexto, threads).
+    _gguf_cache: Dict[Any, Any] = {}
+
+    def _carregar_gguf(self) -> Any:
+        """Abre o GGUF com llama-cpp-python, uma vez por processo."""
+        if not settings.local_gguf_path:
+            raise ExternalServiceError("LOCAL_GGUF_PATH não definido")
+        caminho = Path(settings.local_gguf_path)
+        if not caminho.is_file():
+            raise ExternalServiceError(f"GGUF inexistente: {caminho}")
+        chave = (str(caminho), settings.local_gguf_ctx, settings.local_gguf_threads)
+        if chave in self._gguf_cache:
+            return self._gguf_cache[chave]
+        try:
+            from llama_cpp import Llama
+        except ImportError as exc:
+            raise ExternalServiceError(
+                "llama-cpp-python não instalado (pip install llama-cpp-python)"
+            ) from exc
+        modelo = Llama(
+            model_path=str(caminho),
+            n_ctx=settings.local_gguf_ctx,
+            n_threads=max(1, settings.local_gguf_threads),
+            verbose=False,
+        )
+        self._gguf_cache[chave] = modelo
+        log.warning("Motor local carregado: %s (%d ctx)", caminho.name,
+                    settings.local_gguf_ctx)
+        return modelo
+
+    @staticmethod
+    def extrair_json(texto: str) -> Optional[str]:
+        """Tira o JSON de uma resposta que pode trazer raciocínio à frente.
+
+        Os modelos Qwen3 abrem um bloco ``<think>…</think>`` antes da
+        resposta. Medido neste sandbox: com ``max_tokens=160`` o orçamento
+        acabava *dentro* do raciocínio e o JSON nunca aparecia; o modelo
+        respondeu de facto, só não chegou ao fim. Isto separa os dois.
+        """
+        if not texto:
+            return None
+        limpo = re.sub(r"<think\b[^>]*>.*?</think\s*>", "", texto, flags=re.S | re.I)
+        if "<think" in limpo.lower():  # bloco aberto e não fechado
+            limpo = re.sub(r"<think\b[^>]*>.*", "", limpo, flags=re.S | re.I)
+        limpo = limpo.strip()
+        if not limpo:
+            return None
+        # Cerca de código ```json … ```
+        cerca = re.search(r"```(?:json)?\s*(.+?)```", limpo, re.S | re.I)
+        if cerca:
+            limpo = cerca.group(1).strip()
+        if limpo.startswith("{"):
+            return limpo
+        # Último objecto {...} que feche
+        inicio = limpo.find("{")
+        fim = limpo.rfind("}")
+        if inicio != -1 and fim > inicio:
+            return limpo[inicio: fim + 1]
+        return None
+
+    def _call_local_gguf(
+        self, request: LLMRequest, prompt: str, system: str
+    ) -> LLMResponse:
+        """Inferência local num ficheiro GGUF — sem rede, sem chave, sem cota.
+
+        Orçamento de tokens: os esquadrões pedem 300–700 tokens. Um Qwen3
+        gasta parte disso a raciocinar antes da resposta, por isso o mínimo
+        aqui é 512; com menos, o JSON sai cortado a meio e parece falha do
+        motor.
+        """
+        modelo = self._carregar_gguf()
+        sistema = system or ""
+        if request.json_mode:
+            # `/no_think` reduz o bloco de raciocínio; mesmo assim ele
+            # aparece, e `extrair_json` limpa-o depois.
+            sistema = ("/no_think\nResponde APENAS com JSON válido, sem texto "
+                       "à volta, sem markdown." + ("\n" + sistema if sistema else ""))
+        mensagens: List[Dict[str, str]] = []
+        if sistema:
+            mensagens.append({"role": "system", "content": sistema})
+        mensagens.append({"role": "user", "content": prompt})
+
+        started = time.monotonic()
+        try:
+            saida = modelo.create_chat_completion(
+                messages=mensagens,
+                max_tokens=max(512, request.max_tokens),
+                temperature=request.temperature,
+            )
+        except Exception as exc:
+            raise ExternalServiceError(f"GGUF falhou: {type(exc).__name__}: {exc}") from exc
+        latency = int((time.monotonic() - started) * 1000)
+
+        escolha = (saida.get("choices") or [{}])[0]
+        texto = (escolha.get("message") or {}).get("content") or ""
+        if not texto.strip():
+            raise ExternalServiceError("Motor local devolveu resposta vazia")
+
+        uso = saida.get("usage") or {}
+        usage = TokenUsage(
+            prompt_tokens=int(uso.get("prompt_tokens", estimate_tokens(prompt))),
+            completion_tokens=int(uso.get("completion_tokens", estimate_tokens(texto))),
+            total_tokens=0,
+        )
+        usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        return LLMResponse(
+            text=texto,
+            provider="local_gguf",
+            model=Path(settings.local_gguf_path).name,
+            usage=usage,
+            cost_usd=0.0,
+            latency_ms=latency,
+            is_llm=True,
+        )
+
     # ------------------------------------------------------------------ público
     def complete(self, request: LLMRequest) -> LLMResponse:
         """Executa a cadeia de fallback e devolve sempre uma ``LLMResponse``."""
@@ -924,6 +1057,8 @@ class LLMRouter:
                     response = self._call_openrouter(request, prompt, system)
                 elif provider == "ollama":
                     response = self._call_ollama(request, prompt, system)
+                elif provider == "local_gguf":
+                    response = self._call_local_gguf(request, prompt, system)
                 else:
                     continue
             except (ExternalServiceError, ConfigurationError) as exc:
@@ -1047,9 +1182,20 @@ class LLMRouter:
 
 
 def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
-    """Extrai o primeiro objecto JSON de um texto possivelmente com markdown."""
+    """Extrai o primeiro objecto JSON de um texto possivelmente com markdown.
+
+    Trata também o bloco de raciocínio ``<think>…</think>`` dos modelos Qwen3:
+    o raciocínio contém chavetas soltas (``{"idea": …}`` mencionado no texto
+    do pensamento) e, sem o remover primeiro, o extractor apanha o JSON de
+    exemplo escrito *dentro* do raciocínio em vez da resposta final.
+    """
     if not text:
         return None
+    sem_think = re.sub(r"<think\b[^>]*>.*?</think\s*>", "", text, flags=re.S | re.I)
+    if sem_think.strip():
+        text = sem_think
+    elif "<think" not in text.lower():
+        text = text
     candidate = text.strip()
     if candidate.startswith("```"):
         candidate = re.sub(r"^```(?:json)?\s*", "", candidate)
