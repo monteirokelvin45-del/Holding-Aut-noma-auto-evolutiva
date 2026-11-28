@@ -22,6 +22,28 @@ import pytest
 # --------------------------------------------------------------------------
 # 1. Registo declarativo
 # --------------------------------------------------------------------------
+
+import os as _os
+
+import pytest as _pytest
+
+
+@_pytest.fixture(autouse=True)
+def _motor_rapido(monkeypatch):
+    """Evita carregar 397 MB de GGUF em cada teste, salvo pedido explícito."""
+    if _os.environ.get("AUTOMATON_TESTAR_MOTOR_REAL") == "1":
+        return
+    from backend.config.settings import settings as _cfg
+
+    # `Settings` é frozen: `monkeypatch.setattr` levanta FrozenInstanceError.
+    antes = _cfg.local_gguf_path
+    object.__setattr__(_cfg, "local_gguf_path", "")
+    try:
+        yield
+    finally:
+        object.__setattr__(_cfg, "local_gguf_path", antes)
+
+
 def test_yaml_de_agentes_e_tarefas_e_valido_e_completo() -> None:
     from backend.core.crew_bridge import agent_registry
 
@@ -92,8 +114,11 @@ def test_tarefa_corre_sem_chaves_e_diz_a_verdade() -> None:
     assert result["gate"] == "kill_switch_clear"
     assert isinstance(result["text"], str) and result["text"]
     # Honestidade do relatório: nunca afirma LLM quando não houve.
-    assert result["provider"] in {"local", "groq", "gemini", "openrouter",
-                                 "ollama", "crewai"}
+    # `local_gguf` entrou na cadeia e é o provider real sempre que o GGUF
+    # existe: é o único que não precisa de chave. A lista fixa anterior
+    # ficou desactualizada e falhava por omissão, não por defeito.
+    assert result["provider"] in {"local", "local_gguf", "groq", "gemini",
+                                  "openrouter", "ollama", "crewai"}
     assert result["is_llm"] in (True, False)
     if result["provider"] == "local":
         assert result["is_llm"] is False

@@ -806,12 +806,43 @@ jobs:
             pydantic==2.10.4 pyyaml httpx websockets==12.0 2>&1 | tail -20
           /tmp/venv/bin/python -c "import fastapi, uvicorn, yaml, httpx; print('deps ok', fastapi.__version__)"
 
+      # O cofre é DESCARTÁVEL de propósito.
+      #
+      # O teste de botões pressiona «Aprovar» e «Pedir saque». Se corresse
+      # contra o cofre real, o CI estaria a gastar a única decisão humana do
+      # ciclo — e um verde no Actions passaria a significar «aprovações
+      # aprovadas por um robot». `VAULT_DIR` isola tudo em /tmp; o cofre do
+      # repositório não é tocado. Cria-se uma aprovação para que o botão
+      # «Aprovar» tenha em que carregar.
+      - name: Preparar cofre descartável
+        id: cofre
+        run: |
+          set -euo pipefail
+          export VAULT_DIR=/tmp/cofre-ci
+          export PYTHONPATH="$GITHUB_WORKSPACE"
+          mkdir -p "$VAULT_DIR"
+          /tmp/venv/bin/python - <<'PY'
+          import os, sys
+          sys.path.insert(0, os.environ["PYTHONPATH"])
+          from backend.core.approval_gate import approval_gate
+          r = approval_gate.request(
+              title="Decisão de teste (cofre descartável do CI)",
+              kind="custom",
+              amount_usd=12.0,
+              reason="Criada pelo emulador para provar que o botão Aprovar abre.",
+              requested_by="emulador-ci",
+          )
+          print("aprovação de teste:", r.get("id"))
+          PY
+          ls "$VAULT_DIR"
+
       - name: Subir o backend
         id: backend
         run: |
           set -euo pipefail
           export API_ACCESS_TOKEN=token-do-emulador
           export PYTHONPATH="$GITHUB_WORKSPACE"
+          export VAULT_DIR=/tmp/cofre-ci
           nohup /tmp/venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 \
             > /tmp/backend.log 2>&1 &
           for i in $(seq 1 40); do
@@ -859,6 +890,10 @@ jobs:
             -camera-back none -camera-front none
           script: |
             bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"
+            # Segunda passagem: premir os BOTÕES, não só as abas. Corre contra
+            # o cofre descartável, por isso pode decidir sem consequências.
+            bash scripts/ci_emulator_buttons.sh "$GITHUB_WORKSPACE/saida_botoes" descartavel || \
+              echo "::error::teste de botões falhou (ver saida_botoes/botoes.log)"
 
       - name: Guardar diagnóstico do job
         if: failure()
@@ -887,6 +922,7 @@ jobs:
           mkdir -p /tmp/ev && cd /tmp/ev
           git init -q -b emulador-evidencias
           cp -r "$GITHUB_WORKSPACE/saida_emulador/." .
+          cp -r "$GITHUB_WORKSPACE/saida_botoes/." . 2>/dev/null || true
           {
             echo "# Prova de execução no emulador"
             echo

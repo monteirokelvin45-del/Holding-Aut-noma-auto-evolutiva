@@ -271,6 +271,55 @@ fun GovernanceScreen(
             )
         }
 
+        // --------------------------- Catálogo de agentes -------------------
+        // Vem de /agents. Antes este campo não existia no modelo Kotlin e a
+        // lista era descartada em silêncio: 17 agentes no servidor, zero no
+        // ecrã. Agora aparece com o tier do motor e as ferramentas de cada um.
+        val agentes = ai?.agents ?: emptyList()
+        if (agentes.isNotEmpty()) {
+            GovernanceCard(
+                icon = Icons.Filled.Groups,
+                title = "AGENTES DE IA (" + agentes.size.toString() + ")",
+                accent = HoldingsColors.Accent,
+            ) {
+                Text(
+                    "Todos correm no motor local: zero chave, zero custo.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = HoldingsColors.TextMuted,
+                )
+                Spacer(Modifier.height(8.dp))
+                agentes.forEach { agente ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                agente.role.ifBlank { agente.id.replace("_", " ") },
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                            )
+                            Text(
+                                agente.tools.joinToString(" · ").ifBlank { "sem ferramentas" },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = HoldingsColors.TextMuted,
+                                maxLines = 1,
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            agente.llmTier.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = HoldingsColors.Accent,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        }
+
         // ----------------------------- Jurídico ----------------------------
         GovernanceCard(
             icon = Icons.Filled.Gavel,

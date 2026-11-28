@@ -340,11 +340,31 @@ data class BridgeInfo(
     val providers: List<String> = emptyList(),
 )
 
+/**
+ * Um agente declarado em `agents.yaml`, tal como `/agents` o devolve.
+ *
+ * Antes o catálogo era só `bridge`/`validation`/`llm` e esta lista era
+ * descartada: o backend enviava 17 agentes e a app mostrava zero. O campo
+ * `agents` do JSON não tinha destino e o kotlinx.serialization não se queixa
+ * de campos a mais — falhava em silêncio, que é a pior forma de falhar.
+ */
+@Serializable
+data class AgentSpecDto(
+    val id: String = "",
+    val role: String = "",
+    val goal: String = "",
+    @SerialName("llm_tier") val llmTier: String = "",
+    val tools: List<String> = emptyList(),
+    val guards: List<String> = emptyList(),
+)
+
 @Serializable
 data class AiCatalog(
     val bridge: BridgeInfo = BridgeInfo(),
     val validation: JsonObject? = null,
     val llm: JsonObject? = null,
+    val agents: List<AgentSpecDto> = emptyList(),
+    val tasks: JsonObject? = null,
 )
 
 // ------------------------------------------------------------- validação --

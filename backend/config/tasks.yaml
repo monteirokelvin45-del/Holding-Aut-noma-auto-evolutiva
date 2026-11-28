@@ -200,3 +200,74 @@ tasks:
         "steps", "approvals_created", "summary"
       }
     gate: always
+
+  # ---------------------------------------------------------------- #
+  # Tarefas da camada de língua e memória (motor local, custo $0.00).
+  # ---------------------------------------------------------------- #
+
+  localizar_texto:
+    description: >
+      Receber um texto e devolver a versão em português de Moçambique:
+      Metical (MZN) como moeda, M-Pesa e e-Mola como pagamentos, e
+      vocabulário local em vez de brasileiro. Não inventar factos; se o
+      texto original tiver um erro factual, corrigi-lo e dizê-lo.
+    agent: tradutor_local
+    inputs: [texto, publico]
+    output: |
+      { "texto_localizado", "correcoes": [{"antes", "depois", "motivo"}] }
+    gate: always
+
+  revisar_legibilidade:
+    description: >
+      Reescrever o texto com menos palavras e frases curtas, sem alterar
+      factos, números nem nomes próprios. Devolver também a contagem de
+      palavras antes e depois.
+    agent: revisor_estilo
+    inputs: [texto, max_palavras]
+    output: |
+      { "texto_revisto", "palavras_antes", "palavras_depois", "cortes": [] }
+    gate: always
+
+  auditar_tom_marca:
+    description: >
+      Avaliar o texto contra o tom da holding e listar frases de risco
+      (promessas de lucro, garantias, superlativos vazios). Nota de 0 a 100
+      e veredicto apto/recusado.
+    agent: guardiao_marca
+    inputs: [texto]
+    output: |
+      { "nota", "apto", "frases_de_risco": [{"frase", "motivo"}] }
+    gate: always
+
+  triar_feedback:
+    description: >
+      Agrupar comentários por tema, classificar cada grupo como pedido,
+      reclamação ou elogio, e propor as três mudanças com maior impacto.
+      Cada conclusão tem de citar o comentário que a sustenta.
+    agent: analista_feedback
+    inputs: [comentarios]
+    output: |
+      { "temas": [{"tema", "tipo", "n", "evidencia"}], "top3_mudancas": [] }
+    gate: always
+
+  consolidar_memoria:
+    description: >
+      Resumir o cemitério de negócios, apontar duplicados e devolver os
+      padrões de falha mais frequentes (por causa, por nicho, por canal).
+    agent: arquivista_memoria
+    inputs: [janela_dias]
+    output: |
+      { "total", "duplicados": [], "padroes": [{"causa", "n"}] }
+    gate: cemetery_check
+
+  interpretar_comando:
+    description: >
+      Converter uma mensagem em linguagem natural num comando estruturado
+      do sistema. Se o comando for destrutivo (parar a holding, abater um
+      esquadrão), devolver `requer_confirmacao: true` e o texto exacto a
+      confirmar.
+    agent: operador_telegram
+    inputs: [mensagem]
+    output: |
+      { "comando", "argumentos", "requer_confirmacao", "texto_confirmacao" }
+    gate: kill_switch_clear

@@ -138,3 +138,111 @@ def test_guiao_do_video_e_limpo_antes_de_ser_narrado():
     assert "Paytm" not in hook and "M-Pesa" in hook
     assert "Mobis" not in body[0]
     assert problemas == []
+
+
+# ---------------------------------------------------------------------------
+# Regressões medidas nesta sessão: o cérebro e o catálogo de agentes.
+# ---------------------------------------------------------------------------
+def test_descobre_o_gguf_sem_variavel_de_ambiente(monkeypatch, tmp_path):
+    """O cérebro não pode depender de alguém exportar LOCAL_GGUF_PATH.
+
+    Medido: com o modelo em `~/modelos/Qwen3-0.6B-Q4_K_M.gguf` e sem a
+    variável, o `/agents` dizia `local_gguf: available=False,
+    reason='sem_chave'` e o ciclo caía na heurística sem avisar. O modelo
+    estava lá; ninguém o encontrava.
+    """
+    # `backend.config.__init__` reexporta o *objecto* `settings`, portanto
+    # `import backend.config.settings as ...` devolve o objecto, não o módulo.
+    import importlib
+
+    mod_settings = importlib.import_module("backend.config.settings")
+
+    falso = tmp_path / "modelo.gguf"
+    falso.write_bytes(b"GGUF")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("LOCAL_GGUF_PATH", raising=False)
+    (tmp_path / "modelos").mkdir()
+    (tmp_path / "modelos" / "modelo.gguf").write_bytes(b"GGUF")
+
+    assert mod_settings._descobrir_gguf() != ""
+    # Variável explícita continua a mandar.
+    monkeypatch.setenv("LOCAL_GGUF_PATH", str(falso))
+    assert mod_settings._gguf_configurado() == str(falso)
+
+
+def test_motivo_de_indisponibilidade_nao_mente_para_o_motor_local():
+    """`sem_chave` era falso para um modelo que não usa chave nenhuma."""
+    from backend.core.llm_router import _motivo_indisponivel
+
+    assert _motivo_indisponivel("local_gguf") == "gguf_nao_encontrado"
+    assert _motivo_indisponivel("ollama") == "ollama_desligado"
+    assert _motivo_indisponivel("groq") == "sem_chave"
+
+
+def test_catalogo_tem_os_agentes_de_lingua_e_memoria():
+    """Os agentes novos existem e nenhum ficou sem tarefa."""
+    from backend.core.crew_bridge import crew_bridge
+
+    reg = crew_bridge.registry
+    ids = {a.id for a in reg.agents()}
+    for esperado in (
+        "tradutor_local",
+        "revisor_estilo",
+        "guardiao_marca",
+        "analista_feedback",
+        "arquivista_memoria",
+        "operador_telegram",
+    ):
+        assert esperado in ids, esperado
+    # Toda a tarefa declara um agente que existe (o validador já o faz, mas
+    # aqui confirma-se que o YAML continua íntegro depois de ser editado).
+    relatorio = reg.validate()
+    assert relatorio["ok"] is True, relatorio["errors"]
+
+
+def test_agente_novo_executa_no_motor_local(monkeypatch):
+    """Um agente acrescentado tem de correr — não basta estar no YAML.
+
+    Sem GGUF (ambiente de teste) a tarefa tem de devolver texto válido pelo
+    caminho heurístico; com GGUF, o mesmo código caminha pelo modelo real.
+    """
+    from backend.core.crew_bridge import crew_bridge
+
+    r = crew_bridge.run_task("auditar_tom_marca", {"texto": "Ganhe dinheiro rápido!"})
+    assert r["agent"] == "guardiao_marca"
+    assert isinstance(r["text"], str) and r["text"].strip()
+    assert r["is_llm"] in (True, False)
+
+
+def test_o_apk_declara_os_agentes_no_modelo_kotlin():
+    """O APK tem de ler `/agents` até ao fim.
+
+    Medido: a API enviava 17 agentes e o ecrã mostrava zero, porque
+    `AiCatalog` não tinha o campo e o kotlinx.serialization descarta campos
+    desconhecidos sem avisar. Este teste lê o fonte Kotlin — o CI de Python
+    não tem Android SDK, mas consegue impedir a regressão.
+    """
+    from pathlib import Path
+
+    fonte = Path("android_apk/app/src/main/java/com/automaton/holding/data/ApiService.kt")
+    texto = fonte.read_text(encoding="utf-8")
+    assert "data class AgentSpecDto" in texto
+    assert "val agents: List<AgentSpecDto>" in texto
+
+
+def test_o_apk_mostra_os_agentes_na_diretoria():
+    from pathlib import Path
+
+    fonte = Path(
+        "android_apk/app/src/main/java/com/automaton/holding/ui/screens/GovernanceScreen.kt"
+    )
+    texto = fonte.read_text(encoding="utf-8")
+    assert "ai?.agents" in texto
+    assert "AGENTES DE IA" in texto
+
+
+def test_bloco_de_factos_proibe_plataformas_que_nao_operam_em_mocambique():
+    """«Mercado Livre» passou num agente real até ser nomeado no bloco."""
+    bloco = grounding.FACTOS_MOCAMBIQUE.lower()
+    assert "mercado livre" in bloco
+    assert "paytm" in bloco

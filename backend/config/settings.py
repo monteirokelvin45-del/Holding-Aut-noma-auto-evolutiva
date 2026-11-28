@@ -194,6 +194,7 @@ class Settings:
     kokoro_idioma_espeak: str = "pt-br"
     local_gguf_threads: int = 2
 
+
     llm_provider_order: List[str] = field(
         default_factory=lambda: [
             # Ordem = qualidade/cota. GitHub Models entra em segundo porque a
@@ -372,6 +373,49 @@ class Settings:
         }
 
 
+
+#: Sítios onde o GGUF local é procurado, por ordem. A variável de ambiente
+#: `LOCAL_GGUF_PATH` continua a mandar; isto é só a rede de segurança para o
+#: caso comum — o modelo foi reconstruído por `scripts/instalar_motor_local.sh`
+#: (que o põe em ``~/modelos``) e o backend nunca soube onde o ir buscar.
+#: Sem isto o cérebro ficava desligado em silêncio e o `/agents` dizia
+#: ``sem_chave`` a falar de um modelo que não usa chave nenhuma.
+_CAMINHOS_GGUF_CONHECIDOS = (
+    "~/modelos/qwen3-0.6b-q4_k_m.gguf",
+    "models/local/qwen3-0.6b-q4_k_m.gguf",
+    "./Qwen3-0.6B-Q4_K_M.gguf",
+    "~/modelos/*.gguf",
+    "models/local/*.gguf",
+)
+
+
+def _descobrir_gguf() -> str:
+    """Devolve o caminho do primeiro GGUF local que exista, ou ``""``."""
+    import glob
+    import os
+    from pathlib import Path
+
+    for padrao in _CAMINHOS_GGUF_CONHECIDOS:
+        expandido = os.path.expanduser(padrao)
+        if any(ch in expandido for ch in "*?["):
+            achados = sorted(glob.glob(expandido))
+            if achados:
+                return achados[0]
+            continue
+        if Path(expandido).is_file():
+            return expandido
+    return ""
+
+
+def _gguf_configurado() -> str:
+    """``LOCAL_GGUF_PATH`` se válido; senão descoberta automática."""
+    import os
+
+    explicito = os.environ.get("LOCAL_GGUF_PATH", "").strip()
+    if explicito:
+        return explicito
+    return _descobrir_gguf()
+
 def _build_settings() -> Settings:
     vault_env = env_str("VAULT_DIR", "./vault_data")
     vault_dir = Path(vault_env)
@@ -432,7 +476,7 @@ def _build_settings() -> Settings:
         ollama_base_url=env_str("OLLAMA_BASE_URL", "http://localhost:11434"),
         ollama_model=env_str("OLLAMA_MODEL", "llama3.2:3b"),
         ollama_enabled=env_bool("OLLAMA_ENABLED", False),
-        local_gguf_path=env_str("LOCAL_GGUF_PATH", ""),
+        local_gguf_path=_gguf_configurado(),
         local_gguf_ctx=env_int("LOCAL_GGUF_CTX", 2048),
         kokoro_modelo_onnx=env_str("KOKORO_MODELO_ONNX", "models/kokoro/kokoro-q8.onnx"),
         kokoro_vozes_dir=env_str("KOKORO_VOZES_DIR", "models/kokoro/voices"),

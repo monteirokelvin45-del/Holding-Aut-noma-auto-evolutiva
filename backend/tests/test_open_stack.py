@@ -834,14 +834,25 @@ def test_github_models_entra_na_cadeia_e_falha_com_elegancia(monkeypatch):
     # endpoint é um proxy (ver test_github_models_nao_aceita_o_ok_do_proxy).
     # Este teste continua a cobrir a elegibilidade, por isso liga-o aqui.
     object.__setattr__(mod.settings, "github_models_ativo", True)
+    # `local_gguf` vem ANTES de `github_models` na cadeia, e com razão: um
+    # modelo local que responde não deve deixar ninguém tocar na rede. Mas
+    # isso faz o github_models nunca ser tentado, e o teste deixava de cobrir
+    # o que se propõe cobrir. Aqui o cérebro local é desligado de propósito
+    # para que a cadeia chegue mesmo ao provider em teste.
+    antes_gguf = mod.settings.local_gguf_path
+    object.__setattr__(mod.settings, "local_gguf_path", "")
     monkeypatch.setattr(
         type(llm_router), "GITHUB_MODELS_ENDPOINTS", ("http://127.0.0.1:9/nada",)
     )
     monkeypatch.setattr(
         type(llm_router), "GITHUB_MODELS_TIMEOUT", 1
     )
-    resposta = llm_router.complete(LLMRequest(prompt="Diz olá.", max_tokens=32))
-    # Caiu para o local, e disse porquê.
+    try:
+        resposta = llm_router.complete(LLMRequest(prompt="Diz olá.", max_tokens=32))
+    finally:
+        object.__setattr__(mod.settings, "local_gguf_path", antes_gguf)
+    # Com o GGUF desligado, a cadeia chega ao github_models, falha e cai no
+    # heurístico local — sem rebentar.
     assert resposta.provider == "local"
     assert resposta.is_llm is False
     assert any("github_models" in passo for passo in resposta.fallback_chain)
@@ -1165,13 +1176,24 @@ def test_extrair_json_com_bloco_de_raciocinio_aberto():
 
 
 def test_local_gguf_nao_conta_sem_ficheiro(tmp_path):
-    """Caminho morto não pode gastar uma tentativa da cadeia."""
+    """Caminho morto não pode gastar uma tentativa da cadeia.
+
+    A regra não mudou; mudou a forma de a testar. Antes este teste assumia que
+    *não havia* GGUF nenhum, o que deixou de ser verdade quando o settings
+    passou a descobrir `~/modelos/*.gguf`: o teste falhava por o cérebro estar
+    ligado, não por haver um defeito. Agora aponta-se o caminho para um
+    ficheiro que não existe e verifica-se a regra em si.
+    """
+    from backend.config.settings import settings as cfg
     from backend.core.llm_router import LLMRouter
 
-    router = LLMRouter()
-    specs = {s.name: s for s in router.provider_specs()}
-    # Sem LOCAL_GGUF_PATH no ambiente dos testes, não está configurado.
-    assert specs["local_gguf"].configured is False
+    antes = cfg.local_gguf_path
+    object.__setattr__(cfg, "local_gguf_path", str(tmp_path / "nao_existe.gguf"))
+    try:
+        specs = {s.name: s for s in LLMRouter().provider_specs()}
+        assert specs["local_gguf"].configured is False
+    finally:
+        object.__setattr__(cfg, "local_gguf_path", antes)
 
 
 def test_local_gguf_responde_e_e_marcado_como_llm(monkeypatch, tmp_path):

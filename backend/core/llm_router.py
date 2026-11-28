@@ -454,6 +454,20 @@ class ProviderSpec:
     configured: bool
 
 
+def _motivo_indisponivel(name: str) -> str:
+    """Porque é que este provider não está configurado — dito com verdade.
+
+    Antes, tudo o que não estivesse configurado aparecia como ``sem_chave``.
+    Para o motor local isso era falso e enganador: ele não usa chave nenhuma.
+    Um diagnóstico que mente custa mais caro do que um que se cala.
+    """
+    if name == "local_gguf":
+        return "gguf_nao_encontrado"
+    if name == "ollama":
+        return "ollama_desligado"
+    return "sem_chave"
+
+
 class LLMRouter:
     """Ponto único de acesso a modelos de linguagem em toda a holding."""
 
@@ -553,8 +567,10 @@ class LLMRouter:
                 },
                 "usage": self.limiter.usage(name),
                 "available": bool(spec.configured and can),
-                "reason": "pronto" if (spec.configured and can) else (
-                    reason if spec.configured else "sem_chave"
+                "reason": (
+                    "pronto"
+                    if (spec.configured and can)
+                    else (reason if spec.configured else _motivo_indisponivel(name))
                 ),
             }
         result["providers"]["local"] = {
