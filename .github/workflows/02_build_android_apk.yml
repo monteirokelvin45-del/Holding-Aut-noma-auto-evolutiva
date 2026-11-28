@@ -569,13 +569,22 @@ jobs:
           ls -lh /tmp/apk/app-debug.apk
           sha256sum /tmp/apk/app-debug.apk
 
-      - name: Activar KVM
+      # O runner do GitHub já tem /dev/kvm e o emulador precisa dele. Não se
+      # instala nada por apt: o android-emulator-runner trata do AVD, e um
+      # `apt-get install qemu-kvm cpu-checker` falhou aqui (exit 1 sem pista).
+      # Só se verifica e, se faltar, diz-se claramente que a prova não é
+      # possível — em vez de falhar num passo de preparação enganador.
+      - name: Verificar KVM
         run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq cpu-checker qemu-kvm
-          sudo chmod 666 /dev/kvm || true
-          kvm-ok || true
+          set -uo pipefail
+          ls -l /dev/kvm || echo "::warning::/dev/kvm ausente"
+          sudo chmod 666 /dev/kvm 2>/dev/null || echo "::warning::sem sudo para o kvm"
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "KVM utilizável"
+          else
+            echo "::error::sem KVM: o emulador não arranca neste runner"
+            exit 1
+          fi
 
       - name: Executar a app no emulador
         uses: reactivecircus/android-emulator-runner@v2
