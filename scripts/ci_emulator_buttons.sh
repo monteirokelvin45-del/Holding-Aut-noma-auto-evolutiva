@@ -257,6 +257,9 @@ if tocar "STOP" "botão vermelho (congelar)"; then
     ok "diálogo do kill switch abriu"
     ecra "B3_dialogo_stop"
     # Confirmar dentro do diálogo, se houver botão próprio.
+    # Guardar o dump ANTES de tocar: quando o alvo do toque esta errado, o
+    # unico diagnostico util e a arvore real de nos e bounds.
+    cp /tmp/ui_botoes.xml "$SAIDA/ui_dialogo_stop.xml" 2>/dev/null || true
     for rotulo in "PARAR TUDO" "Confirmar"; do
       if tocar_texto_exacto "$rotulo" "confirmar congelamento"; then break; fi
     done
