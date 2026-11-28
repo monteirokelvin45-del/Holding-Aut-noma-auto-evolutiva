@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.automaton.holding.data.ApiException
+import com.automaton.holding.data.CobrancaResponse
+import com.automaton.holding.data.PayPalStatus
 import com.automaton.holding.data.AiCatalog
 import com.automaton.holding.data.ApiService
 import com.automaton.holding.data.EndpointRules

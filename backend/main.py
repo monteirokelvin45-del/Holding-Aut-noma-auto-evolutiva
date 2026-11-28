@@ -14,7 +14,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-import logging
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
@@ -41,10 +40,8 @@ from .core.errors import (
     ApprovalRequired,
     AutomatonError,
     ConfigurationError,
-    ExternalServiceError,
     KillSwitchActive,
     NotFound,
-    SpendCapExceeded,
     ValidationBlocked,
 )
 from .core.llm_router import LLMRequest, llm_router
@@ -61,7 +58,7 @@ from .core.observability_langfuse import (
 from .core.runtime_bus import event_bus
 from .core.security_guard import kill_switch, prompt_shield
 from .core.shared_memory import shared_memory
-from .core.vault_store import PENDING_APPROVALS, SQUAD_METRICS, VAULT_FILES, vault
+from .core.vault_store import VAULT_FILES, vault
 from .finance.cfo_treasury import cfo
 from .finance import cfo_tools
 from .finance.paypal_cobranca import paypal_cobranca

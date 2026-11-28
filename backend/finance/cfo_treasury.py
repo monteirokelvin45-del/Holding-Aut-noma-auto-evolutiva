@@ -18,7 +18,7 @@ import hashlib
 import threading
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from ..config.settings import settings
 from ..core.clock import month_key, parse_iso, utcnow, utcnow_iso

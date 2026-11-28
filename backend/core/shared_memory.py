@@ -22,7 +22,6 @@ from collections import Counter
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from ..config.settings import settings
 from .clock import utcnow_iso
 from .errors import NotFound, ValidationBlocked
 from .logger import get_logger

@@ -17,8 +17,6 @@ docs/pagamentos.md — seis passos, nenhum automatizável daqui.
 
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from backend.tests.fake_paypal import FakePayPal
@@ -138,6 +136,11 @@ def test_receita_com_a_mesma_referencia_nao_duplica(paypal_falso):
     cobranca = pp.criar_cobranca(valor_usd=19.90, descricao="e-book")
     paypal_falso.aprovar(cobranca.order_id)
 
+    # O cofre é partilhado pela sessão de testes: mede-se a **diferença**.
+    # Asserções absolutas aqui passam sozinhas e falham na suíte completa —
+    # foi exactamente o que aconteceu, e não era o código que estava mal.
+    antes = cfo.snapshot()["gross_revenue_usd"]
+
     primeiro = receber_pagamento(19.90, origem="paypal", order_id=cobranca.order_id)
     segundo = receber_pagamento(19.90, origem="paypal", order_id=cobranca.order_id)
 
@@ -146,8 +149,9 @@ def test_receita_com_a_mesma_referencia_nao_duplica(paypal_falso):
     assert primeiro["dividido"]["event_id"] == segundo["dividido"]["event_id"], (
         "o segundo registo devia devolver o evento existente, não criar outro"
     )
-    assert cfo.snapshot()["gross_revenue_usd"] == pytest.approx(19.90), (
-        "receita acumulada devia ser 19.90, não 39.80"
+    depois = cfo.snapshot()["gross_revenue_usd"]
+    assert depois - antes == pytest.approx(19.90), (
+        f"esperava +19.90 no cofre, obteve +{depois - antes:.2f} (duplicou?)"
     )
 
 

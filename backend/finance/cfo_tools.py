@@ -34,15 +34,15 @@ Nenhum tool move dinheiro sem passar pelas guardas que já existiam:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 from ..core.approvals import approval_gate
-from ..core.errors import ApprovalRequired, ValidationBlocked
+from ..core.errors import ValidationBlocked
 from ..core.logger import get_logger
 from .cfo_treasury import cfo, phase_for_monthly_revenue, split_for_phase
 from .paypal_cobranca import paypal_cobranca
-from .payout_bridge import SUPPORTED_CHANNELS, PayoutRequest, payout_bridge
+from .payout_bridge import SUPPORTED_CHANNELS
 
 log = get_logger("finance.cfo_tools")
 
@@ -376,7 +376,7 @@ def diagnostico() -> Dict[str, Any]:
 
 def _crewai_instalado() -> bool:
     try:
-        import crewai  # noqa: F401
+        __import__("crewai")
     except Exception:  # noqa: BLE001
         return False
     return True

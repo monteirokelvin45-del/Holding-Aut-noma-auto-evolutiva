@@ -58,7 +58,7 @@ import os
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ..config.settings import settings
 from ..core.errors import ExternalServiceError, ValidationBlocked
@@ -153,8 +153,9 @@ class PayPalCobranca:
         return falta
 
     def _sdk_disponivel(self) -> bool:
+        """Só responde a uma pergunta: dá para importar o SDK?"""
         try:
-            import paypalserversdk  # noqa: F401
+            __import__("paypalserversdk")
         except ImportError:
             return False
         return True

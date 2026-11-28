@@ -22,7 +22,6 @@ import threading
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from ..config.settings import settings
 from ..core.clock import days_between, days_since, utcnow, utcnow_iso
 from ..core.logger import get_logger
 from ..core.runtime_bus import event_bus

@@ -46,7 +46,6 @@ from ..squads.scout_hunter import scout_hunter
 from ..squads.storefront_publisher import Produto, storefront
 from ..squads.video_factory_squad import video_factory
 from ..validation.demand_validator import demand_validator
-from ..validation.eval_judge import eval_judge
 
 log = get_logger("governance.ceo")
 

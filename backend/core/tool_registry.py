@@ -34,7 +34,7 @@ agente acredita que produziu algo.
 from __future__ import annotations
 
 import importlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 from .logger import get_logger
