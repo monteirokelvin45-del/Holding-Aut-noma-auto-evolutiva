@@ -929,3 +929,43 @@ def test_conversao_avaliada_na_ordem_real_do_funil():
 
     assert resultado["test"]["status"] == "passed", resultado["test"].get("decision_reason")
     assert resultado["metrics"]["conversion_rate"] >= 0.04
+
+
+def test_github_models_aceita_texto_puro(monkeypatch):
+    """models.github.ai responde text/plain com o texto do modelo.
+
+    Medido no runner (sonda_rede.txt, runs 46132277258/46132690867):
+        HTTP/2 200
+        content-type: text/plain
+        OK
+
+    Ou seja: a API está viva e devolve texto puro. Exigir o envelope JSON da
+    OpenAI fazia o provider parecer morto com 200 em três modelos seguidos.
+    """
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    router = mod.LLMRouter()
+    object.__setattr__(cfg, "github_models_token", "token-de-teste")
+
+    chamadas = []
+
+    def falso_post(url, payload, headers, timeout=30):
+        chamadas.append(url)
+        return "OK", "text/plain"
+
+    monkeypatch.setattr(mod, "_http_post_raw", falso_post)
+    try:
+        resposta = router._call_github_models(
+            mod.LLMRequest(prompt="Diz OK"), "Diz OK", ""
+        )
+    finally:
+        object.__setattr__(cfg, "github_models_token", "")
+
+    assert resposta.is_llm is True
+    assert resposta.text == "OK"
+    assert resposta.provider == "github_models"
+    assert resposta.cost_usd == 0.0
+    # Tem de ser o endpoint vivo, à primeira — o morto não deve ser tocado.
+    assert chamadas == [mod.LLMRouter.GITHUB_MODELS_ENDPOINTS[0]]
+    assert "models.github.ai" in chamadas[0]

@@ -369,13 +369,18 @@ class LocalHeuristicEngine:
 # ==========================================================================
 # Providers HTTP
 # ==========================================================================
-def _http_post_json(
+def _http_post_raw(
     url: str,
     payload: Dict[str, Any],
     headers: Dict[str, str],
     timeout: int = HTTP_TIMEOUT_SECONDS,
-) -> Dict[str, Any]:
-    """POST JSON com urllib (sem dependências), com retry simples."""
+) -> Tuple[str, str]:
+    """POST JSON com urllib (sem dependências), com retry simples.
+
+    Devolve ``(corpo, content_type)`` sem interpretar o corpo. Existe porque
+    o GitHub Models responde ``text/plain`` (ver GITHUB_MODELS_ENDPOINTS):
+    forçar JSON aqui fazia o provider parecer morto quando estava vivo.
+    """
     data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, method="POST")
     request.add_header("Content-Type", "application/json")
@@ -388,20 +393,8 @@ def _http_post_json(
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 body = response.read().decode("utf-8", errors="replace")
-                ctype = response.headers.get("Content-Type", "?")
-            if not body.strip():
-                return {}
-            try:
-                return json.loads(body)
-            except json.JSONDecodeError as exc:
-                # Um 200 com HTML no corpo é o que um proxy de egress devolve
-                # quando bloqueia o destino. Sem guardar o início do corpo e o
-                # Content-Type, o erro aparece como 'JSONDecodeError char 0' e
-                # não se percebe que a rede foi interceptada.
-                raise ExternalServiceError(
-                    f"Resposta não-JSON (HTTP 200) em {url.split('?')[0]} "
-                    f"[{ctype}]: {body[:200]!r}"
-                ) from exc
+                ctype = response.headers.get("Content-Type", "") or ""
+            return body, ctype
         except urllib.error.HTTPError as exc:
             detail = ""
             try:
@@ -426,6 +419,28 @@ def _http_post_json(
                 details={"url": url.split("?")[0]},
             ) from exc
     raise ExternalServiceError(f"Falha após 3 tentativas: {last_error}")
+
+
+def _http_post_json(
+    url: str,
+    payload: Dict[str, Any],
+    headers: Dict[str, str],
+    timeout: int = HTTP_TIMEOUT_SECONDS,
+) -> Dict[str, Any]:
+    """Como :func:`_http_post_raw`, mas exige JSON e explica quando não é."""
+    body, ctype = _http_post_raw(url, payload, headers, timeout=timeout)
+    if not body.strip():
+        return {}
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError as exc:
+        # Um 200 com HTML no corpo é o que um proxy de egress devolve quando
+        # bloqueia o destino. Sem o corpo e o Content-Type no erro, isto
+        # aparece como 'JSONDecodeError char 0' e nada se percebe.
+        raise ExternalServiceError(
+            f"Resposta não-JSON (HTTP 200) em {url.split('?')[0]} "
+            f"[{ctype}]: {body[:200]!r}"
+        ) from exc
 
 
 @dataclass
@@ -668,6 +683,7 @@ class LLMRouter:
         }
         started = time.monotonic()
         raw: Optional[Dict[str, Any]] = None
+        texto_puro: Optional[str] = None
         ultimo_erro: Optional[Exception] = None
         # Guardar TODOS os erros, não só o último: reportar apenas o do
         # endpoint final escondeu durante duas runs que o problema estava no
@@ -677,20 +693,47 @@ class LLMRouter:
             try:
                 # Timeout curto: um endpoint morto não pode custar 30 s antes
                 # de se tentar o seguinte (com retry de 3x, seriam 90 s).
-                raw = _http_post_json(
+                corpo, ctype = _http_post_raw(
                     url, payload, headers, timeout=self.GITHUB_MODELS_TIMEOUT
                 )
+                try:
+                    raw = json.loads(corpo) if corpo.strip() else {}
+                except json.JSONDecodeError:
+                    # Medido no runner (sonda_rede.txt): models.github.ai
+                    # devolve `content-type: text/plain` e o corpo `OK` — é a
+                    # resposta do modelo em texto puro, não do envelope JSON
+                    # da OpenAI. Tratar isto como falha fazia o provider
+                    # parecer morto com a API a funcionar (200 em 3 modelos).
+                    if corpo.strip():
+                        texto_puro = corpo.strip()
+                        raw = None
+                        break
+                    raise ExternalServiceError(
+                        f"Resposta vazia (HTTP 200, {ctype or 'sem content-type'}) "
+                        f"em {url.split('?')[0]}"
+                    )
                 break
             except Exception as exc:  # 404 de endpoint descontinuado, 401, 429…
                 ultimo_erro = exc
                 erros.append(f"{url} -> {type(exc).__name__}: {exc}")
                 log.info("GitHub Models: %s falhou (%s); a tentar o seguinte", url, exc)
-        if raw is None:
+        if raw is None and texto_puro is None:
             raise ExternalServiceError(
                 "GitHub Models indisponível em "
                 f"{len(self.GITHUB_MODELS_ENDPOINTS)} endpoints: " + " | ".join(erros)
             )
         latency = int((time.monotonic() - started) * 1000)
+
+        if texto_puro is not None:
+            return LLMResponse(
+                text=texto_puro, provider="github_models", model=model,
+                usage=TokenUsage(
+                    prompt_tokens=estimate_tokens(prompt),
+                    completion_tokens=estimate_tokens(texto_puro),
+                    total_tokens=0,
+                ),
+                cost_usd=0.0, latency_ms=latency, is_llm=True,
+            )
 
         try:
             escolha = (raw.get("choices") or [])[0]
