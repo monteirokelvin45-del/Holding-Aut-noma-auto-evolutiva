@@ -372,3 +372,20 @@ Backend real a correr em `0.0.0.0:8000` no mesmo runner (5 pacotes).
   não o sensor.
 - **Fluxo de escrita** (aprovar, saque, kill switch): exigem biometria e um
   toque real no botão vermelho; fora do âmbito do teste de fumo.
+
+
+---
+
+## 11. Nota sobre a suíte de testes backend neste ambiente
+
+`pytest backend/tests` deu **62 passed, 3 skipped** — mas só depois de:
+
+```bash
+bash scripts/fetch_models.sh              # 89 MB em models/kokoro/ (npm, sha256)
+pip install kokoro-onnx espeakng-loader   # declarados em backend/requirements.txt
+```
+
+Sem isso dá `3 failed`: os testes de TTS verificam que os motores offline
+existem, e não existiam porque os pesos (`.onnx`, `.npz`) e as bibliotecas não
+são versionados. A falha era do ambiente, não do código — e o teste está certo
+a recusar-se a passar sem o que diz precisar.
