@@ -656,6 +656,10 @@ class LLMRouter:
         started = time.monotonic()
         raw: Optional[Dict[str, Any]] = None
         ultimo_erro: Optional[Exception] = None
+        # Guardar TODOS os erros, não só o último: reportar apenas o do
+        # endpoint final escondeu durante duas runs que o problema estava no
+        # primeiro (o vivo), não no segundo (o morto).
+        erros: list[str] = []
         for url in self.GITHUB_MODELS_ENDPOINTS:
             try:
                 # Timeout curto: um endpoint morto não pode custar 30 s antes
@@ -666,11 +670,12 @@ class LLMRouter:
                 break
             except Exception as exc:  # 404 de endpoint descontinuado, 401, 429…
                 ultimo_erro = exc
+                erros.append(f"{url} -> {type(exc).__name__}: {exc}")
                 log.info("GitHub Models: %s falhou (%s); a tentar o seguinte", url, exc)
         if raw is None:
             raise ExternalServiceError(
-                f"GitHub Models indisponível em {len(self.GITHUB_MODELS_ENDPOINTS)} "
-                f"endpoints: {ultimo_erro}"
+                "GitHub Models indisponível em "
+                f"{len(self.GITHUB_MODELS_ENDPOINTS)} endpoints: " + " | ".join(erros)
             )
         latency = int((time.monotonic() - started) * 1000)
 
