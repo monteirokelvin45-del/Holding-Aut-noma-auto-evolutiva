@@ -60,6 +60,7 @@ from .core.security_guard import kill_switch, prompt_shield
 from .core.shared_memory import shared_memory
 from .core.vault_store import VAULT_FILES, vault
 from .finance.cfo_treasury import cfo
+from .core import agent_tools
 from .finance import cfo_tools
 from .finance.paypal_cobranca import paypal_cobranca
 from .finance.payout_bridge import PayoutRequest, payout_bridge
@@ -1004,6 +1005,33 @@ def llm_chat(payload: ChatRequest) -> Dict[str, Any]:
 # ==========================================================================
 # Agentes (agents.yaml / tasks.yaml) — ponte CrewAI + roteador LLM
 # ==========================================================================
+@app.get("/mcp", tags=["agentes"])
+def mcp_catalogo() -> Dict[str, Any]:
+    """Servidores MCP configurados e quais arrancam de facto."""
+    from .core.mcp_bridge import catalogo
+
+    return catalogo()
+
+
+@app.get("/mcp/{servidor}/ferramentas", tags=["agentes"])
+def mcp_ferramentas(servidor: str) -> Dict[str, Any]:
+    """Arranca o servidor, descobre as ferramentas, classifica-as e fecha.
+
+    A classificação diz quais passariam pelo `approval_gate` — é o que o
+    Jurídico pediu para poder ver antes de ligar o servidor a um agente.
+    """
+    from .core import agent_tools
+    from .core.mcp_bridge import ferramentas_para_registo
+
+    ferramentas = ferramentas_para_registo(servidor)
+    return {
+        "servidor": servidor,
+        "total": len(ferramentas),
+        "ferramentas": ferramentas,
+        "auditoria": agent_tools.auditar(ferramentas),
+    }
+
+
 @app.get("/agents/tools", tags=["agentes"])
 def agent_tools() -> Dict[str, Any]:
     """Que ferramentas os YAML prometem vs. as que existem mesmo.
@@ -1028,6 +1056,7 @@ def list_agents() -> Dict[str, Any]:
     return {
         "validation": validation,
         "bridge": crew_bridge.availability(),
+        "guardas_ferramentas": [agent_tools.diagnostico()],
         "agents": [spec.to_dict() for spec in agent_registry.agents()],
         "tasks": [task.to_dict() for task in agent_registry.tasks()],
         "defaults": agent_registry.defaults(),

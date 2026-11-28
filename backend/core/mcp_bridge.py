@@ -425,3 +425,27 @@ def executar(nome_servidor: str, nome_ferramenta: str, argumentos: Dict[str, Any
         )
     with ClienteMCP(servidor) as cliente:
         return cliente.chamar(nome_ferramenta, argumentos)
+
+
+# ==========================================================================
+# Integração com o registo de ferramentas
+# ==========================================================================
+def ferramentas_para_registo(nome_servidor: str) -> List[Dict[str, Any]]:
+    """Descoberta de um servidor, em formato aceite por `agent_tools.auditar`.
+
+    Não regista nada em `tool_registry.TOOLS`: uma ferramenta vinda de um
+    processo externo tem ciclo de vida diferente das internas, e misturá-las
+    no mesmo dicionário tornaria impossível dizer de onde veio o quê. Ficam
+    identificadas por ``mcp__<servidor>__<tool>``.
+    """
+    descoberta = descobrir(nome_servidor)
+    return [
+        {
+            "nome": f["nome"],
+            "descricao": f["descricao"],
+            "servidor": nome_servidor,
+            "acao_sensivel": f.get("acao_sensivel", False),
+            "terceiros": f.get("terceiros", False),
+        }
+        for f in descoberta["ferramentas"]
+    ]
