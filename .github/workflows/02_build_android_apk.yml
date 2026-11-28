@@ -963,26 +963,32 @@ jobs:
             -camera-back none -camera-front none
           script: |
             # Duas passagens: o smoke (as abas abrem) e os botões (os
-            # botões fazem). Os códigos de saída são capturados e impressos
-            # individualmente — se só se visse o resultado final, uma falha
-            # de uma linha (adb devolve 1 ao usar `grep -q` num pipe) não
-            # deixaria rasto e o diagnóstico seria uma adivinha.
+            # botões fazem). Os dois correm sempre — interessa o retrato
+            # completo, não parar no primeiro sintoma — e no fim o passo
+            # falha se qualquer um falhou.
             #
-            # Os dois correm sempre, mesmo que o primeiro falhe: interessa o
-            # retrato completo, não parar no primeiro sintoma. No fim, o
-            # passo falha se qualquer um falhou — antes havia um `|| echo`
-            # que transformava uma falha em sucesso, e o CI ficava verde com
-            # os botões partidos. Isso é pior do que não testar.
-            rc_smoke=0
-            rc_botoes=0
-            bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador" || rc_smoke=$?
-            echo "::notice::smoke exit=$rc_smoke"
-            bash scripts/ci_emulator_buttons.sh "$GITHUB_WORKSPACE/saida_botoes" descartavel || rc_botoes=$?
-            echo "::notice::botoes exit=$rc_botoes"
-            if [ "$rc_smoke" -ne 0 ] || [ "$rc_botoes" -ne 0 ]; then
-              echo "::error::emulador falhou (smoke=$rc_smoke botoes=$rc_botoes)"
-              exit 1
+            # Sem `|| echo`: um `||` transformava a falha em sucesso e o CI
+            # ficava verde com os botões partidos. Pior do que não testar,
+            # porque dá confiança falsa.
+            #
+            # Sem `|| rc=$?` + `[ "$rc" -ne 0 ]`: essa forma deu "Illegal
+            # number" no runner (a variável chegou vazia ao `[`), e o passo
+            # falhava com exit 2 por um defeito do próprio diagnóstico, não
+            # do emulador. O código de cada script fica num ficheiro, para o
+            # teste poder ser lido mesmo que a lógica de controlo se engane.
+            falhou=0
+            if ! bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"; then
+              falhou=1
+              echo "::error::smoke do emulador falhou"
             fi
+            echo "$falhou" > /tmp/rc_smoke
+            if ! bash scripts/ci_emulator_buttons.sh "$GITHUB_WORKSPACE/saida_botoes" descartavel; then
+              falhou=1
+              echo "::error::teste de botões falhou (ver saida_botoes/botoes.log)"
+            fi
+            echo "$falhou" > /tmp/rc_botoes
+            echo "falhou=$falhou"
+            test "$falhou" = "0"
 
       - name: Guardar diagnóstico do job
         if: failure()
