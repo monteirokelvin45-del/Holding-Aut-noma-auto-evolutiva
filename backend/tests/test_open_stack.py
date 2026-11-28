@@ -1310,3 +1310,63 @@ def test_ollama_recua_para_api_nativa_sem_v1(monkeypatch):
     assert urls[-1].endswith("/api/chat")
     assert resposta.text == "pela nativa"
     assert resposta.usage.completion_tokens == 7
+
+
+# --------------------------------------------------------------------------- #
+# 16. Pipeline de vídeo offline: frames desenhados, tempos reais
+# --------------------------------------------------------------------------- #
+def test_srt_usa_a_duracao_real_e_nao_estimativa():
+    """Cada fala é sintetizada à parte, por isso o tempo é medido, não inferido.
+
+    O `video-creator` original transcreve o áudio com whisperx para descobrir
+    quando começa cada palavra. Aqui o texto é nosso e medimos o WAV de cada
+    frase: é a duração exacta, não uma estimativa de modelo acústico.
+    """
+    from pathlib import Path
+
+    from backend.squads.offline_video_pipeline import Fala, OfflineVideoPipeline
+
+    falas = [
+        Fala("Primeira frase.", Path("a.wav"), inicio_s=0.0, duracao_s=3.625),
+        Fala("Segunda frase.", Path("b.wav"), inicio_s=3.625, duracao_s=2.95),
+    ]
+    destino = Path("/tmp/teste_legendas.srt")
+    OfflineVideoPipeline.escrever_srt(falas, destino)
+    linhas = destino.read_text(encoding="utf-8")
+
+    assert "00:00:00,000 --> 00:00:03,625" in linhas
+    assert "00:00:03,625 --> 00:00:06,575" in linhas
+    # As duas entradas estão numeradas e o texto é o original.
+    assert linhas.startswith("1\n")
+    assert "Segunda frase." in linhas
+
+
+def test_frame_do_pipeline_offline_e_desenhado_e_muda_com_o_tempo():
+    """O fundo tem de mudar entre frames — senão é um slide, não um vídeo."""
+    from backend.squads.offline_video_pipeline import OfflineVideoPipeline
+
+    pipeline = OfflineVideoPipeline()
+    a = pipeline._frame(0, 100, None, "Teste", 540, 960, 0)
+    b = pipeline._frame(50, 100, None, "Teste", 540, 960, 0)
+
+    assert a.size == (540, 960)
+    # Mesmo tamanho, conteúdo diferente: o gradiente desloca-se e as formas
+    # orbitam. Sem isto, o FFmpeg só esticava uma imagem.
+    assert a.tobytes() != b.tobytes()
+
+
+def test_pipeline_offline_sem_ffmpeg_diz_porque_falha(monkeypatch):
+    """Falta de ffmpeg é um resultado explicado, não uma excepção."""
+    from backend.squads.offline_video_pipeline import OfflineVideoPipeline, Fala
+
+    pipeline = OfflineVideoPipeline()
+    monkeypatch.setattr(pipeline.renderer, "ffmpeg", lambda: None)
+    from pathlib import Path
+
+    video, frames, ms, notas = pipeline.render(
+        falas=[Fala("Olá.", Path("x.wav"), 0.0, 1.0)],
+        titulo="T", out_dir=Path("/tmp/sem_ffmpeg"),
+    )
+    assert video is None
+    assert frames == 0
+    assert any("ffmpeg" in n for n in notas)

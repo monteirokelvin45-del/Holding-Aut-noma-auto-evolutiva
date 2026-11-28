@@ -742,6 +742,37 @@ class VideoFactorySquad(BaseSquad):
             is_llm=False,
         )
 
+    def produzir_offline(
+        self,
+        *,
+        script: "VideoScript",
+        out_dir: Path,
+        language: str = "pt",
+    ) -> Optional[Dict[str, Any]]:
+        """Vídeo completo desenhado frame a frame, sem rede.
+
+        Diferença para `render()`: aqui o fundo não é uma imagem estática com
+        zoom no FFmpeg — cada frame é desenhado (gradiente a rodar, formas a
+        orbitar, barra de progresso) e a voz é sintetizada frase a frase, pelo
+        que as legendas usam a duração REAL de cada fala em vez de uma
+        estimativa por contagem de caracteres.
+
+        Devolve o dicionário do resultado, ou ``None`` se o pipeline não
+        arrancar (aí o chamador usa `render()` como antes).
+        """
+        try:
+            from .offline_video_pipeline import offline_pipeline
+        except Exception as exc:  # Pillow/ffmpeg em falta
+            log.info("Pipeline offline indisponível: %s", exc)
+            return None
+
+        frases = [script.hook] + [b for b in script.body if b] + [script.cta]
+        frases = [f.strip() for f in frases if f and f.strip()]
+        resultado = offline_pipeline.produzir(
+            frases=frases, titulo=script.title, out_dir=out_dir, language=language
+        )
+        return resultado.to_dict()
+
     @staticmethod
     def _default_hashtags(niche: str) -> List[str]:
         base = ["#shorts", "#dicas", "#aprender"]
@@ -972,7 +1003,33 @@ class VideoFactorySquad(BaseSquad):
             niche or idea, out_dir / "footage", script=script
         )
 
+        # Pipeline offline primeiro: vídeo desenhado frame a frame, voz Kokoro
+        # frase a frase e legendas com tempos reais. Se faltar Pillow ou
+        # ffmpeg, cai no `render()` antigo (imagem estática + zoom).
+        offline = self.produzir_offline(script=script, out_dir=out_dir, language=language)
         render = self.render(script=script, out_dir=out_dir, footage=footage)
+
+        if offline and offline.get("ok"):
+            # O resultado offline substitui o do renderer: tem áudio próprio,
+            # legendas com tempos medidos e movimento real.
+            render.ok = True
+            render.path = offline["video"]
+            render.audio_path = offline.get("audio") or render.audio_path
+            render.duration_seconds = offline.get("duracao_s") or render.duration_seconds
+            render.steps = {
+                "tts": {"ok": True, "engine": offline.get("tts_engine"),
+                        "ms": offline.get("ms_tts")},
+                "subtitles": {"ok": bool(offline.get("srt")), "path": offline.get("srt")},
+                "render": {"ok": True, "ffmpeg": "imageio-ffmpeg",
+                           "ms": offline.get("ms_render"),
+                           "frames": offline.get("frames"),
+                           "pipeline": "offline_frame_by_frame"},
+            }
+            render.warnings = list(offline.get("notas") or [])
+        elif offline:
+            render.warnings = list(render.warnings) + [
+                f"pipeline offline: {n}" for n in (offline.get("notas") or [])
+            ]
 
         # ---- compliance de mídia (antes do juiz) --------------------------
         tts_engine = str((render.steps.get("tts") or {}).get("engine", "")).split(":")[0]
