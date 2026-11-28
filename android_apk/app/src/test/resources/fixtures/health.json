@@ -2,16 +2,16 @@
   "status": "ok",
   "service": "automaton-holding-api",
   "version": "1.0.0",
-  "env": "production",
-  "started_at": "2026-11-27T18:37:12+00:00",
-  "now": "2026-11-27T18:37:12+00:00",
+  "env": "test",
+  "started_at": "2026-11-28T14:42:49+00:00",
+  "now": "2026-11-28T14:42:49+00:00",
   "kill_switch": {
     "engaged": false,
-    "reason": "estado_inicial",
-    "engaged_by": "system",
-    "engaged_at": null,
-    "released_at": null,
-    "version": 1
+    "reason": "operacional",
+    "engaged_by": "president_apk",
+    "engaged_at": "2026-11-28T13:36:16+00:00",
+    "released_at": "2026-11-28T13:36:16+00:00",
+    "version": 7
   },
   "vault": {
     "root": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data",
@@ -28,12 +28,12 @@
       },
       "squad_metrics.json": {
         "exists": true,
-        "bytes": 2124,
+        "bytes": 182005,
         "valid_json": true
       },
       "pending_approvals.json": {
         "exists": true,
-        "bytes": 1173,
+        "bytes": 10147,
         "valid_json": true
       }
     }
@@ -41,6 +41,7 @@
   "integrations": {
     "groq": false,
     "gemini": false,
+    "github_models": true,
     "openrouter": false,
     "ollama": false,
     "langfuse": false,
@@ -74,6 +75,12 @@
       "reason": "sem_chave",
       "requests_today": 0
     },
+    "github_models": {
+      "configured": false,
+      "available": false,
+      "reason": "sem_chave",
+      "requests_today": 0
+    },
     "openrouter": {
       "configured": false,
       "available": false,
@@ -83,14 +90,32 @@
     "ollama": {
       "configured": false,
       "available": false,
-      "reason": "sem_chave",
+      "reason": "ollama_desligado",
       "requests_today": 0
+    },
+    "llm7": {
+      "configured": false,
+      "available": false,
+      "reason": "desligado_por_omissao",
+      "requests_today": 0
+    },
+    "pollinations": {
+      "configured": false,
+      "available": false,
+      "reason": "desligado_por_omissao",
+      "requests_today": 0
+    },
+    "local_gguf": {
+      "configured": true,
+      "available": true,
+      "reason": "pronto",
+      "requests_today": 32
     },
     "local": {
       "configured": true,
       "available": true,
       "reason": "sempre_disponivel",
-      "requests_today": 20
+      "requests_today": 3
     }
   },
   "websocket_clients": 0,

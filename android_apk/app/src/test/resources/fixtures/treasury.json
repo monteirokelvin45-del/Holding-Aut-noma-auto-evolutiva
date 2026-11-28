@@ -46,7 +46,7 @@
     },
     "distributable_owner_usd": 0.0,
     "tax_reserve_rate": 0.05,
-    "generated_at": "2026-11-27T18:37:12+00:00"
+    "generated_at": "2026-11-28T14:42:49+00:00"
   },
   "channels": {
     "channels": {
@@ -94,7 +94,7 @@
       "updated_at": "2026-11-27T17:38:24+00:00"
     },
     "owner_pocket_usd": 0.0,
-    "generated_at": "2026-11-27T18:37:12+00:00"
+    "generated_at": "2026-11-28T14:42:49+00:00"
   },
   "payouts": [],
   "audit": {
@@ -107,6 +107,6 @@
     "expected_vaults_usd": 0.0,
     "delta_usd": 0.0,
     "balanced": true,
-    "checked_at": "2026-11-27T18:37:12+00:00"
+    "checked_at": "2026-11-28T14:42:49+00:00"
   }
 }

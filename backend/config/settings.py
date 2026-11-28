@@ -179,6 +179,10 @@ class Settings:
     #: Caminho directo para um GGUF local — o motor que **não** precisa de
     #: Ollama nem de chave. É o que corre quando o Ollama não está instalado
     #: (sandbox, runner sem Docker): abre o ficheiro .gguf e responde.
+    #: Liga os endpoints públicos SEM chave (LLM7, Pollinations). Desligados
+    #: por omissão: num ambiente sem rede aberta, tentá-los só gasta tempo.
+    llm_sem_chave_ativo: bool = False
+
     local_gguf_path: str = ""
     #: Contexto do motor GGUF. 2048 chega para os prompts dos esquadrões e
     #: cabe em 4 GB de RAM com um modelo Q4 de 0,6B.
@@ -476,6 +480,7 @@ def _build_settings() -> Settings:
         ollama_base_url=env_str("OLLAMA_BASE_URL", "http://localhost:11434"),
         ollama_model=env_str("OLLAMA_MODEL", "llama3.2:3b"),
         ollama_enabled=env_bool("OLLAMA_ENABLED", False),
+        llm_sem_chave_ativo=env_bool("LLM_SEM_CHAVE_ATIVO", False),
         local_gguf_path=_gguf_configurado(),
         local_gguf_ctx=env_int("LOCAL_GGUF_CTX", 2048),
         kokoro_modelo_onnx=env_str("KOKORO_MODELO_ONNX", "models/kokoro/kokoro-q8.onnx"),

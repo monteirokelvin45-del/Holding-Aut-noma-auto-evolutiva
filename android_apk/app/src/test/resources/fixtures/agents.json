@@ -1,8 +1,8 @@
 {
   "validation": {
     "ok": true,
-    "agents": 11,
-    "tasks": 15,
+    "agents": 17,
+    "tasks": 21,
     "errors": [],
     "tiers": [
       "fast",
@@ -29,6 +29,7 @@
     "native_engine": "llm_router+heuristic",
     "mode": "nativo",
     "providers": [
+      "local_gguf",
       "local"
     ]
   },
@@ -217,6 +218,97 @@
         "approval_batching",
         "never_bypass_validation"
       ]
+    },
+    {
+      "id": "tradutor_local",
+      "role": "Agente Tradutor e Localizador (pt-MZ)",
+      "goal": "Traduzir e localizar conteúdo para português de Moçambique, não para português do Brasil. Corrigir o registo, os números e as unidades, e nunca deixar passar uma moeda errada (RMB, BRL, EUR, USD como moeda local) nem pagamentos móveis inventados.\n",
+      "backstory": "Cresceu em Maputo e irrita-se com textos que falam de «celular», «ônibus» e «Mercado Livre» para um público moçambicano. Sabe que a moeda é o Metical e que se paga com M-Pesa ou e-Mola — e que uma tradução que muda o nome da moeda arruína a confiança de quem lê.\n",
+      "llm_tier": "fast",
+      "tools": [
+        "llm_router",
+        "grounding_guard"
+      ],
+      "guards": [
+        "fact_grounding_mozambique",
+        "no_treasury_access"
+      ]
+    },
+    {
+      "id": "revisor_estilo",
+      "role": "Agente Revisor de Estilo e Legibilidade",
+      "goal": "Cortar o que sobra: frases longas, repetições, jargão e nomes internos de variáveis. Devolver o mesmo conteúdo com menos palavras e mais clareza, sem alterar um único facto.\n",
+      "backstory": "Editor de formação clássica. Aplica a regra mais difícil de aceitar: se uma frase pode sair, sai. Prefere 40 palavras que se entendem a 90 que impressionam.\n",
+      "llm_tier": "fast",
+      "tools": [
+        "llm_router",
+        "grounding_guard"
+      ],
+      "guards": [
+        "never_change_facts",
+        "no_treasury_access"
+      ]
+    },
+    {
+      "id": "guardiao_marca",
+      "role": "Agente Guardião da Marca e do Tom",
+      "goal": "Garantir que tudo o que sai fala a mesma língua: tom directo, segunda pessoa, sem promessas de enriquecimento e sem números inventados. Sinalizar qualquer texto que soe a anúncio de esquema.\n",
+      "backstory": "Viu marcas morrerem por uma única frase exagerada. Odeia «ganhe dinheiro rápido» e sabe que a confiança se constrói em anos e se perde em três segundos.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "llm_router",
+        "grounding_guard",
+        "legal_compliance"
+      ],
+      "guards": [
+        "no_get_rich_quick_claims",
+        "no_treasury_access"
+      ]
+    },
+    {
+      "id": "analista_feedback",
+      "role": "Agente Analista de Feedback e Comentários",
+      "goal": "Ler comentários e respostas do público, agrupar por tema, separar pedido de reclamação, e devolver as três mudanças de produto que mais impacto teriam — com a evidência citada.\n",
+      "backstory": "Passou anos a ler caixas de comentários que ninguém lia. Sabe que a primeira frase de um comentário raramente é o problema real.\n",
+      "llm_tier": "reasoning",
+      "tools": [
+        "llm_router",
+        "event_bus"
+      ],
+      "guards": [
+        "prompt_injection_shield",
+        "no_treasury_access"
+      ]
+    },
+    {
+      "id": "arquivista_memoria",
+      "role": "Agente Arquivista de Memória e Post-Mortem",
+      "goal": "Manter o cemitério de negócios e a memória da holding úteis: resumir o que morreu e porquê, detectar duplicados e garantir que uma ideia morta não volta a ser proposta com outro nome.\n",
+      "backstory": "Bibliotecário obstinado. Acredita que a memória de uma organização é o único activo que cresce sem custar dinheiro — e que esquecer um erro é pagá-lo duas vezes.\n",
+      "llm_tier": "local",
+      "tools": [
+        "shared_memory",
+        "vault_store"
+      ],
+      "guards": [
+        "no_treasury_access"
+      ]
+    },
+    {
+      "id": "operador_telegram",
+      "role": "Agente Operador do Telegram (comandos do Presidente)",
+      "goal": "Traduzir comandos escritos em linguagem natural para acções do sistema (/status, /aprovar, /parar) e confirmar sempre o que vai acontecer antes de acontecer. Nunca executa uma acção destrutiva sem confirmação.\n",
+      "backstory": "Assumiu que uma mensagem mal interpretada podia desligar a holding inteira. Por isso prefere perguntar duas vezes a executar uma vez.\n",
+      "llm_tier": "fast",
+      "tools": [
+        "telegram_bot",
+        "approval_gate",
+        "kill_switch"
+      ],
+      "guards": [
+        "kill_switch_first",
+        "confirm_before_destructive"
+      ]
     }
   ],
   "tasks": [
@@ -371,6 +463,54 @@
       ],
       "output": "{\n  \"cycle_id\", \"status\", \"duration_seconds\",\n  \"steps\", \"approvals_created\", \"summary\"\n}\n",
       "gate": "always"
+    },
+    {
+      "id": "localizar_texto",
+      "description": "Receber um texto e devolver a versão em português de Moçambique: Metical (MZN) como moeda, M-Pesa e e-Mola como pagamentos, e vocabulário local em vez de brasileiro. Não inventar factos; se o texto original tiver um erro factual, corrigi-lo e dizê-lo.",
+      "agent": "tradutor_local",
+      "depends_on": [],
+      "output": "{ \"texto_localizado\", \"correcoes\": [{\"antes\", \"depois\", \"motivo\"}] }\n",
+      "gate": "always"
+    },
+    {
+      "id": "revisar_legibilidade",
+      "description": "Reescrever o texto com menos palavras e frases curtas, sem alterar factos, números nem nomes próprios. Devolver também a contagem de palavras antes e depois.",
+      "agent": "revisor_estilo",
+      "depends_on": [],
+      "output": "{ \"texto_revisto\", \"palavras_antes\", \"palavras_depois\", \"cortes\": [] }\n",
+      "gate": "always"
+    },
+    {
+      "id": "auditar_tom_marca",
+      "description": "Avaliar o texto contra o tom da holding e listar frases de risco (promessas de lucro, garantias, superlativos vazios). Nota de 0 a 100 e veredicto apto/recusado.",
+      "agent": "guardiao_marca",
+      "depends_on": [],
+      "output": "{ \"nota\", \"apto\", \"frases_de_risco\": [{\"frase\", \"motivo\"}] }\n",
+      "gate": "always"
+    },
+    {
+      "id": "triar_feedback",
+      "description": "Agrupar comentários por tema, classificar cada grupo como pedido, reclamação ou elogio, e propor as três mudanças com maior impacto. Cada conclusão tem de citar o comentário que a sustenta.",
+      "agent": "analista_feedback",
+      "depends_on": [],
+      "output": "{ \"temas\": [{\"tema\", \"tipo\", \"n\", \"evidencia\"}], \"top3_mudancas\": [] }\n",
+      "gate": "always"
+    },
+    {
+      "id": "consolidar_memoria",
+      "description": "Resumir o cemitério de negócios, apontar duplicados e devolver os padrões de falha mais frequentes (por causa, por nicho, por canal).",
+      "agent": "arquivista_memoria",
+      "depends_on": [],
+      "output": "{ \"total\", \"duplicados\": [], \"padroes\": [{\"causa\", \"n\"}] }\n",
+      "gate": "cemetery_check"
+    },
+    {
+      "id": "interpretar_comando",
+      "description": "Converter uma mensagem em linguagem natural num comando estruturado do sistema. Se o comando for destrutivo (parar a holding, abater um esquadrão), devolver `requer_confirmacao: true` e o texto exacto a confirmar.",
+      "agent": "operador_telegram",
+      "depends_on": [],
+      "output": "{ \"comando\", \"argumentos\", \"requer_confirmacao\", \"texto_confirmacao\" }\n",
+      "gate": "kill_switch_clear"
     }
   ],
   "defaults": {
@@ -383,21 +523,23 @@
     "order": [
       "groq",
       "gemini",
-      "openrouter",
+      "local_gguf",
       "ollama",
+      "github_models",
+      "openrouter",
       "local"
     ],
     "providers": {
       "groq": {
         "configured": false,
-        "model": "gpt-oss-120b",
+        "model": "openai/gpt-oss-120b",
         "limits": {
           "rpm": 30,
           "rpd": 1000,
           "tpd": 200000
         },
         "usage": {
-          "date": "2026-11-27",
+          "date": "2026-11-28",
           "requests_today": 0,
           "tokens_today": 0,
           "cost_usd_today": 0.0,
@@ -415,7 +557,25 @@
           "tpd": 250000
         },
         "usage": {
-          "date": "2026-11-27",
+          "date": "2026-11-28",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "sem_chave"
+      },
+      "github_models": {
+        "configured": false,
+        "model": "gpt-4o-mini",
+        "limits": {
+          "rpm": 10,
+          "rpd": 150,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-28",
           "requests_today": 0,
           "tokens_today": 0,
           "cost_usd_today": 0.0,
@@ -433,7 +593,7 @@
           "tpd": 0
         },
         "usage": {
-          "date": "2026-11-27",
+          "date": "2026-11-28",
           "requests_today": 0,
           "tokens_today": 0,
           "cost_usd_today": 0.0,
@@ -451,14 +611,68 @@
           "tpd": 0
         },
         "usage": {
-          "date": "2026-11-27",
+          "date": "2026-11-28",
           "requests_today": 0,
           "tokens_today": 0,
           "cost_usd_today": 0.0,
           "requests_last_minute": 0
         },
         "available": false,
-        "reason": "sem_chave"
+        "reason": "ollama_desligado"
+      },
+      "llm7": {
+        "configured": false,
+        "model": "gpt-4o-mini",
+        "limits": {
+          "rpm": 30,
+          "rpd": 0,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-28",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "desligado_por_omissao"
+      },
+      "pollinations": {
+        "configured": false,
+        "model": "openai",
+        "limits": {
+          "rpm": 1,
+          "rpd": 0,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-28",
+          "requests_today": 0,
+          "tokens_today": 0,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": false,
+        "reason": "desligado_por_omissao"
+      },
+      "local_gguf": {
+        "configured": true,
+        "model": "Qwen3-0.6B-Q4_K_M.gguf",
+        "limits": {
+          "rpm": 0,
+          "rpd": 0,
+          "tpd": 0
+        },
+        "usage": {
+          "date": "2026-11-28",
+          "requests_today": 32,
+          "tokens_today": 22656,
+          "cost_usd_today": 0.0,
+          "requests_last_minute": 0
+        },
+        "available": true,
+        "reason": "pronto"
       },
       "local": {
         "configured": true,
@@ -469,33 +683,16 @@
           "tpd": 0
         },
         "usage": {
-          "date": "2026-11-27",
-          "requests_today": 20,
-          "tokens_today": 11539,
+          "date": "2026-11-28",
+          "requests_today": 3,
+          "tokens_today": 1883,
           "cost_usd_today": 0.0,
-          "requests_last_minute": 1
+          "requests_last_minute": 0
         },
         "available": true,
         "reason": "sempre_disponivel"
       }
     },
-    "last_response": {
-      "provider": "local",
-      "model": "heuristic-v1",
-      "usage": {
-        "prompt_tokens": 93,
-        "completion_tokens": 339,
-        "total_tokens": 432
-      },
-      "cost_usd": 0.0,
-      "latency_ms": 0,
-      "is_llm": false,
-      "fallback_chain": [
-        "local:used"
-      ],
-      "blocked": false,
-      "error": null,
-      "created_at": "2026-11-27T18:37:12+00:00"
-    }
+    "last_response": null
   }
 }

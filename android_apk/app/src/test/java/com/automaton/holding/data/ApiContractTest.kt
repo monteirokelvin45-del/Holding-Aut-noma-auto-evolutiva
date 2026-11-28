@@ -132,9 +132,20 @@ class ApiContractTest {
     fun `agents decodifica modo do motor de IA`() {
         val catalogo = json.decodeFromString(AiCatalog.serializer(), fixture("agents"))
         assertTrue(catalogo.bridge.mode.isNotBlank())
-        // O catálogo real traz 11 agentes; o APK só precisa do bridge, mas o
-        // campo tem de sobreviver ao ignoreUnknownKeys.
         assertNotNull(catalogo.validation)
+        // O catálogo tem de chegar INTEIRO ao ecrã da Diretoria.
+        //
+        // Antes este teste só verificava o `bridge`: os 11 agentes que a API
+        // enviava eram descartados (AiCatalog não tinha o campo) e nada disto
+        // falhava. Passou a 17 agentes em 2026-11-28 — 6 novos, todos no
+        // motor local.
+        assertTrue(
+            "catálogo sem agentes: ${catalogo.agents.size}",
+            catalogo.agents.isNotEmpty(),
+        )
+        assertTrue(catalogo.agents.all { it.id.isNotBlank() })
+        assertTrue(catalogo.agents.any { it.llmTier.isNotBlank() })
+        assertTrue("catálogo sem tarefas", catalogo.tasks.isNotEmpty())
     }
 
     // --------------------------------------------------------- governança ---

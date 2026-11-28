@@ -1,12 +1,386 @@
 {
-  "squads": [],
+  "squads": [
+    {
+      "id": "sq_01f551041ca5",
+      "name": "Guia prático de freelancing para jovens de Maputo",
+      "type": "video_factory",
+      "niche": "freelancing em Maputo",
+      "owner_agent": "video_factory",
+      "status": "active",
+      "created_at": "2026-11-28T13:24:35+00:00",
+      "activated_at": "2026-11-28T13:24:35+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [],
+      "updated_at": "2026-11-28T13:24:35+00:00",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.05,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.05
+    },
+    {
+      "id": "sq_59453be2138a",
+      "name": "Guia pratico de freelancing para jovens de Maputo",
+      "type": "video_factory",
+      "niche": "freelancing_mz",
+      "owner_agent": "video_factory",
+      "status": "active",
+      "created_at": "2026-11-28T13:00:32+00:00",
+      "activated_at": "2026-11-28T13:00:32+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [],
+      "updated_at": "2026-11-28T13:00:32+00:00",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.07,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.07
+    },
+    {
+      "id": "sq_294683cf15e2",
+      "name": "Guia pratico de freelancing para jovens de Maputo",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing_mz",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T12:59:03+00:00",
+      "activated_at": "2026-11-28T12:59:03+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.07,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.07
+    },
+    {
+      "id": "sq_6c9753cf6a20",
+      "name": "Freelancing em Moçambique: os 3 passos para o primeiro cliente",
+      "type": "video_factory",
+      "niche": "freelancing_video_kokoro",
+      "owner_agent": "video_factory",
+      "status": "active",
+      "created_at": "2026-11-28T11:12:02+00:00",
+      "activated_at": "2026-11-28T11:12:02+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.08,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.15,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.15
+    },
+    {
+      "id": "sq_36197484aa16",
+      "name": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing_mz",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T10:42:35+00:00",
+      "activated_at": "2026-11-28T10:42:35+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T10:42:49+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.02,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T11:08:08+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.1,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.17,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.17
+    },
+    {
+      "id": "sq_8f772dbd460e",
+      "name": "Guia de freelancing para jovens de Maputo — loja automatica",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing_mz",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T10:42:21+00:00",
+      "activated_at": "2026-11-28T10:42:21+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T10:42:49+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.02,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T11:08:08+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.1,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.17,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.17
+    },
+    {
+      "id": "sq_a1bce44d3f88",
+      "name": "Guia prático de freelancing em Moçambique",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T09:11:04+00:00",
+      "activated_at": "2026-11-28T09:11:04+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T09:11:20+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.06,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T10:42:49+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.08,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T11:08:08+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.16,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep",
+      "cac_basis": "sem_dados",
+      "conversion_rate": 0.0,
+      "ctr": 0.0,
+      "days_alive": 0.23,
+      "profit_usd": 0.0,
+      "roi": null,
+      "lifetime_days": 0.23
+    }
+  ],
   "summary": {
-    "total": 0,
-    "active": 0,
+    "total": 7,
+    "active": 7,
     "killed": 0,
     "paused": 0,
-    "revenue_usd": 0,
-    "cost_usd": 0,
+    "revenue_usd": 0.0,
+    "cost_usd": 0.0,
     "with_first_dollar": 0
   },
   "kill_policy": {
@@ -17,5 +391,5 @@
     "conversion_check_days": 14,
     "min_spend_to_judge_usd": 0.0
   },
-  "generated_at": "2026-11-27T18:37:12+00:00"
+  "generated_at": "2026-11-28T14:42:49+00:00"
 }

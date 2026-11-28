@@ -39,14 +39,14 @@
       },
       {
         "id": "infoproducts_affiliate",
-        "calls": 0,
-        "success_rate": null,
-        "avg_judge_score": null,
+        "calls": 4,
+        "success_rate": 1.0,
+        "avg_judge_score": 91.86,
         "cost_usd": 0.0,
         "tokens": 0,
         "prompt_version": 1,
         "rewrites": 0,
-        "last_review": "nunca",
+        "last_review": "healthy",
         "status": "active"
       },
       {
@@ -63,26 +63,26 @@
       },
       {
         "id": "scout_hunter",
-        "calls": 0,
-        "success_rate": null,
+        "calls": 3,
+        "success_rate": 1.0,
         "avg_judge_score": null,
         "cost_usd": 0.0,
         "tokens": 0,
         "prompt_version": 1,
         "rewrites": 0,
-        "last_review": "nunca",
+        "last_review": "healthy",
         "status": "active"
       },
       {
         "id": "video_factory",
-        "calls": 0,
-        "success_rate": null,
-        "avg_judge_score": null,
+        "calls": 5,
+        "success_rate": 1.0,
+        "avg_judge_score": 89.57,
         "cost_usd": 0.0,
         "tokens": 0,
         "prompt_version": 1,
         "rewrites": 0,
-        "last_review": "nunca",
+        "last_review": "healthy",
         "status": "active"
       }
     ],
@@ -96,7 +96,7 @@
       "min_success_rate": 0.6,
       "min_judge_score": 85.0
     },
-    "generated_at": "2026-11-27T18:37:12+00:00"
+    "generated_at": "2026-11-28T14:42:49+00:00"
   },
   "accounting": {
     "treasury": {
@@ -146,15 +146,15 @@
       },
       "distributable_owner_usd": 0.0,
       "tax_reserve_rate": 0.05,
-      "generated_at": "2026-11-27T18:37:12+00:00"
+      "generated_at": "2026-11-28T14:42:49+00:00"
     },
     "portfolio": {
-      "total": 0,
-      "active": 0,
+      "total": 7,
+      "active": 7,
       "killed": 0,
       "paused": 0,
-      "revenue_usd": 0,
-      "cost_usd": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
       "with_first_dollar": 0
     },
     "ledger_audit": {
@@ -167,13 +167,13 @@
       "expected_vaults_usd": 0.0,
       "delta_usd": 0.0,
       "balanced": true,
-      "checked_at": "2026-11-27T18:37:12+00:00"
+      "checked_at": "2026-11-28T14:42:49+00:00"
     },
     "monthly_revenue_usd": 0.0,
     "phase": 1,
     "tax_rate": 0.05,
     "tax_reserve_usd": 0.0,
-    "generated_at": "2026-11-27T18:37:12+00:00"
+    "generated_at": "2026-11-28T14:42:49+00:00"
   },
   "legal": {
     "tools_available": {
@@ -228,18 +228,458 @@
       "youtube"
     ],
     "recent_audits": [],
-    "generated_at": "2026-11-27T18:37:12+00:00"
+    "generated_at": "2026-11-28T14:42:49+00:00"
   },
   "judge": {
     "threshold": 85.0,
-    "total_evaluations": 0,
-    "passed": 0,
+    "total_evaluations": 9,
+    "passed": 9,
     "failed": 0,
-    "pass_rate": 0.0,
-    "average_score": null,
-    "by_content_type": {},
-    "recent": [],
-    "generated_at": "2026-11-27T18:37:12+00:00"
+    "pass_rate": 1.0,
+    "average_score": 90.59,
+    "by_content_type": {
+      "ebook": {
+        "count": 4,
+        "avg": 91.86
+      },
+      "video_short": {
+        "count": 5,
+        "avg": 89.57
+      }
+    },
+    "recent": [
+      {
+        "squad_id": "sq_01f551041ca5",
+        "agent_id": "video_factory",
+        "content_type": "video_short",
+        "content_hash": "len330",
+        "verdict": {
+          "score": 88.0,
+          "passed": true,
+          "content_type": "video_short",
+          "axes": {
+            "hook": 90.0,
+            "clarity": 90.0,
+            "technical": 80.0,
+            "compliance": 90.0
+          },
+          "points": {
+            "hook": 22.5,
+            "clarity": 22.5,
+            "technical": 20.0,
+            "compliance": 22.5
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Gancho forte nos primeiros segundos (pergunta/número).",
+            "CTA explícito presente no guião.",
+            "Frases legíveis (média 11.4 palavras)."
+          ],
+          "critical_findings": [],
+          "suggestions": [],
+          "engine": "objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T13:27:00+00:00"
+        },
+        "metadata": {
+          "duration_seconds": 20.12,
+          "has_cta": true,
+          "title": "Guia prático de freelancing para jovens de Maputo"
+        },
+        "at": "2026-11-28T13:27:00+00:00"
+      },
+      {
+        "squad_id": "sq_59453be2138a",
+        "agent_id": "video_factory",
+        "content_type": "video_short",
+        "content_hash": "len315",
+        "verdict": {
+          "score": 91.27,
+          "passed": true,
+          "content_type": "video_short",
+          "axes": {
+            "hook": 92.8,
+            "clarity": 95.5,
+            "technical": 79.75,
+            "compliance": 95.5
+          },
+          "points": {
+            "hook": 23.2,
+            "clarity": 23.88,
+            "technical": 19.94,
+            "compliance": 23.88
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Gancho forte nos primeiros segundos (pergunta/número).",
+            "Frases legíveis (média 9.2 palavras).",
+            "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+            "Acesse os recursos gratuitos e participe de eventos para crescer.",
+            "Acesse nosso guia completo para uma startup no Maputo."
+          ],
+          "critical_findings": [],
+          "suggestions": [
+            "Falta uma chamada à acção explícita.",
+            "Clique aqui para mais informações.",
+            "Participe de eventos para crescer."
+          ],
+          "engine": "hybrid:local_gguf+objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T13:19:23+00:00"
+        },
+        "metadata": {
+          "duration_seconds": 21.55,
+          "has_cta": true,
+          "title": "Guia Prático de Freelancing para jovens de Maputo"
+        },
+        "at": "2026-11-28T13:19:23+00:00"
+      },
+      {
+        "squad_id": "sq_59453be2138a",
+        "agent_id": "video_factory",
+        "content_type": "video_short",
+        "content_hash": "len315",
+        "verdict": {
+          "score": 91.27,
+          "passed": true,
+          "content_type": "video_short",
+          "axes": {
+            "hook": 92.8,
+            "clarity": 95.5,
+            "technical": 79.75,
+            "compliance": 95.5
+          },
+          "points": {
+            "hook": 23.2,
+            "clarity": 23.88,
+            "technical": 19.94,
+            "compliance": 23.88
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Gancho forte nos primeiros segundos (pergunta/número).",
+            "Frases legíveis (média 9.2 palavras).",
+            "Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.",
+            "Acesse os recursos gratuitos e participe de eventos para crescer.",
+            "Acesse nosso guia completo para uma startup no Maputo."
+          ],
+          "critical_findings": [],
+          "suggestions": [
+            "Falta uma chamada à acção explícita.",
+            "Clique aqui para mais informações.",
+            "Participe de eventos para crescer."
+          ],
+          "engine": "hybrid:local_gguf+objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T13:15:43+00:00"
+        },
+        "metadata": {
+          "duration_seconds": 21.55,
+          "has_cta": true,
+          "title": "Guia Prático de Freelancing para jovens de Maputo"
+        },
+        "at": "2026-11-28T13:15:43+00:00"
+      },
+      {
+        "squad_id": "sq_59453be2138a",
+        "agent_id": "video_factory",
+        "content_type": "video_short",
+        "content_hash": "len685",
+        "verdict": {
+          "score": 89.29,
+          "passed": true,
+          "content_type": "video_short",
+          "axes": {
+            "hook": 85.6,
+            "clarity": 99.1,
+            "technical": 79.75,
+            "compliance": 95.5
+          },
+          "points": {
+            "hook": 21.4,
+            "clarity": 24.77,
+            "technical": 19.94,
+            "compliance": 23.88
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Frases legíveis (média 14.3 palavras).",
+            "A entrega completa e concisa apresenta informações relevantes sobre o nicho de freelancing em Maputo.",
+            "A descrição e conteúdo são claras e direcionadas para o público objetivo.",
+            "A falta de bugs e conformidade com normas técnicas é evidenciada."
+          ],
+          "critical_findings": [],
+          "suggestions": [
+            "Abrir com gancho explícito (pergunta, número ou promessa concreta) para segurar os 3 primeiros segundos.",
+            "Falta uma chamada à acção explícita.",
+            "Acesse o link para mais informações sobre a startup no Maputo.",
+            "Participe de eventos gratuitos e plataformas para crescer."
+          ],
+          "engine": "hybrid:local_gguf+objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T13:06:11+00:00"
+        },
+        "metadata": {
+          "duration_seconds": 42.93,
+          "has_cta": true,
+          "title": "Guia Prático de Freelancing para jovens de Maputo"
+        },
+        "at": "2026-11-28T13:06:11+00:00"
+      },
+      {
+        "squad_id": "sq_294683cf15e2",
+        "agent_id": "infoproducts_affiliate",
+        "content_type": "ebook",
+        "content_hash": "len2484",
+        "verdict": {
+          "score": 85.45,
+          "passed": true,
+          "content_type": "ebook",
+          "axes": {
+            "hook": 80.5,
+            "clarity": 90.85,
+            "technical": 79.6,
+            "compliance": 87.25
+          },
+          "points": {
+            "hook": 20.12,
+            "clarity": 22.71,
+            "technical": 19.9,
+            "compliance": 21.81
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Título no intervalo ótimo de SEO (20-70 chars).",
+            "Frases legíveis (média 14.7 palavras).",
+            "Este material é educativo e não constitui aconselhamento financeiro, jurídico ou fiscal."
+          ],
+          "critical_findings": [],
+          "suggestions": [
+            "Expandir para pelo menos 1200 palavras (actual: 367)."
+          ],
+          "engine": "hybrid:local_gguf+objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T13:00:22+00:00"
+        },
+        "metadata": {
+          "title": "Guia Pratico de Freelancing para jovens de Maputo",
+          "price_usd": 12.0
+        },
+        "at": "2026-11-28T13:00:22+00:00"
+      },
+      {
+        "squad_id": "sq_6c9753cf6a20",
+        "agent_id": "video_factory",
+        "content_type": "video_short",
+        "content_hash": "len296",
+        "verdict": {
+          "score": 88.0,
+          "passed": true,
+          "content_type": "video_short",
+          "axes": {
+            "hook": 90.0,
+            "clarity": 90.0,
+            "technical": 80.0,
+            "compliance": 90.0
+          },
+          "points": {
+            "hook": 22.5,
+            "clarity": 22.5,
+            "technical": 20.0,
+            "compliance": 22.5
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Gancho forte nos primeiros segundos (pergunta/número).",
+            "CTA explícito presente no guião.",
+            "Frases legíveis (média 10.2 palavras)."
+          ],
+          "critical_findings": [],
+          "suggestions": [],
+          "engine": "objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T11:12:37+00:00"
+        },
+        "metadata": {
+          "duration_seconds": 18.846153846153847,
+          "has_cta": true,
+          "title": "Freelancing em Moçambique: os 3 passos para o primeiro cliente"
+        },
+        "at": "2026-11-28T11:12:37+00:00"
+      },
+      {
+        "squad_id": "sq_36197484aa16",
+        "agent_id": "infoproducts_affiliate",
+        "content_type": "ebook",
+        "content_hash": "len9135",
+        "verdict": {
+          "score": 94.0,
+          "passed": true,
+          "content_type": "ebook",
+          "axes": {
+            "hook": 100.0,
+            "clarity": 98.0,
+            "technical": 88.0,
+            "compliance": 90.0
+          },
+          "points": {
+            "hook": 25.0,
+            "clarity": 24.5,
+            "technical": 22.0,
+            "compliance": 22.5
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Título no intervalo ótimo de SEO (20-70 chars).",
+            "Extensão adequada para ebook.",
+            "Frases legíveis (média 11.4 palavras)."
+          ],
+          "critical_findings": [],
+          "suggestions": [],
+          "engine": "objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T10:42:49+00:00"
+        },
+        "metadata": {
+          "title": "Guia de freelancing para jovens em Maputo — edicao loja automatica",
+          "price_usd": 12.0
+        },
+        "at": "2026-11-28T10:42:49+00:00"
+      },
+      {
+        "squad_id": "sq_8f772dbd460e",
+        "agent_id": "infoproducts_affiliate",
+        "content_type": "ebook",
+        "content_hash": "len9079",
+        "verdict": {
+          "score": 94.0,
+          "passed": true,
+          "content_type": "ebook",
+          "axes": {
+            "hook": 100.0,
+            "clarity": 98.0,
+            "technical": 88.0,
+            "compliance": 90.0
+          },
+          "points": {
+            "hook": 25.0,
+            "clarity": 24.5,
+            "technical": 22.0,
+            "compliance": 22.5
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Título no intervalo ótimo de SEO (20-70 chars).",
+            "Extensão adequada para ebook.",
+            "Frases legíveis (média 11.4 palavras)."
+          ],
+          "critical_findings": [],
+          "suggestions": [],
+          "engine": "objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T10:42:35+00:00"
+        },
+        "metadata": {
+          "title": "Guia de freelancing para jovens de Maputo — loja automatica",
+          "price_usd": 12.0
+        },
+        "at": "2026-11-28T10:42:35+00:00"
+      },
+      {
+        "squad_id": "sq_a1bce44d3f88",
+        "agent_id": "infoproducts_affiliate",
+        "content_type": "ebook",
+        "content_hash": "len8905",
+        "verdict": {
+          "score": 94.0,
+          "passed": true,
+          "content_type": "ebook",
+          "axes": {
+            "hook": 100.0,
+            "clarity": 98.0,
+            "technical": 88.0,
+            "compliance": 90.0
+          },
+          "points": {
+            "hook": 25.0,
+            "clarity": 24.5,
+            "technical": 22.0,
+            "compliance": 22.5
+          },
+          "axis_labels": {
+            "hook": "Gancho / Retenção Inicial",
+            "clarity": "Potencial de Monetização / SEO",
+            "technical": "Qualidade Técnica / Áudio / Código",
+            "compliance": "Segurança de Direitos de Autor"
+          },
+          "axis_max_points": 25.0,
+          "findings": [
+            "Título no intervalo ótimo de SEO (20-70 chars).",
+            "Extensão adequada para ebook.",
+            "Frases legíveis (média 11.1 palavras)."
+          ],
+          "critical_findings": [],
+          "suggestions": [],
+          "engine": "objective",
+          "attempts": 1,
+          "evaluated_at": "2026-11-28T09:11:20+00:00"
+        },
+        "metadata": {
+          "title": "Guia prático de freelancing em Moçambique",
+          "price_usd": 12.0
+        },
+        "at": "2026-11-28T09:11:20+00:00"
+      }
+    ],
+    "generated_at": "2026-11-28T14:42:49+00:00"
   },
   "cemetery": {
     "total": 0,
@@ -248,5 +688,5 @@
     "embedding_model": "hash-tf-v2-stem",
     "similarity_block": 0.4
   },
-  "generated_at": "2026-11-27T18:37:12+00:00"
+  "generated_at": "2026-11-28T14:42:49+00:00"
 }

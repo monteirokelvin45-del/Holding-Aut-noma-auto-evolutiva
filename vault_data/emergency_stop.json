@@ -1,8 +1,8 @@
 {
   "engaged": false,
-  "reason": "estado_inicial",
-  "engaged_by": "system",
-  "engaged_at": null,
-  "released_at": null,
-  "version": 1
+  "reason": "operacional",
+  "engaged_by": "president_apk",
+  "engaged_at": "2026-11-28T13:36:16+00:00",
+  "released_at": "2026-11-28T13:36:16+00:00",
+  "version": 7
 }

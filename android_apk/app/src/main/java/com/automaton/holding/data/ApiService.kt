@@ -364,7 +364,11 @@ data class AiCatalog(
     val validation: JsonObject? = null,
     val llm: JsonObject? = null,
     val agents: List<AgentSpecDto> = emptyList(),
-    val tasks: JsonObject? = null,
+    // `/agents` devolve `tasks` como LISTA (não objecto). Declarado como
+    // JsonObject, o kotlinx.serialization rebentava a descodificar o catálogo
+    // inteiro — e o ecrã da Diretoria aparecia vazio, sem erro visível, porque
+    // a falha ficava no Result.
+    val tasks: List<JsonObject> = emptyList(),
 )
 
 // ------------------------------------------------------------- validação --

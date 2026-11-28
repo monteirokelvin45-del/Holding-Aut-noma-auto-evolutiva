@@ -206,9 +206,20 @@ def test_agente_novo_executa_no_motor_local(monkeypatch):
     Sem GGUF (ambiente de teste) a tarefa tem de devolver texto válido pelo
     caminho heurístico; com GGUF, o mesmo código caminha pelo modelo real.
     """
+    from backend.config.settings import settings as cfg
     from backend.core.crew_bridge import crew_bridge
 
-    r = crew_bridge.run_task("auditar_tom_marca", {"texto": "Ganhe dinheiro rápido!"})
+    # Motor real é opt-in (ver test_ai_integration.py): a 25 tok/s, cada
+    # agente custa ~22 s. Sem o GGUF a tarefa corre no heurístico em
+    # milissegundos e o contrato (agente certo, texto, is_llm honesto) é
+    # exactamente o mesmo.
+    antes = cfg.local_gguf_path
+    if not __import__("os").environ.get("AUTOMATON_TESTAR_MOTOR_REAL") == "1":
+        object.__setattr__(cfg, "local_gguf_path", "")
+    try:
+        r = crew_bridge.run_task("auditar_tom_marca", {"texto": "Ganhe dinheiro rápido!"})
+    finally:
+        object.__setattr__(cfg, "local_gguf_path", antes)
     assert r["agent"] == "guardiao_marca"
     assert isinstance(r["text"], str) and r["text"].strip()
     assert r["is_llm"] in (True, False)
@@ -246,3 +257,164 @@ def test_bloco_de_factos_proibe_plataformas_que_nao_operam_em_mocambique():
     bloco = grounding.FACTOS_MOCAMBIQUE.lower()
     assert "mercado livre" in bloco
     assert "paytm" in bloco
+
+
+# ---------------------------------------------------------------------------
+# Endpoints públicos SEM chave (LLM7, Pollinations).
+#
+# Não foram medidos contra a rede: os dois domínios devolvem 000 neste
+# sandbox. O que se prova aqui é o contrato do cliente — payload, parsing,
+# custo zero e failover — com a resposta simulada. A promessa «não precisa de
+# chave» verifica-se pela ausência de cabeçalho de autenticação no pedido.
+# ---------------------------------------------------------------------------
+import pytest as _py
+
+
+@_py.mark.parametrize(
+    "provider,url",
+    [
+        ("llm7", "https://api.llm7.io/v1/chat/completions"),
+        ("pollinations", "https://text.pollinations.ai/openai"),
+    ],
+)
+def test_endpoint_sem_chave_envia_pedido_valido_e_sem_autenticacao(
+    monkeypatch, provider, url
+):
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    capturado = {}
+
+    def falso_post(endpoint, payload, headers, timeout=30):
+        capturado.update(url=endpoint, payload=payload, headers=dict(headers))
+        return {
+            "choices": [{"message": {"content": "Metical (MZN)"}}],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 3},
+        }
+
+    monkeypatch.setattr(mod, "_http_post_json", falso_post)
+    resposta = mod.LLMRouter()._call_sem_chave(
+        mod.LLMRequest(prompt="Qual é a moeda?", system="Sê breve."),
+        "Qual é a moeda?",
+        "Sê breve.",
+        provider,
+    )
+    assert capturado["url"] == url
+    # A prova de «sem chave»: nenhum cabeçalho de autorização.
+    assert not any(
+        k.lower() in ("authorization", "x-api-key")
+        for k in capturado["headers"]
+    )
+    assert capturado["payload"]["messages"][0]["role"] == "system"
+    assert capturado["payload"]["messages"][-1]["content"] == "Qual é a moeda?"
+    assert resposta.text == "Metical (MZN)"
+    assert resposta.provider == provider
+    assert resposta.is_llm is True
+    assert resposta.cost_usd == 0.0
+
+
+def test_endpoints_sem_chave_ficam_desligados_por_omissao():
+    """Sem LLM_SEM_CHAVE_ATIVO não entram na cadeia.
+
+    Num sítio sem rede aberta, declará-los disponíveis faria cada chamada
+    esperar por um timeout antes de chegar ao motor local.
+    """
+    from backend.core.llm_router import LLMRouter, _motivo_indisponivel
+
+    st = LLMRouter().status()
+    for nome in ("llm7", "pollinations"):
+        assert st["providers"][nome]["configured"] is False
+        assert _motivo_indisponivel(nome) == "desligado_por_omissao"
+
+
+def test_endpoint_sem_chave_falha_com_elegancia_e_a_cadeia_continua(monkeypatch):
+    """Rede em baixo: erro claro, resposta obtida por outro provider."""
+    from backend.config.settings import settings as cfg
+    from backend.core import llm_router as mod
+
+    def rebenta(*_a, **_k):
+        raise mod.ExternalServiceError("llm7: rede inacessível")
+
+    monkeypatch.setattr(mod, "_http_post_json", rebenta)
+    antes_gguf = cfg.local_gguf_path
+    object.__setattr__(cfg, "local_gguf_path", "")  # forçar o heurístico
+    try:
+        resposta = mod.LLMRouter().complete(
+            mod.LLMRequest(prompt="Diz olá.", max_tokens=32)
+        )
+    finally:
+        object.__setattr__(cfg, "local_gguf_path", antes_gguf)
+    assert resposta.provider == "local"
+    assert resposta.is_llm is False
+
+
+# ---------------------------------------------------------------------------
+# As 7 rotas de escrita que o APK usa — com os nomes de campo que o Kotlin
+# envia. Se uma mudar de nome, o botão da app falha em silêncio (o
+# kotlinx.serialization não se queixa de campos a mais nem a menos).
+# ---------------------------------------------------------------------------
+def test_as_rotas_de_escrita_do_apk_respondem():
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    from backend.config.settings import settings as cfg
+
+    cliente = TestClient(app)
+    # O token é o que a configuração tem (o conftest define-o); fixá-lo aqui
+    # fazia o teste passar ou falhar conforme a ordem dos ficheiros.
+    cab = {"X-Automaton-Token": cfg.api_access_token}
+
+    # 1. criar aprovação (botão «Pedir saque» do Tesouro)
+    r = cliente.post(
+        "/approvals",
+        json={"title": "Saque de teste", "kind": "payout", "amount_usd": 12.0,
+              "reason": "teste de contrato do APK", "metadata": {"origem": "apk"}},
+        headers=cab,
+    )
+    assert r.status_code == 200, r.text
+    # O nome do campo é `approval_id` (o `requested_by` é fixado pelo
+    # servidor em `president_apk`, não vem do cliente). O APK usa exactamente
+    # este campo: ver `ApprovalCreated` em ApiService.kt.
+    aprovacao = r.json()["approval_id"]
+
+    # 2. decidir SEM biometria -> 428 (a app tem de mostrar o diálogo)
+    r = cliente.post(
+        f"/approvals/{aprovacao}/decide",
+        json={"approve": True, "biometric_verified": False},
+        headers=cab,
+    )
+    assert r.status_code == 428, r.text
+
+    # 3. decidir COM biometria -> 200 (botão «Confirmar com biometria»)
+    r = cliente.post(
+        f"/approvals/{aprovacao}/decide",
+        json={"approve": True, "biometric_verified": True},
+        headers=cab,
+    )
+    assert r.status_code == 200, r.text
+
+    # 4. kill switch: accionar (botão vermelho «STOP»)
+    r = cliente.post("/kill-switch/engage", json={"reason": "teste"}, headers=cab)
+    assert r.status_code == 200, r.text
+
+    # 5. escritas bloqueadas com 423 enquanto congelado
+    r = cliente.post(
+        "/approvals",
+        json={"title": "bloqueada", "kind": "custom"},
+        headers=cab,
+    )
+    assert r.status_code == 423, r.text
+
+    # 6. libertar (o mesmo botão, agora «LIVRE») — não pode ser bloqueado
+    #    pelo próprio bloqueio que levanta.
+    r = cliente.post("/kill-switch/release", json={"reason": "teste"}, headers=cab)
+    assert r.status_code == 200, r.text
+
+    # 7. botão «Ciclo» do Ao Vivo. Aqui NÃO se corre o ciclo: ele produz
+    #    vídeo e demora ~200 s (medido: 3m49s nesta suíte). Verifica-se o
+    #    contrato da rota — que existe, que exige token e que valida o corpo.
+    assert "/cycle/run" in {r.path for r in app.routes}
+    r = cliente.post("/cycle/run", json={"force_scan": False}, headers={})
+    assert r.status_code == 401, r.text   # sem token não passa
+

@@ -465,6 +465,8 @@ def _motivo_indisponivel(name: str) -> str:
         return "gguf_nao_encontrado"
     if name == "ollama":
         return "ollama_desligado"
+    if name in ("llm7", "pollinations"):
+        return "desligado_por_omissao"
     return "sem_chave"
 
 
@@ -529,6 +531,25 @@ class LLMRouter:
                 tpd_limit=0,
                 model=settings.ollama_model,
                 configured=bool(settings.ollama_enabled),
+            ),
+            # Endpoints públicos SEM chave. Desligados por omissão: só entram
+            # na cadeia com LLM_SEM_CHAVE_ATIVO=true. Sem isso, declará-los
+            # como disponíveis punha a holding a tentar rede em cada chamada.
+            ProviderSpec(
+                name="llm7",
+                rpm_limit=30,
+                rpd_limit=0,
+                tpd_limit=0,
+                model=self.SEM_CHAVE_MODELOS["llm7"],
+                configured=bool(getattr(settings, "llm_sem_chave_ativo", False)),
+            ),
+            ProviderSpec(
+                name="pollinations",
+                rpm_limit=1,
+                rpd_limit=0,
+                tpd_limit=0,
+                model=self.SEM_CHAVE_MODELOS["pollinations"],
+                configured=bool(getattr(settings, "llm_sem_chave_ativo", False)),
             ),
             # Motor GGUF local: zero chave, zero rede, zero limite. Só conta
             # como configurado se o ficheiro existir — um caminho morto não
@@ -883,6 +904,74 @@ class LLMRouter:
             log.info("Ollama /v1 indisponível (%s); a tentar a API nativa", exc)
             return self._call_ollama_nativo(request, prompt, system)
 
+    # ------------------------------------------------------------------ #
+    # Endpoints públicos SEM CHAVE (licença dos serviços: uso livre, com
+    # limites). Não são chave de nada: NÃO exigem registo, token nem cartão.
+    #
+    # Estado real: estes dois domínios estão bloqueados neste sandbox
+    # (curl devolve 000). Ficam implementados, testados com resposta
+    # simulada, e DESLIGADOS por omissão — ligam-se com
+    # `LLM_SEM_CHAVE_ATIVO=true` num sítio com rede aberta. Prometer que
+    # funcionam sem os ter medido seria o mesmo erro que a ancoragem de
+    # factos veio corrigir.
+    # ------------------------------------------------------------------ #
+    def _call_sem_chave(
+        self, request: LLMRequest, prompt: str, system: str, provider: str
+    ) -> LLMResponse:
+        """Cliente OpenAI-compatível para um endpoint que não pede chave."""
+        url = self.SEM_CHAVE_URLS[provider]
+        messages: List[Dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        payload: Dict[str, Any] = {
+            "model": self.SEM_CHAVE_MODELOS.get(provider, "openai"),
+            "messages": messages,
+            "temperature": request.temperature,
+            "max_tokens": max(64, request.max_tokens),
+            "stream": False,
+        }
+        if request.json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        started = time.monotonic()
+        raw = _http_post_json(url, payload, {}, timeout=90)
+        latency = int((time.monotonic() - started) * 1000)
+        try:
+            escolha = (raw.get("choices") or [])[0]
+            texto = (escolha.get("message") or {}).get("content") or ""
+        except (AttributeError, IndexError, TypeError) as exc:
+            raise ExternalServiceError(
+                f"Resposta de {provider} inesperada: {str(raw)[:200]}"
+            ) from exc
+        if not texto.strip():
+            raise ExternalServiceError(f"{provider} devolveu resposta vazia")
+        uso = raw.get("usage") or {}
+        usage = TokenUsage(
+            prompt_tokens=int(uso.get("prompt_tokens", estimate_tokens(prompt))),
+            completion_tokens=int(uso.get("completion_tokens", estimate_tokens(texto))),
+            total_tokens=0,
+        )
+        usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        return LLMResponse(
+            text=texto,
+            provider=provider,
+            model=self.SEM_CHAVE_MODELOS.get(provider, "openai"),
+            usage=usage,
+            latency_ms=latency,
+            cost_usd=0.0,
+            is_llm=True,
+        )
+
+    #: Endpoints públicos que respondem sem chave. Ver `_call_sem_chave`.
+    SEM_CHAVE_URLS = {
+        "llm7": "https://api.llm7.io/v1/chat/completions",
+        "pollinations": "https://text.pollinations.ai/openai",
+    }
+    SEM_CHAVE_MODELOS = {
+        "llm7": "gpt-4o-mini",
+        "pollinations": "openai",
+    }
+
     def _call_ollama_openai(
         self, request: LLMRequest, prompt: str, system: str
     ) -> LLMResponse:
@@ -1151,6 +1240,8 @@ class LLMRouter:
                     response = self._call_openrouter(request, prompt, system)
                 elif provider == "ollama":
                     response = self._call_ollama(request, prompt, system)
+                elif provider in ("llm7", "pollinations"):
+                    response = self._call_sem_chave(request, prompt, system, provider)
                 elif provider == "local_gguf":
                     response = self._call_local_gguf(request, prompt, system)
                 else:
