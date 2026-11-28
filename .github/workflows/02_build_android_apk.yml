@@ -556,11 +556,20 @@ jobs:
       - name: Instalar o motor local (LLM GGUF + voz Kokoro)
         run: |
           set -uo pipefail
-          pip install --quiet llama-cpp-python misaki || \
-            echo "::warning::llama-cpp-python/misaki não instalaram; o ciclo segue sem motor local"
+          # O ciclo corre num venv (/tmp/venv). O `pip` cru do runner é outro
+          # Python — instalava os pacotes onde o ciclo não os via. Tem de ser
+          # o mesmo interpretador.
+          export VENV=/tmp/venv
+          "$VENV/bin/python" -m pip install --quiet llama-cpp-python misaki \
+            onnxruntime soundfile phonemizer espeakng-loader || \
+            echo "::warning::instalação parcial do motor local"
           KOKORO_DIR=models/kokoro bash scripts/instalar_motor_local.sh || \
             echo "::warning::motor local indisponível; o ciclo segue com o motor heurístico"
-          bash scripts/fetch_models.sh || true
+          # O fetch_models.sh usa caminhos e nomes diferentes dos que o código
+          # lê (kokoro-v1.0.q8.onnx + voices-v1.0.npz vs kokoro-q8.onnx +
+          # voices/*.bin) e sobrepunha-se ao que o instalador acabou de fazer.
+          # Fica só como último recurso, se o instalador não deixou nada.
+          [ -f models/kokoro/kokoro-q8.onnx ] || bash scripts/fetch_models.sh || true
           ls -lh models/kokoro/ 2>/dev/null | head -3 || true
           echo "LOCAL_GGUF_PATH=$HOME/modelos/Qwen3-0.6B-Q4_K_M.gguf" >> "$GITHUB_ENV"
           echo "LOCAL_GGUF_THREADS=2" >> "$GITHUB_ENV"
@@ -568,7 +577,8 @@ jobs:
           # Os logs do Actions não são alcançáveis de fora (o blob de
           # resultados recusa a ligação), por isso o diagnóstico vai para um
           # ficheiro que é publicado no ramo estado-ciclo.
-          PYTHONPATH=. python scripts/diagnostico_motor.py > motor_local.txt 2>&1 || true
+          PYTHONPATH=. "$VENV/bin/python" scripts/diagnostico_motor.py \
+            > motor_local.txt 2>&1 || true
           cat motor_local.txt
 
       # Diagnóstico de rede: o provider github_models ficou 'configurado' mas
