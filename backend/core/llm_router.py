@@ -683,7 +683,6 @@ class LLMRouter:
         }
         started = time.monotonic()
         raw: Optional[Dict[str, Any]] = None
-        texto_puro: Optional[str] = None
         ultimo_erro: Optional[Exception] = None
         # Guardar TODOS os erros, não só o último: reportar apenas o do
         # endpoint final escondeu durante duas runs que o problema estava no
@@ -699,41 +698,39 @@ class LLMRouter:
                 try:
                     raw = json.loads(corpo) if corpo.strip() else {}
                 except json.JSONDecodeError:
-                    # Medido no runner (sonda_rede.txt): models.github.ai
-                    # devolve `content-type: text/plain` e o corpo `OK` — é a
-                    # resposta do modelo em texto puro, não do envelope JSON
-                    # da OpenAI. Tratar isto como falha fazia o provider
-                    # parecer morto com a API a funcionar (200 em 3 modelos).
-                    if corpo.strip():
-                        texto_puro = corpo.strip()
-                        raw = None
-                        break
+                    # ATENÇÃO — isto não é um modelo a responder em texto puro.
+                    #
+                    # Medido no runner (sonda_rede.txt, run 46135545055):
+                    #   modelo gpt-4o-mini              -> 200 text/plain "OK"
+                    #   modelo gpt-4.1-mini             -> 200 text/plain "OK"
+                    #   modelo INEXISTENTE              -> 200 text/plain "OK"
+                    #   caminho /caminho/que/nao/existe -> 200 text/plain "OK"
+                    #   corpo "isto-nao-e-json"         -> 200 text/plain "OK"
+                    #
+                    # Um LLM real responde de forma diferente a cada um destes.
+                    # Um servidor real devolve 404 a um caminho inválido e 400
+                    # a um corpo inválido. Isto é um proxy de egress que aceita
+                    # qualquer pedido e devolve sempre "OK" — não há IA lá.
+                    #
+                    # Aceitar este "OK" como resposta foi um erro meu numa
+                    # versão anterior: punha is_llm=True e fazia o relatório
+                    # dizer "LLM real" com zero inteligência.
                     raise ExternalServiceError(
-                        f"Resposta vazia (HTTP 200, {ctype or 'sem content-type'}) "
-                        f"em {url.split('?')[0]}"
+                        f"models.github.ai devolveu 200 text/plain "
+                        f"({corpo[:60]!r}) para um pedido válido — é um proxy "
+                        f"de egress, não a API do GitHub Models. Ignorado."
                     )
                 break
             except Exception as exc:  # 404 de endpoint descontinuado, 401, 429…
                 ultimo_erro = exc
                 erros.append(f"{url} -> {type(exc).__name__}: {exc}")
                 log.info("GitHub Models: %s falhou (%s); a tentar o seguinte", url, exc)
-        if raw is None and texto_puro is None:
+        if raw is None:
             raise ExternalServiceError(
                 "GitHub Models indisponível em "
                 f"{len(self.GITHUB_MODELS_ENDPOINTS)} endpoints: " + " | ".join(erros)
             )
         latency = int((time.monotonic() - started) * 1000)
-
-        if texto_puro is not None:
-            return LLMResponse(
-                text=texto_puro, provider="github_models", model=model,
-                usage=TokenUsage(
-                    prompt_tokens=estimate_tokens(prompt),
-                    completion_tokens=estimate_tokens(texto_puro),
-                    total_tokens=0,
-                ),
-                cost_usd=0.0, latency_ms=latency, is_llm=True,
-            )
 
         try:
             escolha = (raw.get("choices") or [])[0]

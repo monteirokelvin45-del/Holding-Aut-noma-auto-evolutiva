@@ -931,41 +931,31 @@ def test_conversao_avaliada_na_ordem_real_do_funil():
     assert resultado["metrics"]["conversion_rate"] >= 0.04
 
 
-def test_github_models_aceita_texto_puro(monkeypatch):
-    """models.github.ai responde text/plain com o texto do modelo.
+def test_github_models_nao_aceita_o_ok_do_proxy(monkeypatch):
+    """O `200 text/plain "OK"` do models.github.ai não é uma resposta de IA.
 
-    Medido no runner (sonda_rede.txt, runs 46132277258/46132690867):
-        HTTP/2 200
-        content-type: text/plain
-        OK
+    Medido no runner (sonda_rede.txt, run 46135545055) — o mesmo corpo "OK"
+    para tudo:
 
-    Ou seja: a API está viva e devolve texto puro. Exigir o envelope JSON da
-    OpenAI fazia o provider parecer morto com 200 em três modelos seguidos.
+        modelo gpt-4o-mini              -> 200 text/plain "OK"
+        modelo INEXISTENTE              -> 200 text/plain "OK"
+        caminho /caminho/que/nao/existe -> 200 text/plain "OK"
+        corpo "isto-nao-e-json"         -> 200 text/plain "OK"
+
+    Um LLM real distingue estes pedidos; um servidor real devolve 404/400.
+    Isto é um proxy de egress. Aceitar o "OK" punha is_llm=True e fazia o
+    relatório do ciclo anunciar "LLM real" com zero raciocínio.
     """
     from backend.config.settings import settings as cfg
     from backend.core import llm_router as mod
 
     router = mod.LLMRouter()
     object.__setattr__(cfg, "github_models_token", "token-de-teste")
-
-    chamadas = []
-
-    def falso_post(url, payload, headers, timeout=30):
-        chamadas.append(url)
-        return "OK", "text/plain"
-
-    monkeypatch.setattr(mod, "_http_post_raw", falso_post)
+    monkeypatch.setattr(mod, "_http_post_raw", lambda *a, **k: ("OK", "text/plain"))
     try:
-        resposta = router._call_github_models(
-            mod.LLMRequest(prompt="Diz OK"), "Diz OK", ""
-        )
+        with pytest.raises(mod.ExternalServiceError) as erro:
+            router._call_github_models(mod.LLMRequest(prompt="Diz OK"), "Diz OK", "")
     finally:
         object.__setattr__(cfg, "github_models_token", "")
 
-    assert resposta.is_llm is True
-    assert resposta.text == "OK"
-    assert resposta.provider == "github_models"
-    assert resposta.cost_usd == 0.0
-    # Tem de ser o endpoint vivo, à primeira — o morto não deve ser tocado.
-    assert chamadas == [mod.LLMRouter.GITHUB_MODELS_ENDPOINTS[0]]
-    assert "models.github.ai" in chamadas[0]
+    assert "proxy de egress" in str(erro.value)
