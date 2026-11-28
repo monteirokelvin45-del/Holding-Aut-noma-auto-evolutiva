@@ -67,6 +67,16 @@ paymentsds-mpesa==0.1a10
 cryptography==44.0.0
 requests==2.32.3
 
+# PayPal — receber. Os dois pacotes são OPCIONAIS: `paypal_cobranca` importa
+# `paypalserversdk` dentro de try/except e funciona em dry-run sem eles.
+# Instalar com:  pip install -r backend/requirements-paypal.txt
+#
+# O nome do módulo é `paypalserversdk`, sem underscores — vários exemplos
+# na internet escrevem `paypal_server_sdk` e dão ModuleNotFoundError.
+#
+# NÃO usar: `paypalrestsdk` e `paypal-checkout-serversdk` estão marcados
+# "Deprecated" no PyPI (últimas versões de 2023) e os repos foram apagados.
+
 # --- Qualidade / ferramentas de licença (ScanCode, Apache-2.0) ---------------
 # `licscan` NÃO existe no PyPI (o repo homónimo tem 1 estrela) — a auditoria de
 # licenças é feita por backend/governance/legal_compliance.py.

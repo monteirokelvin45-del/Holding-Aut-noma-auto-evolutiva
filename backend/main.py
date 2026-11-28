@@ -36,7 +36,7 @@ from pydantic import BaseModel, Field
 from .config.settings import settings
 from .core.approvals import approval_gate
 from .core.clock import utcnow_iso
-from .core.crew_bridge import agent_registry, crew_bridge
+from .core.crew_bridge import agent_registry, cobertura_de_tools, crew_bridge
 from .core.errors import (
     ApprovalRequired,
     AutomatonError,
@@ -63,6 +63,7 @@ from .core.security_guard import kill_switch, prompt_shield
 from .core.shared_memory import shared_memory
 from .core.vault_store import PENDING_APPROVALS, SQUAD_METRICS, VAULT_FILES, vault
 from .finance.cfo_treasury import cfo
+from .finance import cfo_tools
 from .finance.paypal_cobranca import paypal_cobranca
 from .finance.payout_bridge import PayoutRequest, payout_bridge
 from .governance.accountant_auditor import accountant
@@ -1006,6 +1007,23 @@ def llm_chat(payload: ChatRequest) -> Dict[str, Any]:
 # ==========================================================================
 # Agentes (agents.yaml / tasks.yaml) — ponte CrewAI + roteador LLM
 # ==========================================================================
+@app.get("/agents/tools", tags=["agentes"])
+def agent_tools() -> Dict[str, Any]:
+    """Que ferramentas os YAML prometem vs. as que existem mesmo.
+
+    Zero em ``sem_implementacao`` é a meta. Enquanto não estiver lá, esta
+    rota é a lista de trabalho — e não uma surpresa para quem pedir a um
+    agente que use uma ferramenta que nunca foi escrita.
+    """
+    return cobertura_de_tools()
+
+
+@app.get("/finance/cfo-tools", tags=["tesouraria"])
+def cfo_tools_estado() -> Dict[str, Any]:
+    """Os três tools do Agente CFO e as guardas que os limitam."""
+    return cfo_tools.diagnostico()
+
+
 @app.get("/agents", tags=["agentes"])
 def list_agents() -> Dict[str, Any]:
     """Catálogo de agentes e tarefas declarados nos YAML, com validação."""

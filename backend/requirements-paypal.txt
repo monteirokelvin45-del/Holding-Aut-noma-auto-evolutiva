@@ -1,0 +1,17 @@
+# PayPal — cobrança internacional (opcional, separado de propósito).
+#
+#   pip install -r backend/requirements-paypal.txt
+#
+# Sem estes pacotes o backend arranca e o cofre funciona; `paypal_cobranca`
+# fica em dry-run e `ferramentas_do_agente()` devolve lista vazia.
+# Com eles, continua a ser preciso PAYPAL_CLIENT_ID/SECRET para sair do
+# dry-run — instalar um SDK não é ter credenciais.
+#
+# Versões verificadas no PyPI em 2026-11-28:
+#   paypal-server-sdk     2.4.0   (2026-08-21)  activo
+#   paypal-agent-toolkit  1.11.0  (2026-09-01)  activo
+#
+# NÃO usar `paypalrestsdk` (1.13.3, Deprecated) nem
+# `paypal-checkout-serversdk` (1.0.3, Deprecated): ambos de 2023.
+paypal-server-sdk==2.4.0
+paypal-agent-toolkit==1.11.0

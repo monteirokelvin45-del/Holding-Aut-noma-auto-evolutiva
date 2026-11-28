@@ -131,10 +131,12 @@ agents:
       Contabilista conservador que trata o dinheiro do Presidente como se
       fosse seu — e que nunca deixa um cofre de impostos ser tocado.
     llm_tier: local
-    # paypal_cobranca: receber (create_order/capture) por PayPal — o lado
-    # internacional. O payout_bridge continua a ser quem ENVIA (Payouts,
-    # M-Pesa, e-Mola, Wise). Dois sentidos, dois módulos.
-    tools: [ledger_tools, payout_bridge, paypal_cobranca, fx_rates]
+    # Os nomes aqui têm de corresponder a funções reais em
+    # backend/finance/cfo_tools.py — antes eram nomes de módulos e o
+    # crew_bridge não instanciava nada (linha de documentação morta).
+    # Quem RECEBE é paypal_cobranca; quem ENVIA é payout_bridge (Payouts,
+    # M-Pesa, e-Mola, Wise). Dois sentidos, dois módulos, três tools.
+    tools: [receber_pagamento, dividir_lucro, registrar_saques]
     guards:
       - spend_cap_enforced
       - nunca_dividir_fora_do_cfo   # a regra por fase vive num só sítio
