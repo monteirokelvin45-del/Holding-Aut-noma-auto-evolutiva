@@ -1370,3 +1370,61 @@ def test_pipeline_offline_sem_ffmpeg_diz_porque_falha(monkeypatch):
     assert video is None
     assert frames == 0
     assert any("ffmpeg" in n for n in notas)
+
+
+def test_guiao_nunca_polui_a_narracao_com_json_do_modelo():
+    """O modelo devolveu objectos dentro de `body` e a voz leu chavetas.
+
+    Medido num guião real do Qwen3-0.6B: `body` vinha como
+    `[{"title": ..., "description": ..., "content": ...}]` e o código fazia
+    `str(b)`, metendo JSON cru na narração. O Kokoro leu «{'title': 'Conheça
+    o nicho...'}» em voz alta. Um guião com JSON na fala é pior do que um
+    guião vazio: é áudio publicado.
+    """
+    from backend.squads.video_factory_squad import VideoFactorySquad
+
+    item = {
+        "title": "Conheça o nicho de freelancer",
+        "description": "A área oferece oportunidades",
+        "content": "Explore plataformas para encontrar clientes.",
+    }
+    texto = VideoFactorySquad._so_texto(item)
+
+    assert texto == "Explore plataformas para encontrar clientes."
+    assert "{" not in texto and "'title'" not in texto
+    # Valores que não são texto não produzem lixo falado.
+    assert VideoFactorySquad._so_texto(42) == ""
+    assert VideoFactorySquad._so_texto(None) == ""
+    # Listas são achatadas, não convertidas em repr.
+    assert VideoFactorySquad._so_texto(["uma", "duas"]) == "uma duas"
+
+
+def test_kokoro_divide_texto_longo_em_blocos_de_menos_de_510_tokens():
+    """Acima de 510 fonemas o grafo ONNX rebenta com «invalid expand shape».
+
+    Medido por bisseção neste sandbox: 510 ids passam, 514 falham. Uma
+    narração de 40 s tem ~1450 fonemas — sem divisão, o registo caía para o
+    espeak nessa fala e a voz mudava a meio do vídeo.
+
+    O limite é em FONEMAS, não em caracteres: 442 caracteres de português dão
+    510 fonemas (≈1,15 por letra). A primeira correcção cortava por
+    caracteres e continuava a rebentar.
+    """
+    from backend.squads.kokoro_tts import MAX_TOKENS, KokoroLocal
+
+    if KokoroLocal().disponivel()[0] is False:
+        pytest.skip("pesos do Kokoro ausentes")
+
+    k = KokoroLocal()
+    texto = (
+        "Segundo o guia, o primeiro passo é escolher uma competência que já "
+        "tens, e o segundo é montar um portfólio com três trabalhos teus, "
+        "mesmo que sejam de graça, e o terceiro é procurar clientes fora. "
+    ) * 5
+    assert k._n_tokens(texto) > 1000  # o texto é de facto grande
+    blocos = k._blocos(texto)
+    assert len(blocos) > 1
+    for bloco in blocos:
+        assert k._n_tokens(bloco) <= MAX_TOKENS, bloco[:80]
+    # Nada é perdido na divisão.
+    assert " ".join(blocos).split() == texto.split()

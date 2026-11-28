@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-28T11:12:37+00:00",
+  "updated_at": "2026-11-28T13:06:11+00:00",
   "kill_policy": {
     "min_traction_days": 7,
     "min_views_in_traction_window": 200,
@@ -64,9 +64,20 @@
           "ltv_usd": null,
           "conversion_rate": 0.0,
           "at": "2026-11-28T11:08:08+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.16,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
         }
       ],
-      "updated_at": "2026-11-28T11:08:08+00:00",
+      "updated_at": "2026-11-28T13:00:22+00:00",
       "last_verdict": "keep"
     },
     "sq_8f772dbd460e": {
@@ -114,9 +125,20 @@
           "ltv_usd": null,
           "conversion_rate": 0.0,
           "at": "2026-11-28T11:08:08+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.1,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
         }
       ],
-      "updated_at": "2026-11-28T11:08:08+00:00",
+      "updated_at": "2026-11-28T13:00:22+00:00",
       "last_verdict": "keep"
     },
     "sq_36197484aa16": {
@@ -164,9 +186,20 @@
           "ltv_usd": null,
           "conversion_rate": 0.0,
           "at": "2026-11-28T11:08:08+00:00"
+        },
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.1,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
         }
       ],
-      "updated_at": "2026-11-28T11:08:08+00:00",
+      "updated_at": "2026-11-28T13:00:22+00:00",
       "last_verdict": "keep"
     },
     "sq_6c9753cf6a20": {
@@ -192,8 +225,86 @@
       "eval_scores": [],
       "daily": {},
       "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.08,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep"
+    },
+    "sq_294683cf15e2": {
+      "id": "sq_294683cf15e2",
+      "name": "Guia pratico de freelancing para jovens de Maputo",
+      "type": "infoproducts_affiliate",
+      "niche": "freelancing_mz",
+      "owner_agent": "infoproducts_affiliate",
+      "status": "active",
+      "created_at": "2026-11-28T12:59:03+00:00",
+      "activated_at": "2026-11-28T12:59:03+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [
+        {
+          "decision": "keep",
+          "reasons": [
+            "dentro dos parâmetros de saúde."
+          ],
+          "days_alive": 0.0,
+          "cac_usd": null,
+          "ltv_usd": null,
+          "conversion_rate": 0.0,
+          "at": "2026-11-28T13:00:22+00:00"
+        }
+      ],
+      "updated_at": "2026-11-28T13:00:22+00:00",
+      "last_verdict": "keep"
+    },
+    "sq_59453be2138a": {
+      "id": "sq_59453be2138a",
+      "name": "Guia pratico de freelancing para jovens de Maputo",
+      "type": "video_factory",
+      "niche": "freelancing_mz",
+      "owner_agent": "video_factory",
+      "status": "active",
+      "created_at": "2026-11-28T13:00:32+00:00",
+      "activated_at": "2026-11-28T13:00:32+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
       "verdict_history": [],
-      "updated_at": "2026-11-28T11:12:02+00:00"
+      "updated_at": "2026-11-28T13:00:32+00:00"
     }
   },
   "artifacts": [
@@ -1507,6 +1618,712 @@
       "validated_demand": true,
       "created_at": "2026-11-28T11:12:37+00:00",
       "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
+    },
+    {
+      "type": "scout_report",
+      "scan": {
+        "opportunities": [
+          {
+            "id": "opp_fbbb55e6edef",
+            "source": "github_trending",
+            "title": "Marvisak/VIctory: An attempt at running GTA VI on PC",
+            "url": "https://github.com/Marvisak/VIctory",
+            "signal": {
+              "stars": 13988,
+              "forks": 2446,
+              "open_issues": 2395,
+              "license": "GPL-3.0",
+              "created_at": "2026-11-23T21:47:25Z"
+            },
+            "niche": "geral",
+            "demand_score": 100.0,
+            "squad_type": "micro_saas_dev",
+            "rationale": "13988 estrelas e 2446 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "An attempt at running GTA VI on PC"
+          },
+          {
+            "id": "opp_6989a6bfebb3",
+            "source": "github_trending",
+            "title": "erkamyaman/rust-anything: Rewrite your app in Rust, piece by piece, checked against the original at every step. Works with TypeScript, JavaScript,",
+            "url": "https://github.com/erkamyaman/rust-anything",
+            "signal": {
+              "stars": 11004,
+              "forks": 894,
+              "open_issues": 42,
+              "license": "Apache-2.0",
+              "created_at": "2026-11-16T12:10:36Z"
+            },
+            "niche": "inteligência artificial",
+            "demand_score": 84.25,
+            "squad_type": "micro_saas_dev",
+            "rationale": "11004 estrelas e 894 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Rewrite your app in Rust, piece by piece, checked against the original at every step. Works with TypeScript, JavaScript, Python, Go, Ruby, Java, C, PHP, C#, Kotlin and PowerShell."
+          },
+          {
+            "id": "opp_6b594f7909ea",
+            "source": "github_trending",
+            "title": "storytold/craft-anything: Craft Anything: understand how any software works, and craft your own.",
+            "url": "https://github.com/storytold/craft-anything",
+            "signal": {
+              "stars": 44994,
+              "forks": 8887,
+              "open_issues": 478,
+              "license": "Apache-2.0",
+              "created_at": "2026-10-31T14:50:00Z"
+            },
+            "niche": "geral",
+            "demand_score": 26.48,
+            "squad_type": "micro_saas_dev",
+            "rationale": "44994 estrelas e 8887 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Craft Anything: understand how any software works, and craft your own."
+          },
+          {
+            "id": "opp_268d83ebbd52",
+            "source": "github_trending",
+            "title": "Minireel/HGhub: Plug-in media player",
+            "url": "https://github.com/Minireel/HGhub",
+            "signal": {
+              "stars": 12296,
+              "forks": 9301,
+              "open_issues": 9,
+              "license": "NOASSERTION",
+              "created_at": "2026-11-03T14:04:27Z"
+            },
+            "niche": "geral",
+            "demand_score": 24.83,
+            "squad_type": "micro_saas_dev",
+            "rationale": "12296 estrelas e 9301 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Plug-in media player"
+          },
+          {
+            "id": "opp_06e9dcd89a0d",
+            "source": "github_trending",
+            "title": "zortos293/Lichii: VERY experimental Nintendo Switch 2 emulator",
+            "url": "https://github.com/zortos293/Lichii",
+            "signal": {
+              "stars": 10392,
+              "forks": 1636,
+              "open_issues": 759,
+              "license": "GPL-3.0",
+              "created_at": "2026-10-31T14:17:26Z"
+            },
+            "niche": "geral",
+            "demand_score": 23.36,
+            "squad_type": "micro_saas_dev",
+            "rationale": "10392 estrelas e 1636 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "VERY experimental Nintendo Switch 2 emulator"
+          },
+          {
+            "id": "opp_5864a7651388",
+            "source": "github_trending",
+            "title": "janestreet/agent_skills: Agent skills",
+            "url": "https://github.com/janestreet/agent_skills",
+            "signal": {
+              "stars": 12122,
+              "forks": 835,
+              "open_issues": 1,
+              "license": "MIT",
+              "created_at": "2026-11-03T16:50:21Z"
+            },
+            "niche": "geral",
+            "demand_score": 22.01,
+            "squad_type": "micro_saas_dev",
+            "rationale": "12122 estrelas e 835 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Agent skills"
+          },
+          {
+            "id": "opp_ff9227424a8d",
+            "source": "github_trending",
+            "title": "libracoder/kiri: A small, fast container runtime for macOS, Windows and Linux with free Ngrok alternative",
+            "url": "https://github.com/libracoder/kiri",
+            "signal": {
+              "stars": 14108,
+              "forks": 681,
+              "open_issues": 62,
+              "license": "Apache-2.0",
+              "created_at": "2026-11-02T16:11:30Z"
+            },
+            "niche": "inteligência artificial",
+            "demand_score": 21.49,
+            "squad_type": "micro_saas_dev",
+            "rationale": "14108 estrelas e 681 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "A small, fast container runtime for macOS, Windows and Linux with free Ngrok alternative"
+          },
+          {
+            "id": "opp_2259c6d2f102",
+            "source": "github_trending",
+            "title": "deepseek-ai/dsh-superagent-prototype: Towards a More Autonomous Agent System",
+            "url": "https://github.com/deepseek-ai/dsh-superagent-prototype",
+            "signal": {
+              "stars": 24764,
+              "forks": 3118,
+              "open_issues": 0,
+              "license": "MIT",
+              "created_at": "2026-10-31T09:32:46Z"
+            },
+            "niche": "inteligência artificial",
+            "demand_score": 20.79,
+            "squad_type": "micro_saas_dev",
+            "rationale": "24764 estrelas e 3118 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Towards a More Autonomous Agent System"
+          }
+        ],
+        "viable": [
+          {
+            "id": "opp_fbbb55e6edef",
+            "source": "github_trending",
+            "title": "Marvisak/VIctory: An attempt at running GTA VI on PC",
+            "url": "https://github.com/Marvisak/VIctory",
+            "signal": {
+              "stars": 13988,
+              "forks": 2446,
+              "open_issues": 2395,
+              "license": "GPL-3.0",
+              "created_at": "2026-11-23T21:47:25Z"
+            },
+            "niche": "geral",
+            "demand_score": 100.0,
+            "squad_type": "micro_saas_dev",
+            "rationale": "13988 estrelas e 2446 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "An attempt at running GTA VI on PC"
+          },
+          {
+            "id": "opp_6989a6bfebb3",
+            "source": "github_trending",
+            "title": "erkamyaman/rust-anything: Rewrite your app in Rust, piece by piece, checked against the original at every step. Works with TypeScript, JavaScript,",
+            "url": "https://github.com/erkamyaman/rust-anything",
+            "signal": {
+              "stars": 11004,
+              "forks": 894,
+              "open_issues": 42,
+              "license": "Apache-2.0",
+              "created_at": "2026-11-16T12:10:36Z"
+            },
+            "niche": "inteligência artificial",
+            "demand_score": 84.25,
+            "squad_type": "micro_saas_dev",
+            "rationale": "11004 estrelas e 894 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Rewrite your app in Rust, piece by piece, checked against the original at every step. Works with TypeScript, JavaScript, Python, Go, Ruby, Java, C, PHP, C#, Kotlin and PowerShell."
+          },
+          {
+            "id": "opp_6b594f7909ea",
+            "source": "github_trending",
+            "title": "storytold/craft-anything: Craft Anything: understand how any software works, and craft your own.",
+            "url": "https://github.com/storytold/craft-anything",
+            "signal": {
+              "stars": 44994,
+              "forks": 8887,
+              "open_issues": 478,
+              "license": "Apache-2.0",
+              "created_at": "2026-10-31T14:50:00Z"
+            },
+            "niche": "geral",
+            "demand_score": 26.48,
+            "squad_type": "micro_saas_dev",
+            "rationale": "44994 estrelas e 8887 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Craft Anything: understand how any software works, and craft your own."
+          },
+          {
+            "id": "opp_268d83ebbd52",
+            "source": "github_trending",
+            "title": "Minireel/HGhub: Plug-in media player",
+            "url": "https://github.com/Minireel/HGhub",
+            "signal": {
+              "stars": 12296,
+              "forks": 9301,
+              "open_issues": 9,
+              "license": "NOASSERTION",
+              "created_at": "2026-11-03T14:04:27Z"
+            },
+            "niche": "geral",
+            "demand_score": 24.83,
+            "squad_type": "micro_saas_dev",
+            "rationale": "12296 estrelas e 9301 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Plug-in media player"
+          },
+          {
+            "id": "opp_06e9dcd89a0d",
+            "source": "github_trending",
+            "title": "zortos293/Lichii: VERY experimental Nintendo Switch 2 emulator",
+            "url": "https://github.com/zortos293/Lichii",
+            "signal": {
+              "stars": 10392,
+              "forks": 1636,
+              "open_issues": 759,
+              "license": "GPL-3.0",
+              "created_at": "2026-10-31T14:17:26Z"
+            },
+            "niche": "geral",
+            "demand_score": 23.36,
+            "squad_type": "micro_saas_dev",
+            "rationale": "10392 estrelas e 1636 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "VERY experimental Nintendo Switch 2 emulator"
+          },
+          {
+            "id": "opp_5864a7651388",
+            "source": "github_trending",
+            "title": "janestreet/agent_skills: Agent skills",
+            "url": "https://github.com/janestreet/agent_skills",
+            "signal": {
+              "stars": 12122,
+              "forks": 835,
+              "open_issues": 1,
+              "license": "MIT",
+              "created_at": "2026-11-03T16:50:21Z"
+            },
+            "niche": "geral",
+            "demand_score": 22.01,
+            "squad_type": "micro_saas_dev",
+            "rationale": "12122 estrelas e 835 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Agent skills"
+          },
+          {
+            "id": "opp_ff9227424a8d",
+            "source": "github_trending",
+            "title": "libracoder/kiri: A small, fast container runtime for macOS, Windows and Linux with free Ngrok alternative",
+            "url": "https://github.com/libracoder/kiri",
+            "signal": {
+              "stars": 14108,
+              "forks": 681,
+              "open_issues": 62,
+              "license": "Apache-2.0",
+              "created_at": "2026-11-02T16:11:30Z"
+            },
+            "niche": "inteligência artificial",
+            "demand_score": 21.49,
+            "squad_type": "micro_saas_dev",
+            "rationale": "14108 estrelas e 681 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "A small, fast container runtime for macOS, Windows and Linux with free Ngrok alternative"
+          },
+          {
+            "id": "opp_2259c6d2f102",
+            "source": "github_trending",
+            "title": "deepseek-ai/dsh-superagent-prototype: Towards a More Autonomous Agent System",
+            "url": "https://github.com/deepseek-ai/dsh-superagent-prototype",
+            "signal": {
+              "stars": 24764,
+              "forks": 3118,
+              "open_issues": 0,
+              "license": "MIT",
+              "created_at": "2026-10-31T09:32:46Z"
+            },
+            "niche": "inteligência artificial",
+            "demand_score": 20.79,
+            "squad_type": "micro_saas_dev",
+            "rationale": "24764 estrelas e 3118 forks em poucos dias indicam dor real; oportunidade de empacotar como micro-SaaS.",
+            "cemetery_status": "clear",
+            "cemetery_similarity": 0.0,
+            "discovered_at": "2026-11-28T12:56:49+00:00",
+            "raw_excerpt": "Towards a More Autonomous Agent System"
+          }
+        ],
+        "sources_fetched": [
+          "github_trending"
+        ],
+        "sources_skipped": [
+          {
+            "source": "reddit_sideproject",
+            "reason": "sem resultados (rede, rate limit ou vazio)"
+          },
+          {
+            "source": "reddit_entrepreneur",
+            "reason": "sem resultados (rede, rate limit ou vazio)"
+          },
+          {
+            "source": "reddit_passiveincome",
+            "reason": "sem resultados (rede, rate limit ou vazio)"
+          },
+          {
+            "source": "gumroad",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          },
+          {
+            "source": "appsumo",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          },
+          {
+            "source": "youtube_trending",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          },
+          {
+            "source": "tiktok_creative",
+            "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+          }
+        ],
+        "per_source": {
+          "github_trending": 8,
+          "reddit_sideproject": 0,
+          "reddit_entrepreneur": 0,
+          "reddit_passiveincome": 0
+        },
+        "total_found": 8,
+        "viable_count": 8,
+        "deep_research": [],
+        "research_engines": {
+          "crawl4ai": {
+            "installed": false,
+            "enabled": false,
+            "license": "apache-2.0",
+            "ready": false
+          },
+          "gpt_researcher": {
+            "installed": false,
+            "enabled": false,
+            "license": "apache-2.0",
+            "ready": false
+          },
+          "native": {
+            "installed": true,
+            "enabled": true,
+            "license": "own",
+            "ready": true
+          },
+          "active": "native"
+        },
+        "scanned_at": "2026-11-28T12:56:49+00:00"
+      },
+      "proposals": [
+        {
+          "opportunity_id": "opp_fbbb55e6edef",
+          "squad_type": "micro_saas_dev",
+          "niche": "geral",
+          "source": "github_trending",
+          "source_url": "https://github.com/Marvisak/VIctory",
+          "idea": "Smoke Test para GTA VI no PC",
+          "hypothesis": "Validar a lançamento da GTA VI em 3-7 dias com custo $0.00",
+          "cta": "Lançar a Smoke Test de demanda",
+          "price_anchor_usd": 0.0,
+          "risks": [
+            "Problemas técnicos no desenvolvimento",
+            "Durações de produção prolongadas",
+            "Desafios com compatibilidade com o sistema"
+          ],
+          "demand_score": 100.0,
+          "engine": "local_gguf",
+          "is_llm": true,
+          "note": "Proposta gerada pelo LLM."
+        },
+        {
+          "opportunity_id": "opp_6989a6bfebb3",
+          "squad_type": "micro_saas_dev",
+          "niche": "inteligência artificial",
+          "source": "github_trending",
+          "source_url": "https://github.com/erkamyaman/rust-anything",
+          "idea": "Implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.",
+          "hypothesis": "Validar a funcionalidade do aplicativo com modelos de inteligência artificial dentro 3-7 dias, com custo de $500.",
+          "cta": "Lancar uma suite de testes completos para avaliar a performance do aplicativo.",
+          "price_anchor_usd": 500.0,
+          "risks": [
+            "Integração técnica não esperada",
+            "Duração do teste não definida",
+            "Concorrência com outros sistemas"
+          ],
+          "demand_score": 84.25,
+          "engine": "local_gguf",
+          "is_llm": true,
+          "note": "Proposta gerada pelo LLM."
+        },
+        {
+          "opportunity_id": "opp_6b594f7909ea",
+          "squad_type": "micro_saas_dev",
+          "niche": "geral",
+          "source": "github_trending",
+          "source_url": "https://github.com/storytold/craft-anything",
+          "idea": "Validar a capacidade de software de escala e modelo abierto",
+          "hypothesis": "Implementar uma validação de smoke no projeto 'storytold/craft-anything' para avaliar sua capacidade de escala e licença comercial",
+          "cta": "Executar testes de smoke no projeto 'storytold/craft-anything'",
+          "price_anchor_usd": 0.0,
+          "risks": [
+            "A instabilidade do projeto pode comprometer a validação",
+            "Dependências externas não serem testadas",
+            "Limites de tempo para a validação"
+          ],
+          "demand_score": 26.48,
+          "engine": "local_gguf",
+          "is_llm": true,
+          "note": "Proposta gerada pelo LLM."
+        }
+      ],
+      "at": "2026-11-28T12:57:48+00:00"
+    },
+    {
+      "type": "ebook_package",
+      "squad_id": "sq_294683cf15e2",
+      "title": "Guia Pratico de Freelancing para jovens de Maputo",
+      "subtitle": "Guia para jovens de Maputo em Networking e Empreendedorismo",
+      "price_usd": 12.0,
+      "description": "Este guia oferece um plano básico para jovens de Maputo que desejem se tornar profissionais em freelancing. Com base nos princípios de economia sustentável e empreendedorismo, o conteúdo inclui dicas para criar uma carreira independente e como se tornar uma força positiva na área.",
+      "tags": [
+        "freelancing_mz",
+        "maputo",
+        "freelancing-mercados-africa",
+        "freelancing-mosambique",
+        "empreendedorismo-afro"
+      ],
+      "platform": [
+        "gumroad",
+        "lemonsqueezy"
+      ],
+      "files": {
+        "markdown": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_294683cf15e2/2026-11-28/ebook.md",
+        "html": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_294683cf15e2/2026-11-28/ebook.html"
+      },
+      "gumroad_listing": {
+        "name": "Guia Pratico de Freelancing para jovens de Maputo",
+        "price": "12.00",
+        "description": "Este guia oferece um plano básico para jovens de Maputo que desejem se tornar profissionais em freelancing. Com base nos princípios de economia sustentável e empreendedorismo, o conteúdo inclui dicas para criar uma carreira independente e como se tornar uma força positiva na área.\n\nhttps://www.automatonholding.com/book/guia-pratico-de-freelancing-mz",
+        "tags": [
+          "freelancing_mz",
+          "maputo",
+          "freelancing-mercados-africa",
+          "freelancing-mosambique",
+          "empreendedorismo-afro"
+        ],
+        "file": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_294683cf15e2/2026-11-28/ebook.html"
+      },
+      "marketing": {
+        "twitter": "Guia Pratico de Freelancing para jovens de Maputo — Guia para jovens de Maputo em Networking e Empreendedorismo. https://www.automatonholding.com/book/guia-pratico-de-freelancing-mz",
+        "email_subject": "Guia Pratico de Freelancing para jovens de Maputo"
+      },
+      "validated_demand": true,
+      "smoke_test_id": "smk_a5881f8bbf3f",
+      "created_at": "2026-11-28T12:59:49+00:00",
+      "judge": {
+        "score": 85.45,
+        "passed": true,
+        "content_type": "ebook",
+        "axes": {
+          "hook": 80.5,
+          "clarity": 90.85,
+          "technical": 79.6,
+          "compliance": 87.25
+        },
+        "points": {
+          "hook": 20.12,
+          "clarity": 22.71,
+          "technical": 19.9,
+          "compliance": 21.81
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Título no intervalo ótimo de SEO (20-70 chars).",
+          "Frases legíveis (média 14.7 palavras).",
+          "Este material é educativo e não constitui aconselhamento financeiro, jurídico ou fiscal."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Expandir para pelo menos 1200 palavras (actual: 367)."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:00:22+00:00"
+      }
+    },
+    {
+      "type": "video_package",
+      "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/publication_package.json",
+      "publishable": true,
+      "publish_blockers": [],
+      "squad_id": "sq_59453be2138a",
+      "title": "Guia Prático de Freelancing para jovens de Maputo",
+      "description": "Guia Prático de Freelancing para jovens de Maputo. Clique aqui para mais informações. #FreelancingMaputo #Maputo #Startup",
+      "hashtags": [
+        "#FreelancingMaputo",
+        "#Maputo",
+        "#Startup"
+      ],
+      "platforms": [
+        "tiktok",
+        "youtube_shorts",
+        "instagram_reels"
+      ],
+      "narration": "Como começar seu profissionalismo na área de freelancing em Maputo? {'title': 'Conheça o nicho de freelancer em Maputo', 'description': 'A área de freelancing no Maputo oferece oportunidades para jovens que buscam crescimento e estabilidade.', 'content': 'Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.'} {'title': 'Ferramentas essenciais para o freelancing', 'description': 'Aprenda a usar ferramentas como o Fiverr e o LinkedIn para construir sua rede e se destacar.', 'content': 'Acesse os recursos gratuitos e participe de eventos para crescer.'} Acesse nosso guia completo para uma startup no Maputo. Clique aqui para mais informações.",
+      "script": {
+        "title": "Guia Prático de Freelancing para jovens de Maputo",
+        "hook": "Como começar seu profissionalismo na área de freelancing em Maputo?",
+        "body": [
+          "{'title': 'Conheça o nicho de freelancer em Maputo', 'description': 'A área de freelancing no Maputo oferece oportunidades para jovens que buscam crescimento e estabilidade.', 'content': 'Explore plataformas como o Mercado Livre para encontrar profissionais de alta qualidade.'}",
+          "{'title': 'Ferramentas essenciais para o freelancing', 'description': 'Aprenda a usar ferramentas como o Fiverr e o LinkedIn para construir sua rede e se destacar.', 'content': 'Acesse os recursos gratuitos e participe de eventos para crescer.'}"
+        ],
+        "cta": "Acesse nosso guia completo para uma startup no Maputo. Clique aqui para mais informações.",
+        "hashtags": [
+          "#FreelancingMaputo",
+          "#Maputo",
+          "#Startup"
+        ],
+        "description": "Guia Prático de Freelancing para jovens de Maputo. Clique aqui para mais informações. #FreelancingMaputo #Maputo #Startup",
+        "language": "pt",
+        "engine": "local_gguf",
+        "is_llm": true,
+        "word_count": 96
+      },
+      "render": {
+        "ok": true,
+        "video_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/short.mp4",
+        "audio_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/narracao.wav",
+        "duration_seconds": 42.93,
+        "resolution": "1080x1920",
+        "fps": 30,
+        "steps": {
+          "tts": {
+            "ok": true,
+            "engine": "kokoro:pf_dora:4.2s",
+            "ms": 33576
+          },
+          "subtitles": {
+            "ok": true,
+            "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/legendas.srt"
+          },
+          "render": {
+            "ok": true,
+            "ffmpeg": "imageio-ffmpeg",
+            "ms": 225591,
+            "frames": 1288,
+            "pipeline": "offline_frame_by_frame"
+          }
+        },
+        "warnings": []
+      },
+      "footage": {
+        "source": "generated",
+        "kind": "motion_graphics",
+        "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_59453be2138a/2026-11-28/footage/motion/motion_base.mp4",
+        "license": "own_work",
+        "url": "",
+        "query": "freelancing_mz",
+        "engine": "pillow+ffmpeg",
+        "scenes": 4,
+        "has_text": true,
+        "note": "4 planos animados gerados localmente (Pillow + ffmpeg), sem GPU e sem material de terceiros."
+      },
+      "judge": {
+        "score": 89.29,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 85.6,
+          "clarity": 99.1,
+          "technical": 79.75,
+          "compliance": 95.5
+        },
+        "points": {
+          "hook": 21.4,
+          "clarity": 24.77,
+          "technical": 19.94,
+          "compliance": 23.88
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Frases legíveis (média 14.3 palavras).",
+          "A entrega completa e concisa apresenta informações relevantes sobre o nicho de freelancing em Maputo.",
+          "A descrição e conteúdo são claras e direcionadas para o público objetivo.",
+          "A falta de bugs e conformidade com normas técnicas é evidenciada."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Abrir com gancho explícito (pergunta, número ou promessa concreta) para segurar os 3 primeiros segundos.",
+          "Falta uma chamada à acção explícita.",
+          "Acesse o link para mais informações sobre a startup no Maputo.",
+          "Participe de eventos gratuitos e plataformas para crescer."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:06:11+00:00"
+      },
+      "compliance": {
+        "subject": "media",
+        "kind": "copyright",
+        "passed": true,
+        "findings": [
+          {
+            "check": "video_source_source",
+            "passed": true,
+            "severity": "info",
+            "message": "video_source: fonte 'generated' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "generated",
+                "license": "own_work"
+              }
+            }
+          },
+          {
+            "check": "audio_source",
+            "passed": true,
+            "severity": "info",
+            "message": "audio: fonte 'kokoro' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "kokoro",
+                "license": "apache-2.0"
+              }
+            }
+          }
+        ],
+        "tool": "curated-media-policy",
+        "generated_at": "2026-11-28T13:05:49+00:00"
+      },
+      "smoke_test_id": "smk_a5881f8bbf3f",
+      "validated_demand": true,
+      "created_at": "2026-11-28T13:06:11+00:00",
+      "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
     }
   ],
   "agents": {
@@ -1523,16 +2340,16 @@
           "by": "bootstrap"
         }
       ],
-      "calls": 2,
+      "calls": 3,
       "tokens": 0,
       "cost_usd": 0.0,
-      "successes": 2,
+      "successes": 3,
       "failures": 0,
       "judge_scores": [],
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T09:09:52+00:00",
-      "updated_at": "2026-11-28T11:08:08+00:00",
+      "updated_at": "2026-11-28T13:00:22+00:00",
       "reviews": [
         {
           "agent_id": "scout_hunter",
@@ -1585,6 +2402,19 @@
           ],
           "new_prompt": null,
           "candidate_repositories": []
+        },
+        {
+          "agent_id": "scout_hunter",
+          "success_rate": 1.0,
+          "cost_per_success_usd": 0.0,
+          "avg_score": 0.0,
+          "attempts": 3,
+          "decision": "healthy",
+          "reasons": [
+            "dentro dos parâmetros"
+          ],
+          "new_prompt": null,
+          "candidate_repositories": []
         }
       ],
       "last_review": "healthy"
@@ -1602,20 +2432,21 @@
           "by": "bootstrap"
         }
       ],
-      "calls": 3,
+      "calls": 4,
       "tokens": 0,
       "cost_usd": 0.0,
-      "successes": 3,
+      "successes": 4,
       "failures": 0,
       "judge_scores": [
         94.0,
         94.0,
-        94.0
+        94.0,
+        85.45
       ],
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T09:11:20+00:00",
-      "updated_at": "2026-11-28T11:08:08+00:00",
+      "updated_at": "2026-11-28T13:00:22+00:00",
       "reviews": [
         {
           "agent_id": "infoproducts_affiliate",
@@ -1655,6 +2486,19 @@
           ],
           "new_prompt": null,
           "candidate_repositories": []
+        },
+        {
+          "agent_id": "infoproducts_affiliate",
+          "success_rate": 1.0,
+          "cost_per_success_usd": 0.0,
+          "avg_score": 91.86,
+          "attempts": 4,
+          "decision": "healthy",
+          "reasons": [
+            "dentro dos parâmetros"
+          ],
+          "new_prompt": null,
+          "candidate_repositories": []
         }
       ],
       "last_review": "healthy"
@@ -1672,19 +2516,35 @@
           "by": "bootstrap"
         }
       ],
-      "calls": 1,
+      "calls": 2,
       "tokens": 0,
       "cost_usd": 0.0,
-      "successes": 1,
+      "successes": 2,
       "failures": 0,
       "judge_scores": [
-        88.0
+        88.0,
+        89.29
       ],
       "failure_reasons": [],
       "rewrites": 0,
       "created_at": "2026-11-28T11:12:37+00:00",
-      "updated_at": "2026-11-28T11:12:37+00:00",
-      "reviews": []
+      "updated_at": "2026-11-28T13:06:11+00:00",
+      "reviews": [
+        {
+          "agent_id": "video_factory",
+          "success_rate": 1.0,
+          "cost_per_success_usd": 0.0,
+          "avg_score": 88.0,
+          "attempts": 1,
+          "decision": "healthy",
+          "reasons": [
+            "dentro dos parâmetros"
+          ],
+          "new_prompt": null,
+          "candidate_repositories": []
+        }
+      ],
+      "last_review": "healthy"
     }
   },
   "smoke_tests": [
@@ -2201,6 +3061,191 @@
       },
       "conversion_rate": 0.0,
       "days_remaining": 3.0
+    },
+    {
+      "id": "smk_a5881f8bbf3f",
+      "idea": "Guia pratico de freelancing para jovens de Maputo",
+      "niche": "freelancing_mz",
+      "squad_type": "infoproducts_affiliate",
+      "hypothesis": "jovens de Maputo pagam por um guia pratico de freelancing",
+      "cta": "Quero o guia",
+      "price_anchor_usd": 12.0,
+      "status": "passed",
+      "created_at": "2026-11-28T12:56:46+00:00",
+      "deadline_at": "2026-12-01T12:56:46+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 90,
+      "unique_clicks": 90,
+      "signups": 7,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "organic": 0,
+        "divulgacao": 97
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em freelancing_mz: guia pratico de freelancing para jovens de Maputo. Quero o guia (link na bio).",
+        "P1 · Prova: O que já testámos sobre guia pratico de freelancing para jovens de Maputo. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir guia pratico de freelancing para jovens de Maputo. Lista VIP com preço de fundador. Quero o guia."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_a5881f8bbf3f/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_a5881f8bbf3f/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:56:46+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": "2026-11-28T12:56:46+00:00",
+      "decision_reason": "Meta atingida: 90 cliques (meta 25) e conversão 7.8% (meta 4.0%).",
+      "metadata": {
+        "copy_engine": "template",
+        "campaign_source": "organic",
+        "is_llm_copy": false,
+        "produced": true,
+        "produced_by": "sq_294683cf15e2",
+        "produced_at": "2026-11-28T13:00:22+00:00"
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0,
+      "updated_at": "2026-11-28T12:56:46+00:00"
+    },
+    {
+      "id": "smk_78973ef4ac57",
+      "idea": "Smoke Test para GTA VI no PC",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Validar a lançamento da GTA VI em 3-7 dias com custo $0.00",
+      "cta": "Lançar a Smoke Test de demanda",
+      "price_anchor_usd": 0.0,
+      "status": "running",
+      "created_at": "2026-11-28T12:58:03+00:00",
+      "deadline_at": "2026-12-01T12:58:03+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: smoke Test para GTA VI no PC. Lançar a Smoke Test de demanda (link na bio).",
+        "P1 · Prova: O que já testámos sobre smoke Test para GTA VI no PC. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir smoke Test para GTA VI no PC. Lista VIP com preço de fundador. Lançar a Smoke Test de demanda."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_78973ef4ac57/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_78973ef4ac57/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:57:48+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0
+    },
+    {
+      "id": "smk_a1acb70f951e",
+      "idea": "Implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.",
+      "niche": "inteligência artificial",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Validar a funcionalidade do aplicativo com modelos de inteligência artificial dentro 3-7 dias, com custo de $500.",
+      "cta": "Lancar uma suite de testes completos para avaliar a performance do aplicativo.",
+      "price_anchor_usd": 500.0,
+      "status": "running",
+      "created_at": "2026-11-28T12:58:22+00:00",
+      "deadline_at": "2026-12-01T12:58:22+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em inteligência artificial: implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. Lancar uma suite de testes completos para avaliar a performance do aplicativo. (link na bio).",
+        "P1 · Prova: O que já testámos sobre implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir implementar um framework de teste de demanda baseado em inteligência artificial para avaliar a performance do aplicativo.. Lista VIP com preço de fundador. Lancar uma suite de testes completos para avaliar a performance do aplicativo.."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_a1acb70f951e/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_a1acb70f951e/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:58:03+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0
+    },
+    {
+      "id": "smk_3d6565313ff2",
+      "idea": "Validar a capacidade de software de escala e modelo abierto",
+      "niche": "geral",
+      "squad_type": "micro_saas_dev",
+      "hypothesis": "Implementar uma validação de smoke no projeto 'storytold/craft-anything' para avaliar sua capacidade de escala e licença comercial",
+      "cta": "Executar testes de smoke no projeto 'storytold/craft-anything'",
+      "price_anchor_usd": 0.0,
+      "status": "running",
+      "created_at": "2026-11-28T12:59:03+00:00",
+      "deadline_at": "2026-12-01T12:59:03+00:00",
+      "min_clicks": 25,
+      "min_conversion_rate": 0.04,
+      "clicks": 0,
+      "unique_clicks": 0,
+      "signups": 0,
+      "preorders": 0,
+      "revenue_usd": 0.0,
+      "sources": {
+        "github_trending": 0
+      },
+      "posts": [
+        "P0 · Gancho: Ninguém fala disto em geral: validar a capacidade de software de escala e modelo abierto. Executar testes de smoke no projeto 'storytold/craft-anything' (link na bio).",
+        "P1 · Prova: O que já testámos sobre validar a capacidade de software de escala e modelo abierto. 3 lições em 30 segundos. Comenta 'QUERO' se quiseres o acesso antecipado.",
+        "P2 · Oferta: Estamos a construir validar a capacidade de software de escala e modelo abierto. Lista VIP com preço de fundador. Executar testes de smoke no projeto 'storytold/craft-anything'."
+      ],
+      "page_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/smoke_tests/smk_3d6565313ff2/index.html",
+      "public_url": "https://automaton-holding.github.io/smoke/smk_3d6565313ff2/",
+      "cemetery_check": {
+        "allowed": true,
+        "matches": [],
+        "threshold": 0.4,
+        "checked_at": "2026-11-28T12:58:22+00:00",
+        "corpus_size": 0
+      },
+      "decided_at": null,
+      "decision_reason": "",
+      "metadata": {
+        "copy_engine": "local_gguf",
+        "campaign_source": "github_trending",
+        "is_llm_copy": true
+      },
+      "conversion_rate": 0.0,
+      "days_remaining": 3.0
     }
   ],
   "cycles": [
@@ -2619,6 +3664,135 @@
       "approvals_created": [],
       "errors": [],
       "summary": "Ciclo cyc_20261128T110424 · 3 smoke test(s) novo(s) · 0 produção(ões) · 0 ordem(ns) de abate para aprovação · 2 aprovação(ões) pendente(s) ($12.00)"
+    },
+    {
+      "cycle_id": "cyc_20261128T125648",
+      "status": "completed",
+      "started_at": "2026-11-28T12:56:48+00:00",
+      "finished_at": "2026-11-28T13:00:22+00:00",
+      "duration_seconds": 214.11,
+      "steps": [
+        {
+          "step": "hygiene",
+          "status": "ok",
+          "detail": {
+            "approvals_expired": 0,
+            "smoke_tests_decided": 0
+          }
+        },
+        {
+          "step": "scout",
+          "status": "completed",
+          "detail": {
+            "found": 8,
+            "viable": 8,
+            "sources_skipped": [
+              {
+                "source": "reddit_sideproject",
+                "reason": "sem resultados (rede, rate limit ou vazio)"
+              },
+              {
+                "source": "reddit_entrepreneur",
+                "reason": "sem resultados (rede, rate limit ou vazio)"
+              },
+              {
+                "source": "reddit_passiveincome",
+                "reason": "sem resultados (rede, rate limit ou vazio)"
+              },
+              {
+                "source": "gumroad",
+                "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+              },
+              {
+                "source": "appsumo",
+                "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+              },
+              {
+                "source": "youtube_trending",
+                "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+              },
+              {
+                "source": "tiktok_creative",
+                "reason": "requer Crawl4AI/GPT-Researcher ou chave oficial (motores prontos: native)"
+              }
+            ]
+          }
+        },
+        {
+          "step": "validation",
+          "status": "ok",
+          "detail": {
+            "created": 3,
+            "tests": [
+              {
+                "id": "smk_78973ef4ac57",
+                "idea": "Smoke Test para GTA VI no PC"
+              },
+              {
+                "id": "smk_a1acb70f951e",
+                "idea": "Implementar um framework de teste de demanda baseado em inteligência a"
+              },
+              {
+                "id": "smk_3d6565313ff2",
+                "idea": "Validar a capacidade de software de escala e modelo abierto"
+              }
+            ]
+          }
+        },
+        {
+          "step": "production",
+          "status": "ok",
+          "detail": {
+            "count": 1,
+            "items": [
+              {
+                "squad_id": "sq_294683cf15e2",
+                "type": "infoproducts_affiliate",
+                "status": "completed",
+                "summary": "E-book 'Guia Pratico de Freelancing para jovens de Maputo' (365 palavras) produzido e aprovado pelo juiz (85.5/100). Ficheiros em /home/user/Holding-Aut-noma-au"
+              }
+            ]
+          }
+        },
+        {
+          "step": "accounting",
+          "status": "ok",
+          "detail": {
+            "evaluated": 5,
+            "kill_orders": 0,
+            "watched": []
+          }
+        },
+        {
+          "step": "hr",
+          "status": "ok",
+          "detail": {
+            "agents_reviewed": 7,
+            "actions_needed": []
+          }
+        },
+        {
+          "step": "legal",
+          "status": "ok",
+          "detail": {
+            "passed": true,
+            "critical": []
+          }
+        },
+        {
+          "step": "treasury",
+          "status": "ok",
+          "detail": {
+            "phase": 1,
+            "phase_changed": false,
+            "monthly_revenue_usd": 0.0,
+            "audit_balanced": true
+          }
+        }
+      ],
+      "approvals_created": [],
+      "errors": [],
+      "summary": "Ciclo cyc_20261128T125648 · 3 smoke test(s) novo(s) · 1 produção(ões) · 0 ordem(ns) de abate para aprovação · 2 aprovação(ões) pendente(s) ($12.00)"
     }
   ],
   "eval_history": [
@@ -2802,6 +3976,105 @@
         "title": "Freelancing em Moçambique: os 3 passos para o primeiro cliente"
       },
       "at": "2026-11-28T11:12:37+00:00"
+    },
+    {
+      "squad_id": "sq_294683cf15e2",
+      "agent_id": "infoproducts_affiliate",
+      "content_type": "ebook",
+      "content_hash": "len2484",
+      "verdict": {
+        "score": 85.45,
+        "passed": true,
+        "content_type": "ebook",
+        "axes": {
+          "hook": 80.5,
+          "clarity": 90.85,
+          "technical": 79.6,
+          "compliance": 87.25
+        },
+        "points": {
+          "hook": 20.12,
+          "clarity": 22.71,
+          "technical": 19.9,
+          "compliance": 21.81
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Título no intervalo ótimo de SEO (20-70 chars).",
+          "Frases legíveis (média 14.7 palavras).",
+          "Este material é educativo e não constitui aconselhamento financeiro, jurídico ou fiscal."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Expandir para pelo menos 1200 palavras (actual: 367)."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:00:22+00:00"
+      },
+      "metadata": {
+        "title": "Guia Pratico de Freelancing para jovens de Maputo",
+        "price_usd": 12.0
+      },
+      "at": "2026-11-28T13:00:22+00:00"
+    },
+    {
+      "squad_id": "sq_59453be2138a",
+      "agent_id": "video_factory",
+      "content_type": "video_short",
+      "content_hash": "len685",
+      "verdict": {
+        "score": 89.29,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 85.6,
+          "clarity": 99.1,
+          "technical": 79.75,
+          "compliance": 95.5
+        },
+        "points": {
+          "hook": 21.4,
+          "clarity": 24.77,
+          "technical": 19.94,
+          "compliance": 23.88
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Frases legíveis (média 14.3 palavras).",
+          "A entrega completa e concisa apresenta informações relevantes sobre o nicho de freelancing em Maputo.",
+          "A descrição e conteúdo são claras e direcionadas para o público objetivo.",
+          "A falta de bugs e conformidade com normas técnicas é evidenciada."
+        ],
+        "critical_findings": [],
+        "suggestions": [
+          "Abrir com gancho explícito (pergunta, número ou promessa concreta) para segurar os 3 primeiros segundos.",
+          "Falta uma chamada à acção explícita.",
+          "Acesse o link para mais informações sobre a startup no Maputo.",
+          "Participe de eventos gratuitos e plataformas para crescer."
+        ],
+        "engine": "hybrid:local_gguf+objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T13:06:11+00:00"
+      },
+      "metadata": {
+        "duration_seconds": 42.93,
+        "has_cta": true,
+        "title": "Guia Prático de Freelancing para jovens de Maputo"
+      },
+      "at": "2026-11-28T13:06:11+00:00"
     }
   ]
 }

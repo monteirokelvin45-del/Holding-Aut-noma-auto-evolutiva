@@ -53,5 +53,25 @@
     "sqad_id": "sq_36197484aa16",
     "criado_em": "2026-11-28T10:42:49+00:00",
     "preco_local": 762.0
+  },
+  {
+    "id": "sq_294683cf15e2",
+    "titulo": "Guia Pratico de Freelancing para jovens de Maputo",
+    "resumo": "Este guia oferece um plano básico para jovens de Maputo que desejem se tornar profissionais em freelancing. Com base nos princípios de economia sustentável e empreendedorismo, o conteúdo inclui dicas para criar uma carreira independente e c",
+    "descricao": "Este guia oferece um plano básico para jovens de Maputo que desejem se tornar profissionais em freelancing. Com base nos princípios de economia sustentável e empreendedorismo, o conteúdo inclui dicas para criar uma carreira independente e como se tornar uma força positiva na área.",
+    "preco_usd": 12.0,
+    "moeda_local": "MZN",
+    "ficheiro_entrega": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/artifacts/sq_294683cf15e2/2026-11-28/ebook.html",
+    "link_externo": "",
+    "tags": [
+      "freelancing_mz",
+      "maputo",
+      "freelancing-mercados-africa",
+      "freelancing-mosambique",
+      "empreendedorismo-afro"
+    ],
+    "sqad_id": "sq_294683cf15e2",
+    "criado_em": "2026-11-28T13:00:22+00:00",
+    "preco_local": 762.0
   }
 ]

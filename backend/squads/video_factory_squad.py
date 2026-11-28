@@ -701,6 +701,13 @@ class VideoFactorySquad(BaseSquad):
                 body = [line.strip() for line in body.splitlines() if line.strip()]
             if not isinstance(body, list) or not body:
                 body = [str(data.get("hook", ""))]
+            # O modelo devolve, às vezes, objectos em vez de frases:
+            #   [{"title": "...", "description": "...", "content": "..."}]
+            # `str(b)` disso põe JSON cru na narração — e a voz lê chavetas.
+            # Medido num guião real, que saiu a dizer «{'title': 'Conheça o
+            # nicho...'}» em voz alta. Aqui só entram frases.
+            body = [self._so_texto(b) for b in body]
+            body = [b for b in body if b]
             hashtags = data.get("hashtags")
             if isinstance(hashtags, str):
                 hashtags = [h.strip() for h in hashtags.split() if h.strip()]
@@ -772,6 +779,37 @@ class VideoFactorySquad(BaseSquad):
             frases=frases, titulo=script.title, out_dir=out_dir, language=language
         )
         return resultado.to_dict()
+
+    @staticmethod
+    def _so_texto(valor: Any) -> str:
+        """Extrai uma frase legível de um item que pode ser dict ou lista.
+
+        Um guião com JSON na narração é pior do que um guião vazio: é áudio
+        publicado. Se o item for um dicionário, usa o campo de texto mais
+        longo; se for uma lista, junta as partes.
+        """
+        if isinstance(valor, str):
+            return valor.strip()[:280]
+        if isinstance(valor, dict):
+            textos = [
+                str(v).strip()
+                for v in valor.values()
+                if isinstance(v, str) and str(v).strip()
+            ]
+            if not textos:
+                return ""
+            # `content`/`description` são mais informativos do que `title`.
+            preferidos = [
+                str(valor.get(chave, "")).strip()
+                for chave in ("content", "text", "body", "description", "title")
+                if str(valor.get(chave, "")).strip()
+            ]
+            escolhido = preferidos[0] if preferidos else max(textos, key=len)
+            return escolhido[:280]
+        if isinstance(valor, (list, tuple)):
+            partes = [VideoFactorySquad._so_texto(v) for v in valor]
+            return " ".join(p for p in partes if p).strip()[:280]
+        return ""
 
     @staticmethod
     def _default_hashtags(niche: str) -> List[str]:

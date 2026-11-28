@@ -42,6 +42,7 @@ ela. Sem isso, o espeak não arranca e este motor cai para `espeak_ng` puro.
 
 from __future__ import annotations
 
+import re
 import wave
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -79,6 +80,14 @@ VOZES_PT = {"feminina": "pf_dora", "masculina": "pm_alex", "masculina2": "pm_san
 
 TAXA_AMOSTRAGEM = 24000
 DIM_STYLE = 256
+#: Máximo de tokens por chamada ONNX. O modelo tem um limite rígido:
+#: medido por bisseção neste sandbox, 510 ids passam e 514 falham com
+#: «invalid expand shape». Fica 480 para margem.
+#:
+#: ATENÇÃO: o limite é em FONEMAS, não em caracteres. A primeira tentativa
+#: de correcção cortava por caracteres e continuava a rebentar — 442
+#: caracteres dão 510 fonemas em português (≈1,15 fonema por letra).
+MAX_TOKENS = 480
 
 
 class KokoroLocalIndisponivel(RuntimeError):
@@ -179,6 +188,61 @@ class KokoroLocal:
         return linhas[indice]
 
     # ---------------------------------------------------------------- síntese
+    def _n_tokens(self, texto: str) -> int:
+        """Quantos ids este texto vai ocupar no ONNX."""
+        return len(self._ids(self._fonemas(texto)))
+
+    def _blocos(self, texto: str, max_tokens: int = MAX_TOKENS) -> List[str]:
+        """Divide o texto em blocos que caibam no limite do ONNX.
+
+        A contagem é feita em fonemas a cada passo (``_n_tokens``), não por
+        estimativa de caracteres: o português tem cerca de 1,15 fonema por
+        letra, e uma estimativa errada na cauda foi suficiente para o grafo
+        rebentar com «invalid expand shape».
+
+        Corta por fim de frase; se uma frase sozinha exceder o limite, por
+        vírgula; em último caso, por palavra.
+        """
+        if self._n_tokens(texto) <= max_tokens:
+            return [texto]
+
+        unidades = [u.strip() for u in re.split(r"(?<=[.!?])\s+", texto) if u.strip()]
+        # Frases maiores do que o limite, partidas em pedaços por vírgula.
+        pedacos: List[str] = []
+        for unidade in unidades:
+            if self._n_tokens(unidade) <= max_tokens:
+                pedacos.append(unidade)
+                continue
+            for parte in re.split(r"(?<=,)\s+", unidade):
+                if self._n_tokens(parte) <= max_tokens:
+                    pedacos.append(parte)
+                    continue
+                # Último recurso: por palavra.
+                palavras = parte.split()
+                actual = ""
+                for palavra in palavras:
+                    tentativa = (actual + " " + palavra).strip()
+                    if actual and self._n_tokens(tentativa) > max_tokens:
+                        pedacos.append(actual)
+                        actual = palavra
+                    else:
+                        actual = tentativa
+                if actual:
+                    pedacos.append(actual)
+
+        blocos: List[str] = []
+        actual = ""
+        for pedaco in pedacos:
+            tentativa = (actual + " " + pedaco).strip()
+            if actual and self._n_tokens(tentativa) > max_tokens:
+                blocos.append(actual)
+                actual = pedaco
+            else:
+                actual = tentativa
+        if actual:
+            blocos.append(actual)
+        return [b for b in blocos if b]
+
     def sintetizar(
         self, texto: str, saida: Path, voz: str = "", velocidade: float = 1.0
     ) -> Tuple[bool, str]:
@@ -188,21 +252,35 @@ class KokoroLocal:
             return False, "kokoro: texto vazio"
         try:
             self._carregar()
-            fonemas = self._fonemas(texto)
-            ids = self._ids(fonemas)
-            if not ids:
-                return False, f"kokoro: nenhum fonema mapeado ({fonemas[:60]!r})"
             import numpy as np  # type: ignore
 
-            estilo = self._style(voz or VOZES_PT["feminina"], len(ids))
-            audio = self._sessao.run(
-                None,
-                {
-                    "input_ids": np.array([ids], dtype=np.int64),
-                    "style": np.asarray(estilo, dtype=np.float32).reshape(1, DIM_STYLE),
-                    "speed": np.array([velocidade], dtype=np.float32),
-                },
-            )[0][0]
+            voz_escolhida = voz or VOZES_PT["feminina"]
+            pedacos = []
+            for bloco in self._blocos(texto):
+                ids = self._ids(self._fonemas(bloco))
+                if not ids:
+                    continue
+                estilo = self._style(voz_escolhida, len(ids))
+                pedacos.append(
+                    self._sessao.run(
+                        None,
+                        {
+                            "input_ids": np.array([ids], dtype=np.int64),
+                            "style": np.asarray(estilo, dtype=np.float32).reshape(
+                                1, DIM_STYLE
+                            ),
+                            "speed": np.array([velocidade], dtype=np.float32),
+                        },
+                    )[0][0]
+                )
+            if not pedacos:
+                return False, "kokoro: nenhum bloco produziu áudio"
+            # Silêncio curto entre blocos: sem ele, as frases colam umas às
+            # outras e a narração fica sem respiração.
+            pausa = np.zeros(int(TAXA_AMOSTRAGEM * 0.18), dtype=np.float32)
+            audio = pedacos[0]
+            for pedaco in pedacos[1:]:
+                audio = np.concatenate([audio, pausa, pedaco])
         except KokoroLocalIndisponivel as exc:
             return False, f"kokoro:{exc}"
         except Exception as exc:  # ONNX, fonemas, memória
