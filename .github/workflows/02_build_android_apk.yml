@@ -167,10 +167,22 @@ jobs:
         working-directory: android_apk
         env:
           AUTOMATON_API_TOKEN: ${{ secrets.AUTOMATON_API_TOKEN }}
+          TOKEN_EMULADOR: ${{ github.event_name == 'workflow_dispatch' && inputs.emulador && 'token-do-emulador' || '' }}
         run: |
           set -euo pipefail
+          # Quando o build se destina ao emulador do CI, o token e conhecido:
+          # e o mesmo que o passo «Subir o backend» exporta. Sem isto o APK
+          # fica sem token, responde 401 a tudo o que escreve e o ecra
+          # parece funcional — foi o que aconteceu ate 2026-11-28.
+          TOKEN="${AUTOMATON_API_TOKEN:-${TOKEN_EMULADOR:-}}"
+          if [ -n "$TOKEN" ]; then
+            echo "APK vai levar token (${#TOKEN} caracteres)"
+          else
+            echo "::warning::APK sem token: leituras funcionam, escritas respondem 401."
+          fi
           ${{ steps.gradle.outputs.cmd }} :app:assembleDebug --no-daemon --stacktrace \
-            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}" 2>&1 | tee -a build.log
+            -Pautomaton.baseUrl="${{ steps.buildurl.outputs.url }}" \
+            -Pautomaton.token="$TOKEN" 2>&1 | tee -a build.log
 
       - name: Definir aptidão do release
         id: release_ok
@@ -849,6 +861,18 @@ jobs:
         id: backend
         run: |
           set -euo pipefail
+          # O MESMO token tem de chegar ao backend E ao APK.
+          #
+          # Medido no run 46161398568: o backend nao recebeu UM UNICO POST em
+          # toda a sessao do emulador, embora o teste de botoes premisse
+          # Aprovar, PARAR TUDO e Pedir saque. O APK do CI e compilado com
+          # buildConfigField API_TOKEN vindo do segredo AUTOMATON_API_TOKEN,
+          # que nao existe no repositorio -> token vazio -> 401 em toda a
+          # escrita, engolido por um Result. O ecra parece funcionar e
+          # nenhuma accao acontece.
+          #
+          # Aqui o token e passado ao build com -Pautomaton.token, para que
+          # o APK de debug fale com este backend.
           export API_ACCESS_TOKEN=token-do-emulador
           export PYTHONPATH="$GITHUB_WORKSPACE"
           export VAULT_DIR=/tmp/cofre-ci
@@ -864,8 +888,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/apk
+          # O ramo apk-artifact e reescrito a cada build. Numa fila com dois
+          # runs ao mesmo commit, o ramo pode ja ter o APK do SEGUNDO run
+          # quando este job comeca — e o SHA do README nao bate com o nosso.
+          # Aqui exige-se que bata: um APK de outro run nao prova nada sobre
+          # este commit.
           git fetch --depth=1 origin apk-artifact
           git show FETCH_HEAD:app-debug.apk > /tmp/apk/app-debug.apk
+          git show FETCH_HEAD:README.md | sed -n 3p
+          ESPERADO="${{ github.sha }}"
+          OBTIDO=$(git show FETCH_HEAD:README.md | sed -n 's/^Commit de origem: //p')
+          if [ -n "$OBTIDO" ] && [ "$OBTIDO" != "$ESPERADO" ]; then
+            echo "::error::O APK do ramo e de $OBTIDO, nao deste commit ($ESPERADO)."
+            exit 1
+          fi
           ls -lh /tmp/apk/app-debug.apk
           sha256sum /tmp/apk/app-debug.apk
 
