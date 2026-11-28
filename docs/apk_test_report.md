@@ -519,3 +519,90 @@ encontrado, os testes de integração começaram a carregar 397 MB e a inferir a
 25 tok/s — **416 s num único caso**. Um teste que bloqueia a suíte durante dez minutos
 deixa de ser corrido. Agora o motor real é opt-in
 (`AUTOMATON_TESTAR_MOTOR_REAL=1`) e por omissão usa um duplo determinístico.
+
+---
+
+## 13. Terceira passagem: os botões, a prova que faltava (2026-11-28)
+
+A secção 12 anunciou um teste de botões. Esta é a prova de que ele passou —
+e, mais importante, dos **defeitos que só ele apanhou**.
+
+### 13.1 Resultado final
+
+`RELATORIO_BOTOES.md`, run `46164882239`, fase `descartavel`:
+
+```
+| Falhas | 0 |
+```
+
+Os catorze passos, pela ordem em que um utilizador os faria:
+
+| Passo | Resultado |
+|---|---|
+| Botão «Ciclo» | OK — corre um ciclo da holding a partir do telemóvel |
+| Botão «Actualizar» | OK |
+| «STOP» abre o diálogo | OK |
+| «PARAR TUDO» **congela** | OK — topo passa a «SISTEMA CONGELADO» |
+| «LIVRE» **descongela** | OK |
+| «Pedir saque» visível (após rolar) | OK |
+| Botão desactivado com campo vazio | OK — não faz nada, correcto |
+| Escrever 5 no montante | OK |
+| **Pedir saque com valor** | OK — cria `apr_56ecf2b1e0f2`, fila 1 → 2 |
+| «Aprovar» abre biometria | OK |
+| «Cancelar» fecha sem decidir | OK |
+| Diálogo de endpoint | OK |
+
+`B4_congelado.png` mostra o banner **«KILL SWITCH ACTIVO — paragem de
+emergência (APK)»**, o topo «SISTEMA CONGELADO» e o botão já a «LIVRE». No
+mesmo ecrã vê-se o ciclo concluído: `CYCLECOMPLETED`, 3 smoke tests criados,
+1 aprovação de $12.00. `B6b_saque_criado.png` mostra «Pedido criado:
+apr_56ecf2b1e0f2».
+
+### 13.2 O defeito mais grave: nenhuma escrita saía da app
+
+O sintoma estava à vista e ninguém o tinha lido: **o backend não recebia um
+único `POST`** durante toda a sessão do emulador. `grep -ci post backend.log
+→ 0`, com o teste a premir Aprovar, PARAR TUDO e Pedir saque. Todos os `GET`
+davam 200, por isso os ecrãs pareciam vivos.
+
+Causa: `build.gradle.kts` compila `BuildConfig.API_TOKEN` a partir de
+`-Pautomaton.token` ou do segredo `AUTOMATON_API_TOKEN` — que não existe no
+repositório. O APK saía com token vazio, o backend exigia
+`X-Automaton-Token` e respondia `401`, e o erro morria dentro de um
+`Result`. **Uma app que parece funcional e não faz nada** é pior do que uma
+que falha à vista.
+
+Correcção: quando o build se destina ao emulador, o token é conhecido e
+passa ao build com `-Pautomaton.token`. Sem token nenhum, o log emite
+`::warning::` em vez de deixar o silêncio instalar-se.
+
+### 13.3 Os outros cinco, por ordem de descoberta
+
+| Defeito | Como foi encontrado | Correcção |
+|---|---|---|
+| **Crash ao premir «Ciclo»** — `Key "0" was already used` | `B1_ciclo.png` mostrava o launcher; logcat tinha `FATAL EXCEPTION` | eventos locais com `sequence` negativa (-1…-4) e `distinctBy` |
+| Evento do kill switch também com `sequence = 0` | o mesmo padrão, noutro caminho | `-2L`; os quatro eventos locais numerados |
+| `adb input tap` perdido (down+up no mesmo instante) | o diálogo fechava e o `POST` nunca saía | `input swipe x y x y 120` |
+| Toque no centro do texto do `AlertDialog` | dump real: `PARAR TUDO` em `[639,1427][848,1488]` | `scripts/tocar_botao.py` → ponto a 3/4 da largura |
+| «Pedir saque» não tem diálogo | `TreasuryScreen.kt:265-275` | o teste passou a fazer o fluxo real: escrever valor e premir |
+
+E cinco do **próprio teste**, que também contam: heredoc indentado no YAML,
+`backend.core.approval_gate` inexistente, `cp` do APK para si mesmo, toque
+no `Cancelar` em vez do `PARAR TUDO`, e leitura da fila antes de o ciclo
+terminar.
+
+### 13.4 A lição
+
+O `ci_emulator_smoke.sh` original abria as cinco abas e confirmava o
+título. Passou meses verde. E, no entanto, **o botão mais importante do
+ecrã fechava a aplicação, e nenhuma escrita chegava ao servidor**. Um teste
+que verifica que o ecrã desenha não verifica que a app funciona.
+
+### 13.5 Uma nota de honestidade sobre o CI
+
+Ao longo desta passagem gastei onze runs do Actions, e mais de metade das
+falhas eram **minhas** — no teste, não no código: um `cp` para o mesmo
+ficheiro, um heredoc indentado, um bloco de teste fora da classe Kotlin, um
+`grep` num campo em que o valor estava na linha anterior. Um CI vermelho
+não diz onde está o defeito; diz só que há um. Ler a prova (screenshot,
+`ui.xml`, `backend.log`) foi sempre mais rápido do que adivinhar.
