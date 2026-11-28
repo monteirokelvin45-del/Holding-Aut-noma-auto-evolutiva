@@ -143,6 +143,26 @@ PY
   return 0
 }
 
+# Toca num ponto DENTRO da area do botao, calculado por scripts/tocar_botao.py.
+# Medido: o centro do texto «PARAR TUDO» (743,1457) nao accionou o botao num
+# AlertDialog do Material3 — o backend nunca recebeu o POST. 795,1457 (3/4 da
+# largura) funcionou. O helper fica em Python para nao voltar a partir o
+# quoting do bash.
+tocar_area_texto() {  # $1 = texto, $2 = descricao
+  dump
+  local xy
+  xy=$(python3 scripts/tocar_botao.py /tmp/ui_botoes.xml "$1")
+  if [ -z "$xy" ]; then
+    nok "$2: «$1» nao encontrado no ecra"
+    return 1
+  fi
+  echo "--- tocar (area) em «$1» @ $xy ($2)" >> "$LOG"
+  # shellcheck disable=SC2086
+  adb shell input tap $xy
+  sleep "${ESPERA:-3}"
+  return 0
+}
+
 # Desliza para cima ate o texto aparecer (ecras com scroll).
 rolar_ate() {  # $1 = texto, $2 = tentativas
   local i=0
@@ -261,7 +281,7 @@ if tocar "STOP" "botão vermelho (congelar)"; then
     # unico diagnostico util e a arvore real de nos e bounds.
     cp /tmp/ui_botoes.xml "$SAIDA/ui_dialogo_stop.xml" 2>/dev/null || true
     for rotulo in "PARAR TUDO" "Confirmar"; do
-      if tocar_texto_exacto "$rotulo" "confirmar congelamento"; then break; fi
+      if tocar_area_texto "$rotulo" "confirmar congelamento"; then break; fi
     done
     sleep 3
     if tem_texto_no_ecra "SISTEMA CONGELADO"; then
@@ -296,12 +316,24 @@ if tocar "Tesouro" "aba Tesouro"; then
   if rolar_ate "Pedir saque (requer aprovação)" 3; then
     ok "botão «Pedir saque» visível no Tesouro (após rolar)"
     ecra "B6_tesouro"
-    # Prime o botao: prova que abre o dialogo, nao so que existe.
-    if tocar "Pedir saque (requer aprovação)" "abrir diálogo de saque"; then
+    # O botao fica DESACTIVADO com saldo $0.00 — o proprio ecra diz
+    # «Disponivel no bolso: 0.00 USD» (ver B6_tesouro.png). Comportamento
+    # correcto: um saque sem saldo nao pode abrir dialogo nenhum. Exigir o
+    # dialogo aqui seria o teste a inventar um requisito.
+    if textos | grep -qi "Disponível no bolso: 0.00"; then
+      ok "«Pedir saque» desactivado com saldo \$0.00 — correcto"
+      if tocar "Pedir saque (requer aprovação)" "premir botão desactivado"; then
+        if esperar "Montante em USD" 3; then
+          nok "botão desactivado abriu o diálogo de saque (não devia)"
+        else
+          ok "botão desactivado não abriu nada — correcto"
+        fi
+      fi
+    elif tocar "Pedir saque (requer aprovação)" "abrir diálogo de saque"; then
       if esperar "Montante em USD" 8; then
         ok "diálogo de saque abriu ao premir o botão"
         ecra "B6b_dialogo_saque"
-        tocar "Cancelar" "fechar diálogo de saque" >/dev/null
+        tocar_area_texto "Cancelar" "fechar diálogo de saque" >/dev/null
       else
         nok "botão «Pedir saque» premido mas o diálogo não abriu"
       fi
@@ -373,7 +405,7 @@ if [ -n "$XY_WIFI" ]; then
   if tem_texto_no_ecra "Ligar ao backend"; then
     ok "diálogo de endpoint abriu"
     ecra "B9_endpoint"
-    tocar "Cancelar" "fechar diálogo de endpoint" >/dev/null
+    tocar_area_texto "Cancelar" "fechar diálogo de endpoint" >/dev/null
   else
     nok "diálogo de endpoint não abriu"
   fi
