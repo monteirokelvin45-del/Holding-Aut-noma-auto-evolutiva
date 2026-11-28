@@ -60,7 +60,7 @@ from .core.security_guard import kill_switch, prompt_shield
 from .core.shared_memory import shared_memory
 from .core.vault_store import VAULT_FILES, vault
 from .finance.cfo_treasury import cfo
-from .core import agent_tools
+from .core import agent_tools as guardas_ferramentas
 from .finance import cfo_tools
 from .finance.paypal_cobranca import paypal_cobranca
 from .finance.payout_bridge import PayoutRequest, payout_bridge
@@ -1020,7 +1020,6 @@ def mcp_ferramentas(servidor: str) -> Dict[str, Any]:
     A classificação diz quais passariam pelo `approval_gate` — é o que o
     Jurídico pediu para poder ver antes de ligar o servidor a um agente.
     """
-    from .core import agent_tools
     from .core.mcp_bridge import ferramentas_para_registo
 
     ferramentas = ferramentas_para_registo(servidor)
@@ -1028,7 +1027,7 @@ def mcp_ferramentas(servidor: str) -> Dict[str, Any]:
         "servidor": servidor,
         "total": len(ferramentas),
         "ferramentas": ferramentas,
-        "auditoria": agent_tools.auditar(ferramentas),
+        "auditoria": guardas_ferramentas.auditar(ferramentas),
     }
 
 
@@ -1056,7 +1055,7 @@ def list_agents() -> Dict[str, Any]:
     return {
         "validation": validation,
         "bridge": crew_bridge.availability(),
-        "guardas_ferramentas": [agent_tools.diagnostico()],
+        "guardas_ferramentas": [guardas_ferramentas.diagnostico()],
         "agents": [spec.to_dict() for spec in agent_registry.agents()],
         "tasks": [task.to_dict() for task in agent_registry.tasks()],
         "defaults": agent_registry.defaults(),

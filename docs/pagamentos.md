@@ -19,6 +19,7 @@ para um banco moçambicano, não.**
 | Enviar por Wise | Implementado, exige aprovação biométrica | `payout_bridge` (`WiseConnector`) |
 | **Sacar PayPal → banco moçambicano** | **NÃO RESOLVIDO pela PayPal** | ver §4 |
 | Tools do Agente CFO | Implementados e testados | `backend/finance/cfo_tools.py` |
+| Guardas de dinheiro (MCP incluído) | **A bloquear, testado** | `backend/core/agent_tools.py` |
 | Cartão PayPal no APK | **Corrido no emulador, 0 falhas** | `docs/emulador/B10_paypal.png` |
 
 Nada nesta tabela foi confirmado com dinheiro real. Não há credenciais

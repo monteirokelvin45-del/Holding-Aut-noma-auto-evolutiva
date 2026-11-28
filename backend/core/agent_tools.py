@@ -36,8 +36,8 @@ com bom senso ou a bloquear tudo.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Sequence
 
 from ..config.settings import settings
 from .approvals import approval_gate

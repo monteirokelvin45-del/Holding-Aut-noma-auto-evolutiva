@@ -16,7 +16,7 @@ import shutil
 import pytest
 
 from backend.core import agent_tools
-from backend.core.agent_tools import Decisao, classificar
+from backend.core.agent_tools import classificar
 
 SEM_NPX = shutil.which("npx") is None
 precisa_npx = pytest.mark.skipif(SEM_NPX, reason="npx indisponível neste ambiente")
