@@ -568,16 +568,7 @@ jobs:
           # Os logs do Actions não são alcançáveis de fora (o blob de
           # resultados recusa a ligação), por isso o diagnóstico vai para um
           # ficheiro que é publicado no ramo estado-ciclo.
-          {
-            echo "== motor local"
-            python -c "import llama_cpp; print('llama_cpp', llama_cpp.__version__)" 2>&1 | head -2
-            python -c "import misaki; print('misaki ok')" 2>&1 | head -2
-            python -c "import onnxruntime; print('onnxruntime', onnxruntime.__version__)" 2>&1 | head -2
-            python -c "import phonemizer; print('phonemizer ok')" 2>&1 | head -2
-            ls -la "$HOME/modelos" 2>&1 | head -5
-            ls -la models/kokoro 2>&1 | head -5
-            ls models/kokoro/voices 2>/dev/null | wc -l
-          } > motor_local.txt 2>&1
+          PYTHONPATH=. python scripts/diagnostico_motor.py > motor_local.txt 2>&1 || true
           cat motor_local.txt
 
       # Diagnóstico de rede: o provider github_models ficou 'configurado' mas
