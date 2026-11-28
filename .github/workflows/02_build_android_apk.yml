@@ -962,11 +962,27 @@ jobs:
             -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
             -camera-back none -camera-front none
           script: |
-            bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador"
-            # Segunda passagem: premir os BOTÕES, não só as abas. Corre contra
-            # o cofre descartável, por isso pode decidir sem consequências.
-            bash scripts/ci_emulator_buttons.sh "$GITHUB_WORKSPACE/saida_botoes" descartavel || \
-              echo "::error::teste de botões falhou (ver saida_botoes/botoes.log)"
+            # Duas passagens: o smoke (as abas abrem) e os botões (os
+            # botões fazem). Os códigos de saída são capturados e impressos
+            # individualmente — se só se visse o resultado final, uma falha
+            # de uma linha (adb devolve 1 ao usar `grep -q` num pipe) não
+            # deixaria rasto e o diagnóstico seria uma adivinha.
+            #
+            # Os dois correm sempre, mesmo que o primeiro falhe: interessa o
+            # retrato completo, não parar no primeiro sintoma. No fim, o
+            # passo falha se qualquer um falhou — antes havia um `|| echo`
+            # que transformava uma falha em sucesso, e o CI ficava verde com
+            # os botões partidos. Isso é pior do que não testar.
+            rc_smoke=0
+            rc_botoes=0
+            bash scripts/ci_emulator_smoke.sh /tmp/apk/app-debug.apk "$GITHUB_WORKSPACE/saida_emulador" || rc_smoke=$?
+            echo "::notice::smoke exit=$rc_smoke"
+            bash scripts/ci_emulator_buttons.sh "$GITHUB_WORKSPACE/saida_botoes" descartavel || rc_botoes=$?
+            echo "::notice::botoes exit=$rc_botoes"
+            if [ "$rc_smoke" -ne 0 ] || [ "$rc_botoes" -ne 0 ]; then
+              echo "::error::emulador falhou (smoke=$rc_smoke botoes=$rc_botoes)"
+              exit 1
+            fi
 
       - name: Guardar diagnóstico do job
         if: failure()
