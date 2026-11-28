@@ -412,8 +412,15 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
             api.engageKillSwitch(reason)
                 .onSuccess {
                     _toast.value = "KILL SWITCH accionado — tudo congelado"
+                    // `sequence` NEGATIVO, pela mesma razão do aviso de
+                    // ligação: este evento é local, não veio do bus. Sem
+                    // sequence próprio colidia com o aviso «connected» — os
+                    // dois a 0 — e o LazyColumn rebentava com "Key 0 was
+                    // already used". O crash do botão «Ciclo» era este mesmo
+                    // defeito, num caminho vizinho.
                     addEvent(
                         LiveEvent(
+                            sequence = -2L,
                             type = "kill_switch", agent = "security", level = "critical",
                             message = "Kill switch accionado pelo APK: $reason",
                         )
@@ -520,6 +527,10 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
             _busyAction.value = "cycle"
             addEvent(
                 LiveEvent(
+                    // -3L: os eventos locais usam sequências negativas
+                    // (-1 ligação, -2 kill switch, -3 comando) para nunca
+                    // colidirem com o historico real do bus, que começa em 1.
+                    sequence = -3L,
                     type = "command", agent = "ceo_orchestrator", level = "info",
                     message = "Ciclo pedido manualmente pelo APK"
                 )
@@ -535,6 +546,7 @@ class HoldingViewModel(application: Application) : AndroidViewModel(application)
                     _toast.value = "Falha no ciclo: ${describe(it)}"
                     addEvent(
                         LiveEvent(
+                            sequence = -4L,
                             type = "error", agent = "ceo_orchestrator", level = "error",
                             message = "Ciclo falhou: ${describe(it)}"
                         )

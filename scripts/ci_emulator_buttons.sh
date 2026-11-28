@@ -156,9 +156,14 @@ tocar_area_texto() {  # $1 = texto, $2 = descricao
     nok "$2: «$1» nao encontrado no ecra"
     return 1
   fi
-  echo "--- tocar (area) em «$1» @ $xy ($2)" >> "$LOG"
+  echo "--- premir (area) «$1» @ $xy ($2)" >> "$LOG"
+  # `input tap` manda down+up praticamente no mesmo instante. Com Compose a
+  # correr sobre swiftshader (emulador sem GPU), esses toques chegam a ser
+  # perdidos: o dialogo do kill switch fechava e o POST nunca saia da app.
+  # `input swipe x y x y <ms>` faz down, espera, up no mesmo ponto — que o
+  # Compose trata como clique. É o mesmo gesto, com tempo para ser visto.
   # shellcheck disable=SC2086
-  adb shell input tap $xy
+  adb shell input swipe $xy $xy 120
   sleep "${ESPERA:-3}"
   return 0
 }
@@ -273,7 +278,7 @@ fi
 registar "--- 3. congelar o sistema (STOP)"
 if tocar "STOP" "botão vermelho (congelar)"; then
   # O diálogo de confirmação pede a causa.
-  if esperar "KILL SWITCH" 8 || esperar "Motivo" 4; then
+  if esperar "Accionar KILL SWITCH" 8 || esperar "Motivo" 4; then
     ok "diálogo do kill switch abriu"
     ecra "B3_dialogo_stop"
     # Confirmar dentro do diálogo, se houver botão próprio.
@@ -316,30 +321,40 @@ if tocar "Tesouro" "aba Tesouro"; then
   if rolar_ate "Pedir saque (requer aprovação)" 3; then
     ok "botão «Pedir saque» visível no Tesouro (após rolar)"
     ecra "B6_tesouro"
-    # O botao fica DESACTIVADO com saldo $0.00 — o proprio ecra diz
-    # «Disponivel no bolso: 0.00 USD» (ver B6_tesouro.png). Comportamento
-    # correcto: um saque sem saldo nao pode abrir dialogo nenhum. Exigir o
-    # dialogo aqui seria o teste a inventar um requisito.
-    if textos | grep -qi "Disponível no bolso: 0.00"; then
-      ok "«Pedir saque» desactivado com saldo \$0.00 — correcto"
-      if tocar "Pedir saque (requer aprovação)" "premir botão desactivado"; then
-        if esperar "Montante em USD" 3; then
-          nok "botão desactivado abriu o diálogo de saque (não devia)"
-        else
-          ok "botão desactivado não abriu nada — correcto"
-        fi
-      fi
-    elif tocar "Pedir saque (requer aprovação)" "abrir diálogo de saque"; then
-      if esperar "Montante em USD" 8; then
-        ok "diálogo de saque abriu ao premir o botão"
-        ecra "B6b_dialogo_saque"
-        tocar_area_texto "Cancelar" "fechar diálogo de saque" >/dev/null
+    # O ecra do Tesouro NAO tem dialogo de saque: o botao «Pedir saque» chama
+  # onRequestPayout e cria logo a aprovacao (TreasuryScreen.kt:265-275). E
+  # fica desactivado enquanto o campo estiver vazio (`enabled = amount > 0`).
+  # O teste correcto e o fluxo completo: escrever o valor e premir.
+  if textos | grep -qi "Pedir saque (requer aprovação)"; then
+    ok "botão «Pedir saque» visível no Tesouro"
+    if tocar "Pedir saque (requer aprovação)" "premir com campo vazio"; then
+      if textos | grep -qi "Ir para Aprovações"; then
+        nok "botão desactivado com campo vazio criou aprovação (não devia)"
       else
-        nok "botão «Pedir saque» premido mas o diálogo não abriu"
+        ok "botão desactivado com campo vazio não fez nada — correcto"
+      fi
+    fi
+
+    # Escrever 5 no «Montante em USD» e premir a sério.
+    if tocar "Montante em USD" "campo de montante"; then
+      adb shell input text "5" >/dev/null 2>&1
+      sleep 1
+      adb shell input keyevent 111 >/dev/null 2>&1   # ESC fecha o teclado
+      sleep 1
+      ok "montante 5 escrito no campo"
+      ecra "B6_tesouro_com_valor"
+      if tocar "Pedir saque (requer aprovação)" "pedir saque com valor"; then
+        if esperar "Ir para Aprovações" 10; then
+          ok "saque pedido: o APK criou uma aprovação (cartão «Ir para Aprovações»)"
+          ecra "B6b_saque_criado"
+        else
+          nok "premi «Pedir saque» com valor mas não apareceu o cartão da aprovação"
+        fi
       fi
     fi
   else
     nok "«Pedir saque» não apareceu nem depois de rolar"
+    fi
   fi
 fi
 
