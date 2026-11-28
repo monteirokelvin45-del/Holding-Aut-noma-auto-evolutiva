@@ -88,3 +88,10 @@ out/
 .DS_Store
 Thumbs.db
 *.log
+
+# ==== Pesos de modelos locais (207 MB) ====
+# Não vão para o repositório: são reinstaláveis e verificáveis por
+# scripts/instalar_motor_local.sh, que confere o SHA-256 de cada um.
+models/kokoro/*.onnx
+models/kokoro/voices/
+models/*.gguf

@@ -183,6 +183,15 @@ class Settings:
     #: Contexto do motor GGUF. 2048 chega para os prompts dos esquadrões e
     #: cabe em 4 GB de RAM com um modelo Q4 de 0,6B.
     local_gguf_ctx: int = 2048
+
+    #: Kokoro-82M offline (Apache-2.0). Os pesos não vêm do HuggingFace (está
+    #: bloqueado neste ambiente): vêm de fragmentos publicados no registry npm,
+    #: com SHA-256 verificado por `scripts/instalar_motor_local.sh`.
+    kokoro_modelo_onnx: str = "models/kokoro/kokoro-q8.onnx"
+    kokoro_vozes_dir: str = "models/kokoro/voices"
+    #: Idioma do espeak para fonemas. `pt-br` é a única variante portuguesa que
+    #: o espeak traz; há diferenças de sotaque em relação a Moçambique.
+    kokoro_idioma_espeak: str = "pt-br"
     local_gguf_threads: int = 2
 
     llm_provider_order: List[str] = field(
@@ -425,6 +434,9 @@ def _build_settings() -> Settings:
         ollama_enabled=env_bool("OLLAMA_ENABLED", False),
         local_gguf_path=env_str("LOCAL_GGUF_PATH", ""),
         local_gguf_ctx=env_int("LOCAL_GGUF_CTX", 2048),
+        kokoro_modelo_onnx=env_str("KOKORO_MODELO_ONNX", "models/kokoro/kokoro-q8.onnx"),
+        kokoro_vozes_dir=env_str("KOKORO_VOZES_DIR", "models/kokoro/voices"),
+        kokoro_idioma_espeak=env_str("KOKORO_IDIOMA_ESPEAK", "pt-br"),
         local_gguf_threads=env_int("LOCAL_GGUF_THREADS", 2),
         llm_provider_order=env_list(
             "LLM_PROVIDER_ORDER",

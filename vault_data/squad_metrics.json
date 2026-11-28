@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-11-28T11:08:08+00:00",
+  "updated_at": "2026-11-28T11:12:37+00:00",
   "kill_policy": {
     "min_traction_days": 7,
     "min_views_in_traction_window": 200,
@@ -168,6 +168,32 @@
       ],
       "updated_at": "2026-11-28T11:08:08+00:00",
       "last_verdict": "keep"
+    },
+    "sq_6c9753cf6a20": {
+      "id": "sq_6c9753cf6a20",
+      "name": "Freelancing em Moçambique: os 3 passos para o primeiro cliente",
+      "type": "video_factory",
+      "niche": "freelancing_video_kokoro",
+      "owner_agent": "video_factory",
+      "status": "active",
+      "created_at": "2026-11-28T11:12:02+00:00",
+      "activated_at": "2026-11-28T11:12:02+00:00",
+      "closed_at": null,
+      "first_dollar_at": null,
+      "ttfd_days": null,
+      "views": 0,
+      "clicks": 0,
+      "conversions": 0,
+      "revenue_usd": 0.0,
+      "cost_usd": 0.0,
+      "cac_usd": null,
+      "ltv_usd": null,
+      "retention_rate": 0.0,
+      "eval_scores": [],
+      "daily": {},
+      "metadata": {},
+      "verdict_history": [],
+      "updated_at": "2026-11-28T11:12:02+00:00"
     }
   },
   "artifacts": [
@@ -1330,6 +1356,157 @@
         }
       ],
       "at": "2026-11-28T11:05:45+00:00"
+    },
+    {
+      "type": "video_package",
+      "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_6c9753cf6a20/2026-11-28/publication_package.json",
+      "publishable": true,
+      "publish_blockers": [],
+      "squad_id": "sq_6c9753cf6a20",
+      "title": "Freelancing em Moçambique: os 3 passos para o primeiro cliente",
+      "description": "3 passos práticos sobre Freelancing em Moçambique: os 3 passos para o primeiro cliente.",
+      "hashtags": [
+        "#shorts",
+        "#dicas",
+        "#aprender",
+        "#freelancingvideokoko",
+        "#moçambique"
+      ],
+      "platforms": [
+        "tiktok",
+        "youtube_shorts",
+        "instagram_reels"
+      ],
+      "narration": "Sabias que a maioria das pessoas perde dinheiro em freelancing_video_kokoro sem perceber porquê? Primeiro, identifica onde o dinheiro está a sair. Segundo, compara com o que realmente gera retorno. Terceiro, corta o que não paga as contas. Segue para mais e entra na lista VIP no link da bio.",
+      "script": {
+        "title": "Freelancing em Moçambique: os 3 passos para o primeiro cliente",
+        "hook": "Sabias que a maioria das pessoas perde dinheiro em freelancing_video_kokoro sem perceber porquê?",
+        "body": [
+          "Primeiro, identifica onde o dinheiro está a sair.",
+          "Segundo, compara com o que realmente gera retorno.",
+          "Terceiro, corta o que não paga as contas."
+        ],
+        "cta": "Segue para mais e entra na lista VIP no link da bio.",
+        "hashtags": [
+          "#shorts",
+          "#dicas",
+          "#aprender",
+          "#freelancingvideokoko",
+          "#moçambique"
+        ],
+        "description": "3 passos práticos sobre Freelancing em Moçambique: os 3 passos para o primeiro cliente.",
+        "language": "pt",
+        "engine": "template",
+        "is_llm": false,
+        "word_count": 49
+      },
+      "render": {
+        "ok": true,
+        "video_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_6c9753cf6a20/2026-11-28/short.mp4",
+        "audio_path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_6c9753cf6a20/2026-11-28/narration.mp3",
+        "duration_seconds": 18.846153846153847,
+        "resolution": "1080x1920",
+        "fps": 30,
+        "steps": {
+          "tts": {
+            "ok": true,
+            "engine": "kokoro:pf_dora:18.3s"
+          },
+          "subtitles": {
+            "ok": true,
+            "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_6c9753cf6a20/2026-11-28/subtitles.srt"
+          },
+          "render": {
+            "ok": true,
+            "ffmpeg": "/tmp/v3/lib/python3.11/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v9.0.2",
+            "silent_audio": false
+          }
+        },
+        "warnings": []
+      },
+      "footage": {
+        "source": "generated",
+        "kind": "motion_graphics",
+        "path": "/home/user/Holding-Aut-noma-auto-evolutiva/vault_data/media/videos/sq_6c9753cf6a20/2026-11-28/footage/motion/motion_base.mp4",
+        "license": "own_work",
+        "url": "",
+        "query": "freelancing_video_kokoro",
+        "engine": "pillow+ffmpeg",
+        "scenes": 5,
+        "has_text": true,
+        "note": "5 planos animados gerados localmente (Pillow + ffmpeg), sem GPU e sem material de terceiros."
+      },
+      "judge": {
+        "score": 88.0,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 90.0,
+          "clarity": 90.0,
+          "technical": 80.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 22.5,
+          "clarity": 22.5,
+          "technical": 20.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "CTA explícito presente no guião.",
+          "Frases legíveis (média 10.2 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T11:12:37+00:00"
+      },
+      "compliance": {
+        "subject": "media",
+        "kind": "copyright",
+        "passed": true,
+        "findings": [
+          {
+            "check": "video_source_source",
+            "passed": true,
+            "severity": "info",
+            "message": "video_source: fonte 'generated' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "generated",
+                "license": "own_work"
+              }
+            }
+          },
+          {
+            "check": "audio_source",
+            "passed": true,
+            "severity": "info",
+            "message": "audio: fonte 'kokoro' aceite para uso comercial.",
+            "evidence": {
+              "item": {
+                "source": "kokoro",
+                "license": "apache-2.0"
+              }
+            }
+          }
+        ],
+        "tool": "curated-media-policy",
+        "generated_at": "2026-11-28T11:12:37+00:00"
+      },
+      "smoke_test_id": "smk_d5bd7dafc80a",
+      "validated_demand": true,
+      "created_at": "2026-11-28T11:12:37+00:00",
+      "next_step": "Revisão humana e upload manual. Nenhuma publicação é automática."
     }
   ],
   "agents": {
@@ -1481,6 +1658,33 @@
         }
       ],
       "last_review": "healthy"
+    },
+    "video_factory": {
+      "id": "video_factory",
+      "status": "active",
+      "system_prompt": "És o Produtor do Esquadrão de Vídeos Curtos. Escreves guiões de 9:16 com gancho nos primeiros 3 segundos, áudio limpo e CTA claro. Só usas vozes e footage com licença comercial permitida.",
+      "prompt_version": 1,
+      "prompt_history": [
+        {
+          "version": 1,
+          "prompt": "És o Produtor do Esquadrão de Vídeos Curtos. Escreves guiões de 9:16 com gancho nos primeiros 3 segundos, áudio limpo e CTA claro. Só usas vozes e footage com licença comercial permitida.",
+          "at": "2026-11-28T11:12:37+00:00",
+          "by": "bootstrap"
+        }
+      ],
+      "calls": 1,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "successes": 1,
+      "failures": 0,
+      "judge_scores": [
+        88.0
+      ],
+      "failure_reasons": [],
+      "rewrites": 0,
+      "created_at": "2026-11-28T11:12:37+00:00",
+      "updated_at": "2026-11-28T11:12:37+00:00",
+      "reviews": []
     }
   },
   "smoke_tests": [
@@ -2552,6 +2756,52 @@
         "price_usd": 12.0
       },
       "at": "2026-11-28T10:42:49+00:00"
+    },
+    {
+      "squad_id": "sq_6c9753cf6a20",
+      "agent_id": "video_factory",
+      "content_type": "video_short",
+      "content_hash": "len296",
+      "verdict": {
+        "score": 88.0,
+        "passed": true,
+        "content_type": "video_short",
+        "axes": {
+          "hook": 90.0,
+          "clarity": 90.0,
+          "technical": 80.0,
+          "compliance": 90.0
+        },
+        "points": {
+          "hook": 22.5,
+          "clarity": 22.5,
+          "technical": 20.0,
+          "compliance": 22.5
+        },
+        "axis_labels": {
+          "hook": "Gancho / Retenção Inicial",
+          "clarity": "Potencial de Monetização / SEO",
+          "technical": "Qualidade Técnica / Áudio / Código",
+          "compliance": "Segurança de Direitos de Autor"
+        },
+        "axis_max_points": 25.0,
+        "findings": [
+          "Gancho forte nos primeiros segundos (pergunta/número).",
+          "CTA explícito presente no guião.",
+          "Frases legíveis (média 10.2 palavras)."
+        ],
+        "critical_findings": [],
+        "suggestions": [],
+        "engine": "objective",
+        "attempts": 1,
+        "evaluated_at": "2026-11-28T11:12:37+00:00"
+      },
+      "metadata": {
+        "duration_seconds": 18.846153846153847,
+        "has_cta": true,
+        "title": "Freelancing em Moçambique: os 3 passos para o primeiro cliente"
+      },
+      "at": "2026-11-28T11:12:37+00:00"
     }
   ]
 }

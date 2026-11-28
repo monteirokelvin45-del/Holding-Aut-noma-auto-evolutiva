@@ -1184,3 +1184,47 @@ def test_local_gguf_responde_e_e_marcado_como_llm(monkeypatch, tmp_path):
     assert resposta.cost_usd == 0.0
     assert resposta.model == "modelo.gguf"
     assert "curso de Excel" in resposta.text
+
+
+# --------------------------------------------------------------------------- #
+# 14. Kokoro-82M real, offline, com vozes portuguesas
+# --------------------------------------------------------------------------- #
+def test_kokoro_tem_vozes_portuguesas():
+    """O código antigo desistia do Kokoro em PT com uma justificação errada.
+
+    Dizia: «o pacote voices-v1.0 só tem vozes en/zh; usar edge-tts para
+    português». É falso — o Kokoro-82M v1.0 tem pf_dora, pm_alex e pm_santa.
+    Este teste fixa a existência das vozes para a desculpa não voltar.
+    """
+    from backend.squads.kokoro_tts import VOZES_PT
+
+    assert VOZES_PT["feminina"] == "pf_dora"
+    assert VOZES_PT["masculina"] == "pm_alex"
+    assert set(VOZES_PT.values()) == {"pf_dora", "pm_alex", "pm_santa"}
+
+
+def test_kokoro_vocabulario_cobre_os_fonemas_do_portugues():
+    """Os fonemas que o espeak pt-br produz têm de existir no vocabulário.
+
+    Sem isto, palavras inteiras saem mudas sem aviso — o `input_ids` fica
+    mais curto e o áudio sai truncado, sem erro.
+    """
+    from backend.squads.kokoro_tts import VOCAB
+
+    # Fonemas reais medidos: "Olá, este é um teste de voz em português."
+    fonemas = "olˈa, ˌesʧy ɛ ũŋ tˈɛsʧy ʤy vˈɔz ˈAŋ pˌoɾətuɡˈez ʤy mˌosɐ̃mbˈiky."
+    faltam = {c for c in fonemas if c not in VOCAB}
+    assert not faltam, f"fonemas sem token no vocabulário: {sorted(faltam)}"
+
+
+def test_kokoro_diz_porque_nao_pode_sem_pesos(tmp_path):
+    """Sem modelo, `disponivel()` explica — não rebenta nem finge."""
+    from backend.squads.kokoro_tts import KokoroLocal
+
+    k = KokoroLocal(modelo=tmp_path / "nao-existe.onnx", vozes_dir=tmp_path)
+    ok, motivo = k.disponivel()
+    assert ok is False
+    assert "ausente" in motivo
+    ok, motivo = k.sintetizar("olá", tmp_path / "x.wav")
+    assert ok is False
+    assert motivo.startswith("kokoro:")

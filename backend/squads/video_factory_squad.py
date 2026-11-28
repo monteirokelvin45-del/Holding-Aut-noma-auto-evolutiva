@@ -123,7 +123,11 @@ class TTSRegistry:
     def available(self) -> Dict[str, bool]:
         return {
             "edge_tts": self._module("edge_tts"),
-            "kokoro": self._module("kokoro") or self._module("kokoro_onnx"),
+            # Kokoro-82M offline com vozes PT: modelo ONNX + 54 vozes locais.
+            "kokoro": (
+                self._module("kokoro") or self._module("kokoro_onnx")
+                or self._kokoro_local_pronto()
+            ),
             "chatterbox": self._module("chatterbox"),
             "piper": shutil.which("piper") is not None,
             # espeak-ng (GPLv3) via libespeakng-loader: síntese offline, inclui
@@ -131,6 +135,16 @@ class TTSRegistry:
             # pesos neurais — a voz é robótica, e isso fica declarado.
             "espeak_ng": self._module("espeakng_loader"),
         }
+
+    @staticmethod
+    def _kokoro_local_pronto() -> bool:
+        """Kokoro-82M local (ONNX + vozes PT) presente e utilizável."""
+        try:
+            from .kokoro_tts import kokoro_local
+
+            return kokoro_local.disponivel()[0]
+        except Exception:
+            return False
 
     @staticmethod
     def _module(name: str) -> bool:
@@ -154,6 +168,14 @@ class TTSRegistry:
             if ok:
                 return True, "edge_tts"
             log.warning("edge-tts falhou (%s); a tentar alternativas.", message)
+        # O motor local com vozes PT vem primeiro: é o único que produz
+        # português de qualidade sem rede. `kokoro_onnx` (en/zh) e `kokoro`
+        # (PyTorch, precisa do HuggingFace) ficam como alternativas.
+        if engine in {"kokoro", "edge_tts"} and self._kokoro_local_pronto():
+            ok, message = self._kokoro_local(text, out_path, language)
+            if ok:
+                return True, message
+            log.warning("Kokoro local falhou (%s); a tentar alternativas.", message)
         if engine in {"kokoro", "edge_tts"} and (
             self._module("kokoro") or self._module("kokoro_onnx")
         ):
@@ -284,6 +306,17 @@ class TTSRegistry:
             return f"phonemizer_config:{exc}"
         TTSRegistry._phonemizer_ok = True
         return None
+
+    @staticmethod
+    def _kokoro_local(text: str, out_path: Path, language: str) -> Tuple[bool, str]:
+        """Kokoro-82M offline com vozes portuguesas (pf_dora / pm_alex)."""
+        from .kokoro_tts import VOZES_PT, kokoro_local
+
+        voz = VOZES_PT["feminina"] if language.startswith("pt") else "af_heart"
+        ok, motivo = kokoro_local.sintetizar(text, out_path, voz=voz)
+        if not ok:
+            return False, motivo
+        return out_path.is_file() and out_path.stat().st_size > 1024, motivo
 
     @staticmethod
     def _kokoro(text: str, out_path: Path, language: str) -> Tuple[bool, str]:
